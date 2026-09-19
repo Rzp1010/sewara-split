@@ -262,7 +262,6 @@ export default function InventarisPage() {
       }
 
       itemBaru = {
-        id: Date.now(),
         jenis,
         nama,
         tipeSewa,
@@ -280,7 +279,6 @@ export default function InventarisPage() {
       if (tempKomponenRef.current.length === 0)
         return notify("Paket Bundling minimal 1 komponen!", "error");
       itemBaru = {
-        id: Date.now(),
         jenis,
         nama,
         tipeSewa,

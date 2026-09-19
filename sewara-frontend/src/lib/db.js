@@ -227,8 +227,11 @@ export async function updateInventory(rows) {
   try {
     for (const row of rows) {
       const { id, ...data } = row;
-      if (id) await api.inventory.update(id, data);
-      else await api.inventory.create(data);
+      if (id !== undefined && id !== null) {
+        await api.inventory.update(id, data);
+      } else {
+        await api.inventory.create(data);
+      }
     }
   } catch (e) {
     console.error('updateInventory error:', e.message);
