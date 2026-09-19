@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { API_BASE } from "@/lib/api-client";
 
 const COOLDOWN = 60;
 
@@ -33,7 +34,7 @@ function VerifikasiEmailContent() {
     if (seconds > 0) return;
     setState("loading");
     try {
-      const response = await fetch("/api/auth/resend-verification", {
+      const response = await fetch(`${API_BASE}/api/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

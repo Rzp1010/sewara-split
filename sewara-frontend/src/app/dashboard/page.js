@@ -181,7 +181,7 @@ export default function DashboardPage() {
   }, [role, userId, rentangKey, customMulai, customAkhir]);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await api.auth.logout();
     resetOwnerIdCache();
     router.replace("/");
   }

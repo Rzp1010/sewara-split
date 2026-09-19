@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getSetting, getSettingTenant, setSetting, setSettingTenant } from "@/lib/db";
-import { api } from "@/lib/api-client";
+import { api, API_BASE } from "@/lib/api-client";
 import { ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
@@ -521,7 +521,7 @@ export default function PengaturanPage() {
   async function tesTelegram() {
     setSaving(true);
     try {
-      const res = await fetch("/api/telegram/test", { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/telegram/test`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok)
         return notify(data.error || "Gagal mengirim pesan uji.", "error");

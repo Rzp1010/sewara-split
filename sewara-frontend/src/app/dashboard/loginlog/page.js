@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getSettingTenant, setSettingTenant, getLoginLogs } from "@/lib/db";
 import { createPortal } from "react-dom";
-import { api } from "@/lib/api-client";
+import { api, API_BASE } from "@/lib/api-client";
 import { formatTanggal } from "@/lib/utils";
 import { ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
@@ -109,7 +109,7 @@ export default function LoginLogPage() {
   async function tesTg() {
     setTgTesting(true);
     try {
-      const res = await fetch("/api/telegram/test", { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/telegram/test`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok)
         return notify(data.error || "Gagal mengirim pesan uji.", "error");

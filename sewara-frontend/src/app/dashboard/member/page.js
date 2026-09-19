@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getSettingTenant, setSettingTenant, getMembers, simpanMember, hapusMember, getMemberTemplates, simpanMemberTemplate, hapusMemberTemplate } from "@/lib/db";
 import { createPortal } from "react-dom";
 import imageCompression from "browser-image-compression";
-import { api } from "@/lib/api-client";
+import { api, API_BASE } from "@/lib/api-client";
 import { ROLE_OWNER } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
@@ -241,7 +241,10 @@ export default function MemberPage() {
       d.append("label", slotLabel);
       d.append("index", index);
       const j = await (
-        await fetch("/api/member/upload", { method: "POST", body: d })
+        await fetch(`${API_BASE}/api/member/upload`, {
+          method: "POST",
+          body: d,
+        })
       ).json();
       if (!j.ok) throw Error(j.error);
       setForm((x) => {
