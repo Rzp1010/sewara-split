@@ -1,0 +1,8 @@
+Bundle Analysis - Before InvoiceView Optimization
+Date: 2026-09-06 10:52 AM
+
+Largest chunk: 2wwh0do5m9oh9.js = 918 KB
+Composition: html2pdf + jsPDF + canvg + pako + core-js
+Source: InvoiceView.jsx imports html2pdf.js
+
+Total static JS: 2,345 KB

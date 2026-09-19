@@ -1,0 +1,858 @@
+▲ Next.js 16.2.12 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 24 errors:
+./src/app/daftar/page.js:46:35
+Module not found: Can't resolve '@/lib/db'
+  [90m44 |[0m
+  [90m45 |[0m     setLoading([36mtrue[0m);
+[31m[1m>[0m [90m46 |[0m     [36mconst[0m { registerApi } = [36mawait[0m [36mimport[0m([32m"@/lib/db"[0m);
+  [90m   |[0m                                   [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m47 |[0m     [36mconst[0m hasil = [36mawait[0m registerApi(
+  [90m48 |[0m       email,
+  [90m49 |[0m       form.password,
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/daftar/page.js [Client Component Browser]
+    ./src/app/daftar/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/daftar/page.js [Client Component SSR]
+    ./src/app/daftar/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/SettingsModal.jsx:3:1
+Module not found: Can't resolve '@/lib/db'
+  [90m1 |[0m [32m"use client"[0m;
+  [90m2 |[0m
+[31m[1m>[0m [90m3 |[0m [36mimport[0m { getSetting, setSetting } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m4 |[0m [36mimport[0m { [33mVERSI_APLIKASI[0m } [36mfrom[0m [32m"@/lib/version"[0m;
+  [90m5 |[0m [36mimport[0m { getFITUR } [36mfrom[0m [32m"@/lib/features"[0m;
+  [90m6 |[0m [36mconst[0m [33mLABEL_TAB[0m = {
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/app/dashboard/SettingsModal.jsx [Client Component Browser]
+    ./src/app/dashboard/layout.js [Client Component Browser]
+    ./src/app/dashboard/layout.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/booking/page.js:8:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 6 |[0m [36mimport[0m dynamic [36mfrom[0m [32m"next/dynamic"[0m;
+  [90m 7 |[0m
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getInventoryByIds,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   getTransactionsAktif,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m   getTransactionsCari,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m   getTransactionById,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m   getStok,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   buatIDUnik,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m   updateTransactions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m18 |[0m   updateInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m19 |[0m   tambahTransactions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m20 |[0m   tambahLogs,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m21 |[0m   getNamaInvoice,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m22 |[0m   getMembers,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m23 |[0m   getPelangganSuggestions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m24 |[0m   getPromoCodes,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m25 |[0m   pakaiPromo,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m26 |[0m   validasiPromo,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m27 |[0m   promoSudahKadaluarsa,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m   getSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m30 |[0m [36mimport[0m {
+  [90m31 |[0m   formatAngkaInput,
+  [90m32 |[0m   formatRupiah,
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/booking/page.js [Client Component Browser]
+    ./src/app/dashboard/booking/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/booking/page.js [Client Component SSR]
+    ./src/app/dashboard/booking/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/inventaris/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 4 |[0m [36mimport[0m [33mImage[0m [36mfrom[0m [32m"next/image"[0m;
+  [90m 5 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+[31m[1m>[0m [90m 6 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   getInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   updateInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   hapusInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getStok,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   getTransactionsAktif,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m [36mimport[0m { formatRupiah, unduhCSV } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m14 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+  [90m15 |[0m [36mimport[0m { [33mButton[0m } [36mfrom[0m [32m"@/components/ui"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/inventaris/page.js [Client Component Browser]
+    ./src/app/dashboard/inventaris/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/inventaris/page.js [Client Component SSR]
+    ./src/app/dashboard/inventaris/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/kalender/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m3 |[0m [36mimport[0m { useState, useEffect, useMemo, useCallback, memo } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { getTransactionsRangeRingkas, getSetting, setSetting } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { formatRupiah, hitungPembayaran } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m bulanNama = [
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/kalender/page.js [Client Component Browser]
+    ./src/app/dashboard/kalender/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/kalender/page.js [Client Component SSR]
+    ./src/app/dashboard/kalender/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/laporan/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m 4 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 6 |[0m   getTransactionsLaporan,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   getTransactionsLaporanRange,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   getTransactionItemsSemua,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m [36mimport[0m {
+  [90m13 |[0m   formatRupiah,
+  [90m14 |[0m   formatTanggal,
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/laporan/page.js [Client Component Browser]
+    ./src/app/dashboard/laporan/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/laporan/page.js [Client Component SSR]
+    ./src/app/dashboard/laporan/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/layout.js:13:1
+Module not found: Can't resolve '@/lib/db'
+  [90m11 |[0m [36mconst[0m [33mSettingsModal[0m = dynamic(() => [36mimport[0m([32m"./SettingsModal"[0m), { ssr: [36mfalse[0m });
+  [90m12 |[0m [36mimport[0m [33mThemeProvider[0m, { useTheme } [36mfrom[0m [32m"@/components/ThemeProvider"[0m;
+[31m[1m>[0m [90m13 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   setSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m   hapusSemuaData,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m   initSettings,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m18 |[0m   updateUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m19 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m20 |[0m [36mimport[0m { [33mVERSI_APLIKASI[0m } [36mfrom[0m [32m"@/lib/version"[0m;
+  [90m21 |[0m [36mimport[0m { api } [36mfrom[0m [32m"@/lib/api-client"[0m;
+  [90m22 |[0m [36mimport[0m { getFITUR } [36mfrom[0m [32m"@/lib/features"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/layout.js [Client Component Browser]
+    ./src/app/dashboard/layout.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/layout.js [Client Component SSR]
+    ./src/app/dashboard/layout.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/log/page.js:4:1
+Module not found: Can't resolve '@/lib/db'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect, useCallback } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { getLogsTerbaru } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { formatTanggal } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m6 |[0m [36mimport[0m { [33mButton[0m, [33mEmptyState[0m } [36mfrom[0m [32m"@/components/ui"[0m;
+  [90m7 |[0m
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/log/page.js [Client Component Browser]
+    ./src/app/dashboard/log/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/log/page.js [Client Component SSR]
+    ./src/app/dashboard/log/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/loginlog/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 5 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 6 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   getLoginLogs,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   getSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   setSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m [36mimport[0m { formatTanggal } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m13 |[0m [36mimport[0m { [33mROLE_SUPERADMIN[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m14 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/loginlog/page.js [Client Component Browser]
+    ./src/app/dashboard/loginlog/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/loginlog/page.js [Client Component SSR]
+    ./src/app/dashboard/loginlog/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/manajemen/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 5 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 6 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   listOwners,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   toggleActive,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   createUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getAdminLogs,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   deleteUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m   updateUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m   unlockUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m   setujuiPendaftaran,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   tolakPendaftaran,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m   perpanjangLangganan,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m [36mimport[0m { [33mLABEL_ROLE[0m, [33mSUPERADMIN_EMAIL[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m19 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+  [90m20 |[0m [36mimport[0m [33mPasswordInput[0m [36mfrom[0m [32m"@/components/PasswordInput"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/manajemen/page.js [Client Component Browser]
+    ./src/app/dashboard/manajemen/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/manajemen/page.js [Client Component SSR]
+    ./src/app/dashboard/manajemen/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/member/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 3 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 4 |[0m [36mimport[0m imageCompression [36mfrom[0m [32m"browser-image-compression"[0m;
+[31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 6 |[0m   getMembers,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   simpanMember,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   hapusMember,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getMemberTemplates,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   simpanMemberTemplate,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   hapusMemberTemplate,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m   getSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m   setSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m16 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+  [90m17 |[0m [36mimport[0m { [33mROLE_OWNER[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m18 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/member/page.js [Client Component Browser]
+    ./src/app/dashboard/member/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/member/page.js [Client Component SSR]
+    ./src/app/dashboard/member/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/page.js:7:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 5 |[0m [36mimport[0m [33mLink[0m [36mfrom[0m [32m"next/link"[0m;
+  [90m 6 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 7 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   getDashboardStatistik,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getDashboardManajemen,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m13 |[0m [36mimport[0m { formatRupiah } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m14 |[0m [36mimport[0m {
+  [90m15 |[0m   resetOwnerIdCache,
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/page.js [Client Component Browser]
+    ./src/app/dashboard/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/page.js [Client Component SSR]
+    ./src/app/dashboard/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/pelanggan/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 3 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 4 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 6 |[0m   getPelangganSuggestions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   getTransactionsLaporan,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m10 |[0m [36mimport[0m { unduhCSV } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m11 |[0m [36mimport[0m { [33mROLE_OWNER[0m, [33mROLE_SUPERADMIN[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m12 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/pelanggan/page.js [Client Component Browser]
+    ./src/app/dashboard/pelanggan/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/pelanggan/page.js [Client Component SSR]
+    ./src/app/dashboard/pelanggan/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/pengaturan/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m 4 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 6 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   setSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   getSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   setSettingTenant,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m [36mimport[0m { [33mROLE_SUPERADMIN[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m13 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+  [90m14 |[0m [36mimport[0m [33mLoadingOverlay[0m [36mfrom[0m [32m"@/components/LoadingOverlay"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/pengaturan/page.js [Client Component Browser]
+    ./src/app/dashboard/pengaturan/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/pengaturan/page.js [Client Component SSR]
+    ./src/app/dashboard/pengaturan/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/promo/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m5 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m6 |[0m [36mimport[0m { getPromoCodes, simpanPromo, hapusPromo, getRole } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m [36mimport[0m { getFITUR } [36mfrom[0m [32m"@/lib/features"[0m;
+  [90m8 |[0m [36mimport[0m { [33mROLE_OWNER[0m, [33mROLE_CS[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m9 |[0m [36mimport[0m { formatTanggal } [36mfrom[0m [32m"@/lib/utils"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/promo/page.js [Client Component Browser]
+    ./src/app/dashboard/promo/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/promo/page.js [Client Component SSR]
+    ./src/app/dashboard/promo/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/riwayat/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m dynamic [36mfrom[0m [32m"next/dynamic"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { getTransactionsRingkas, getTransactionById } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { formatRupiah } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m7 |[0m [36mimport[0m { [33mButton[0m, [33mEmptyState[0m } [36mfrom[0m [32m"@/components/ui"[0m;
+  [90m8 |[0m
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/riwayat/page.js [Client Component Browser]
+    ./src/app/dashboard/riwayat/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/riwayat/page.js [Client Component SSR]
+    ./src/app/dashboard/riwayat/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/sdm/page.js:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 3 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 4 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 5 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 6 |[0m   listStaff,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   setRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   toggleActive,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   createUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   deleteUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m   updateUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m   unlockUser,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m15 |[0m [36mimport[0m { [33mROLE_OWNER[0m, [33mROLE_CS[0m, [33mROLE_GUDANG[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m16 |[0m [36mimport[0m { useNotify } [36mfrom[0m [32m"@/components/NotificationProvider"[0m;
+  [90m17 |[0m [36mimport[0m [33mPasswordInput[0m [36mfrom[0m [32m"@/components/PasswordInput"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/sdm/page.js [Client Component Browser]
+    ./src/app/dashboard/sdm/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/sdm/page.js [Client Component SSR]
+    ./src/app/dashboard/sdm/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/status/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m 5 |[0m [36mimport[0m { createBrowserClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+[31m[1m>[0m [90m 6 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 7 |[0m   getTransactionItemsBulk,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 8 |[0m   updateTransactions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   updateInventory,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m   tambahLogs,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m12 |[0m   getSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m13 |[0m   setSetting,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m14 |[0m   getTransactions,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   getTransactionsAktif,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m   getTransactionsSelesai,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m   getTransactionsBelumSelesai,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m18 |[0m   getTransactionById,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m19 |[0m   getNamaInvoice,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m20 |[0m   getRole,
+  [90m   |[0m [31m[1m^^^^^^^^^^[0m
+[31m[1m>[0m [90m21 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+  [90m22 |[0m [36mimport[0m {
+  [90m23 |[0m   formatAngkaInput,
+  [90m24 |[0m   formatRupiah,
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/status/page.js [Client Component Browser]
+    ./src/app/dashboard/status/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/status/page.js [Client Component SSR]
+    ./src/app/dashboard/status/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/tracking/page.js:6:1
+Module not found: Can't resolve '@/lib/db'
+  [90m4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+  [90m5 |[0m [36mimport[0m { useRouter } [36mfrom[0m [32m"next/navigation"[0m;
+[31m[1m>[0m [90m6 |[0m [36mimport[0m { getInventory, getTransactionsRange, getSetting } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m [36mimport[0m { useTransactionsAktif } [36mfrom[0m [32m"@/hooks/useTransactions"[0m;
+  [90m8 |[0m [36mimport[0m { formatRupiah } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m9 |[0m [36mimport[0m [33mDateTimePicker[0m [36mfrom[0m [32m"@/components/DateTimePicker"[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/tracking/page.js [Client Component Browser]
+    ./src/app/dashboard/tracking/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/tracking/page.js [Client Component SSR]
+    ./src/app/dashboard/tracking/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/components/BatalBookingModal.jsx:4:1
+Module not found: Can't resolve '@/lib/db'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { getAturanDpHangus, hitungDpHangus } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { formatRupiah } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m6 |[0m
+  [90m7 |[0m /**
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/components/BatalBookingModal.jsx [Client Component Browser]
+    ./src/app/dashboard/booking/page.js [Client Component Browser]
+    ./src/app/dashboard/booking/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/components/BatalBookingModal.jsx [Client Component SSR]
+    ./src/app/dashboard/booking/page.js [Client Component SSR]
+    ./src/app/dashboard/booking/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/components/InvoiceView.jsx:5:1
+Module not found: Can't resolve '@/lib/db'
+  [90m3 |[0m [36mimport[0m { useSyncExternalStore } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { createPortal } [36mfrom[0m [32m"react-dom"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { getSetting } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { formatRupiah, formatTanggal, hitungPembayaran } [36mfrom[0m [32m"@/lib/utils"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m [33mFOOTER_DEFAULT[0m =
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/components/InvoiceView.jsx [Client Component Browser]
+    ./src/app/dashboard/riwayat/page.js [Client Component Browser]
+    ./src/app/dashboard/riwayat/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/hooks/useTransactions.js:7:1
+Module not found: Can't resolve '@/lib/db'
+  [90m 5 |[0m
+  [90m 6 |[0m [36mimport[0m { useCallback, useEffect, useState } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m 7 |[0m [36mimport[0m { getTransactionsAktif } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m 8 |[0m
+  [90m 9 |[0m [36mlet[0m cacheData = [36mnull[0m;
+  [90m10 |[0m [36mlet[0m cacheTimestamp = [36mnull[0m;
+
+Import map: aliased to relative './src/lib/db' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/hooks/useTransactions.js [Client Component Browser]
+    ./src/app/dashboard/tracking/page.js [Client Component Browser]
+    ./src/app/dashboard/tracking/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/hooks/useTransactions.js [Client Component SSR]
+    ./src/app/dashboard/tracking/page.js [Client Component SSR]
+    ./src/app/dashboard/tracking/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/dashboard/page.js:14:1
+Module not found: Can't resolve '@/lib/db/helpers/tenantHelper'
+  [90m12 |[0m } [36mfrom[0m [32m"@/lib/db"[0m;
+  [90m13 |[0m [36mimport[0m { formatRupiah } [36mfrom[0m [32m"@/lib/utils"[0m;
+[31m[1m>[0m [90m14 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m   resetOwnerIdCache,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m   getOwnerIdAktif,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m } [36mfrom[0m [32m"@/lib/db/helpers/tenantHelper"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m [36mimport[0m { [33mROLE_SUPERADMIN[0m } [36mfrom[0m [32m"@/lib/role"[0m;
+  [90m19 |[0m [36mimport[0m [33mDateTimePicker[0m [36mfrom[0m [32m"@/components/DateTimePicker"[0m;
+  [90m20 |[0m [36mimport[0m [33mLoadingOverlay[0m [36mfrom[0m [32m"@/components/LoadingOverlay"[0m;
+
+Import map: aliased to relative './src/lib/db/helpers/tenantHelper' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/page.js [Client Component Browser]
+    ./src/app/dashboard/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/page.js [Client Component SSR]
+    ./src/app/dashboard/page.js [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/app/api/test-atomic/route.js:4:1
+Module not found: Can't resolve '@/lib/db/services/transactionServiceAtomic'
+  [90m2 |[0m [36mimport[0m { createServerClient } [36mfrom[0m [32m"@supabase/ssr"[0m;
+  [90m3 |[0m [36mimport[0m { cookies } [36mfrom[0m [32m"next/headers"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { saveTransactionAtomic } [36mfrom[0m [32m"@/lib/db/services/transactionServiceAtomic"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m
+  [90m6 |[0m [36mexport[0m [36mconst[0m runtime = [32m"nodejs"[0m;
+  [90m7 |[0m
+
+Import map: aliased to relative './src/lib/db/services/transactionServiceAtomic' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./src/app/daftar/page.js:46:35)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/SettingsModal.jsx:3:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/booking/page.js:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/inventaris/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/kalender/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/laporan/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/layout.js:13:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/log/page.js:4:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/loginlog/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/manajemen/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/member/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/page.js:7:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/pelanggan/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/pengaturan/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/promo/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/riwayat/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/sdm/page.js:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/status/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/tracking/page.js:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/components/BatalBookingModal.jsx:4:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/components/InvoiceView.jsx:5:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/hooks/useTransactions.js:7:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/dashboard/page.js:14:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/app/api/test-atomic/route.js:4:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

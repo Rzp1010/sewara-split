@@ -1,0 +1,232 @@
+/* ============================================================
+   SEWARA BASE STYLES
+   Tailwind + Design Tokens + Minimal Reset
+   Safe for all pages (login, dashboard, daftar)
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Print CSS for invoices */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  body > :not(#cetak_invoice) {
+    display: none !important;
+  }
+  #cetak_invoice {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: #fff !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #cetak_invoice * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #invoice_kartu {
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    box-shadow: none !important;
+  }
+  #invoice_isi {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+}
+
+/* ============================================================
+   DESIGN TOKENS (DEPRECATED - USE TAILWIND DIRECTLY)
+   Keeping for backwards compatibility during migration
+   ============================================================ */
+:root {
+  /* Navbar/sidebar specific colors still used in some places */
+  --color-navbar: #0f172a;
+  --color-sidebar-icon: #1f2937;
+
+  /* Legacy tokens - prefer Tailwind utilities instead */
+  --bg-body: #f3f4f6;
+  --bg-surface: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-color: #d1d5db;
+}
+
+.dark {
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-primary-active: #4f46e5;
+  --color-primary-strong: #a5b4fc;
+  --color-primary-soft: rgba(129, 140, 248, 0.15);
+  --color-primary-soft-strong: rgba(129, 140, 248, 0.24);
+  --color-primary-soft-text: #a5b4fc;
+  --color-primary-contrast: #0c1318;
+  --color-primary-glow: rgba(129, 140, 248, 0.35);
+  --color-success: #34d399;
+  --color-success-hover: #10b981;
+  --color-success-soft: rgba(52, 211, 153, 0.14);
+  --color-success-text: #6ee7b7;
+  --color-danger: #f87171;
+  --color-danger-hover: #ef4444;
+  --color-danger-soft: rgba(248, 113, 113, 0.12);
+  --color-danger-text: #fca5a5;
+  --color-warning: #fbbf24;
+  --color-warning-hover: #f59e0b;
+  --color-warning-soft: rgba(251, 191, 36, 0.13);
+  --color-warning-text: #fcd34d;
+  --color-info: #60a5fa;
+  --color-info-hover: #3b82f6;
+  --color-info-soft: rgba(96, 165, 250, 0.13);
+  --color-info-text: #93c5fd;
+  --color-orange: #fb923c;
+  --color-orange-soft: rgba(251, 146, 60, 0.14);
+  --color-orange-text: #fdba74;
+  --color-purple: #a78bfa;
+  --color-purple-soft: rgba(167, 139, 250, 0.14);
+  --color-purple-text: #c4b5fd;
+  --bg-body: #0b0f19;
+  --bg-surface: #111827;
+  --bg-elevated: #1a2234;
+  --bg-subtle: #16202f;
+  --bg-inset: #0d1320;
+  --text-primary: #e5e9f0;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --border-color: #243044;
+  --border-strong: #374560;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 28px 64px rgba(0, 0, 0, 0.55);
+  --scroll-thumb: #374560;
+}
+
+/* Minimal reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  height: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #111827;
+  background: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+p {
+  margin: 0;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+}
+a {
+  color: #4338ca;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+img {
+  max-width: 100%;
+}
+code {
+  background: #f0f2f7;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.9em;
+}
+button {
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.date-picker-day-selected,
+.date-time-picker-day-selected {
+  background: #7181e0 !important;
+  color: #fff !important;
+}
+input,
+select,
+textarea {
+  font-family: inherit;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  outline: none;
+}
+
+/* Scrollbar, selection, focus */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+::selection {
+  background: #4f46e5;
+  color: #ffffff;
+}
+:focus-visible:not(input):not(textarea):not(select) {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Sidebar icon button - force no border */
+.sidebar-icon-btn,
+.sidebar-icon-btn:hover,
+.sidebar-icon-btn:focus,
+.sidebar-icon-btn:active,
+.sidebar-icon-btn:focus-visible {
+  border: none !important;
+}
+
+.sidebar-icon-btn:focus-visible {
+  outline: 2px solid #7181e0;
+  outline-offset: 2px;
+}

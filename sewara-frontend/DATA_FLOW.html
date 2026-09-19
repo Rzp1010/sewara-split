@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Flow — Aplikasi Sewara (Manajemen Persewaan)</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --success: #059669;
+    --success-soft: #ecfdf5;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --info: #0891b2;
+    --info-soft: #ecfeff;
+    --purple: #7c3aed;
+    --purple-soft: #f5f3ff;
+    --mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header.hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+    color: #fff;
+    padding: 40px 24px 32px;
+  }
+  header.hero h1 { margin: 0 0 6px; font-size: 26px; }
+  header.hero p { margin: 0; opacity: .9; font-size: 14px; }
+  header.hero .badges { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  header.hero .badge {
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.25);
+    padding: 4px 10px; border-radius: 999px; font-size: 12px;
+  }
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    background: #fff; border-bottom: 1px solid var(--line);
+    padding: 8px 16px; overflow-x: auto; white-space: nowrap;
+  }
+  nav.toc a {
+    display: inline-block; color: var(--primary); text-decoration: none;
+    font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 6px;
+  }
+  nav.toc a:hover { background: var(--primary-soft); }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 80px; }
+  section { margin-bottom: 40px; }
+  h2.sec {
+    font-size: 20px; margin: 0 0 4px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary); display: inline-block;
+  }
+  .sec-desc { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 10px; font-size: 16px; }
+  .card h4 { margin: 16px 0 6px; font-size: 14px; color: var(--primary); }
+  .card p { margin: 6px 0; font-size: 14px; }
+  .card ul, .card ol { margin: 6px 0; padding-left: 22px; font-size: 14px; }
+  .card li { margin: 3px 0; }
+  code, .mono {
+    font-family: var(--mono); font-size: 12.5px;
+    background: #f1f3f5; border: 1px solid #e5e7eb; border-radius: 4px;
+    padding: 1px 5px; color: #0f172a;
+  }
+  .ref { color: var(--info); font-size: 12px; }
+  .ref::before { content: "📎 "; }
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 999px; margin-right: 6px; vertical-align: 1px;
+  }
+  .tag-client { background: var(--info-soft); color: var(--info); }
+  .tag-api { background: var(--purple-soft); color: var(--purple); }
+  .tag-db { background: var(--success-soft); color: var(--success); }
+  .tag-rpc { background: var(--warn-soft); color: var(--warn); }
+  .tag-rls { background: var(--danger-soft); color: var(--danger); }
+  .tag-local { background: #f3f4f6; color: #374151; }
+
+  /* Flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 12px 0; }
+  .fstep {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #fafbfc; border: 1px solid var(--line); border-left: 4px solid var(--primary);
+    border-radius: 8px; padding: 8px 12px; font-size: 13.5px;
+  }
+  .fstep .n {
+    flex: 0 0 22px; height: 22px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-weight: 700; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .fstep .body { flex: 1; }
+  .fstep .body b { display: block; font-size: 13.5px; }
+  .fstep .body .sub { color: var(--muted); font-size: 12.5px; }
+  .fstep.gate { border-left-color: var(--warn); background: var(--warn-soft); }
+  .fstep.gate .n { background: var(--warn); }
+  .fstep.write { border-left-color: var(--success); background: var(--success-soft); }
+  .fstep.write .n { background: var(--success); }
+  .fstep.rpc { border-left-color: var(--purple); background: var(--purple-soft); }
+  .fstep.rpc .n { background: var(--purple); }
+  .fstep.err { border-left-color: var(--danger); background: var(--danger-soft); }
+  .fstep.err .n { background: var(--danger); }
+  .fstep.opt { border-left-color: var(--info); background: var(--info-soft); }
+  .fstep.opt .n { background: var(--info); }
+  .arrow { text-align: center; color: var(--muted); font-size: 16px; line-height: 1; padding: 2px 0; }
+  .arrow::after { content: "▼"; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #f8fafc; font-weight: 700; }
+  tr:nth-child(even) td { background: #fcfcfd; }
+  .note {
+    background: var(--warn-soft); border: 1px solid #fde68a; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; margin: 10px 0;
+  }
+  .note b { color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>📊 Data Flow — Aplikasi Sewara</h1>
+  <p>Dokumentasi alur data setiap pergerakan user: dari klik di layar sampai tersimpan di database. Dibuat dari kode aktual (bukan tebakan).</p>
+  <div class="badges">
+    <span class="badge">Next.js App Router</span>
+    <span class="badge">Supabase (Auth + Postgres + RLS)</span>
+    <span class="badge">SPA client-heavy</span>
+    <span class="badge">Multi-tenant per user</span>
+    <span class="badge">Role: superadmin / owner / cs / gudang</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#arsitektur">Arsitektur</a>
+  <a href="#daftar">Pendaftaran</a>
+  <a href="#login">Login</a>
+  <a href="#logout">Logout</a>
+  <a href="#akses">Akses Dashboard</a>
+  <a href="#inventaris">Inventaris</a>
+  <a href="#booking">Buat Booking</a>
+  <a href="#editbooking">Edit Booking</a>
+  <a href="#batalkan">Batalkan Booking</a>
+  <a href="#serahkan">Serahkan Barang</a>
+  <a href="#terima">Terima Kembali</a>
+  <a href="#bayar">Pembayaran</a>
+  <a href="#member">Member</a>
+  <a href="#promo">Kode Promo</a>
+  <a href="#sdm">SDM</a>
+  <a href="#manajemen">Manajemen</a>
+  <a href="#versi">Versi Pengguna</a>
+  <a href="#laporan">Laporan</a>
+  <a href="#riwayat">Riwayat Invoice</a>
+  <a href="#log">Log Aktivitas</a>
+  <a href="#loginlog">Log Login + Telegram</a>
+  <a href="#kosongkan">Kosongkan Data</a>
+  <a href="#kalender">Kalender</a>
+  <a href="#tracking">Tracking</a>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#autologout">Auto-logout</a>
+  <a href="#tabel">Tabel &amp; RLS</a>
+  <a href="#rpc">RPC</a>
+  <a href="#role">Role &amp; Menu</a>
+  <a href="#fitur">Fitur Mode</a>
+</nav>
+
+<main>
+
+<!-- ================= ARSITEKTUR ================= -->
+<section id="arsitektur">
+  <h2 class="sec">Arsitektur Umum</h2>
+  <p class="sec-desc">Bagaimana browser, server Next.js, dan Supabase berkomunikasi.</p>
+
+  <div class="card">
+    <h3>Lapisan Aplikasi</h3>
+    <table>
+      <tr><th>Lapisan</th><th>File</th><th>Peran</th></tr>
+      <tr><td><b>Halaman (Client)</b></td><td><code>src/app/dashboard/*/page.js</code>, <code>src/app/page.js</code>, <code>src/app/daftar/page.js</code></td><td>UI + logika interaksi. Semua halaman <code>"use client"</code>.</td></tr>
+      <tr><td><b>Library data</b></td><td><code>src/lib/db.js</code></td><td>Pusat akses data: baca/tulis tabel via Supabase browser client, RPC, fetch ke API route.</td></tr>
+      <tr><td><b>Helper</b></td><td><code>src/lib/utils.js</code>, <code>src/lib/role.js</code>, <code>src/lib/features.js</code>, <code>src/lib/version.js</code></td><td>Perhitungan durasi/denda/pembayaran, hak menu per role, fitur mode baru/lama.</td></tr>
+      <tr><td><b>Middleware</b></td><td><code>src/proxy.js</code></td><td>Guard edge: blokir <code>/dashboard</code> &amp; <code>/api/admin</code> tanpa cookie sesi.</td></tr>
+      <tr><td><b>API Route (Server)</b></td><td><code>src/app/api/auth/*</code>, <code>src/app/api/admin/*</code>, <code>src/app/api/telegram/*</code></td><td>Operasi yang butuh service role / keamanan server-side (login, register, kelola user, hapus data, notif Telegram).</td></tr>
+      <tr><td><b>Database</b></td><td><code>supabase/*.sql</code></td><td>Skema tabel, RLS, trigger, RPC (lihat bagian Tabel &amp; RPC).</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Pola Akses Data</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Baca data (umum)</b><span class="sub">Halaman → <code>db.js</code> → Supabase browser client (anon key) → tabel via RLS. Contoh: <code>getInventory()</code>, <code>getTransactionsAktif()</code>.</span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Tulis data (umum)</b><span class="sub">Halaman → <code>db.js</code> → <code>sisipUserId()</code> menyisipkan <code>user_id</code> (owner tenant) → insert/upsert → RLS <code>access_own_or_owner</code> memvalidasi. Contoh: <code>updateInventory()</code>, <code>tambahTransactions()</code>, <code>tambahLogs()</code>.</span></div></div>
+      <div class="fstep rpc"><span class="n">3</span><div class="body"><b>Operasi khusus</b><span class="sub">Halaman → <code>db.js</code> → <code>supabase.rpc(...)</code> → fungsi SQL <code>SECURITY DEFINER</code> (validasi role di dalam body). Contoh: <code>listOwners()</code>, <code>setRole()</code>, <code>getLoginLogs()</code>, <code>buatIDUnik()</code>.</span></div></div>
+      <div class="fstep api"><span class="n">4</span><div class="body"><b>Operasi sensitif</b><span class="sub">Halaman → <code>db.js</code> → <code>fetch("/api/...")</code> → route server pakai service role (bypass RLS, validasi role manual). Contoh: login, register, kelola user, hapus semua data.</span></div></div>
+      <div class="fstep opt"><span class="n">5</span><div class="body"><b>Pengaturan lokal</b><span class="sub"><code>getSetting()/setSetting()</code> baca-tulis <code>localStorage</code> (<code>rentalpro_settings</code>) lalu sinkron ke tabel <code>settings</code> (per user). <code>getSettingTenant()/setSettingTenant()</code> baca-tulis milik OWNER tenant (staf ikut nilai owner).</span></div></div>
+    </div>
+    <div class="note"><b>Catatan penting:</b> Semua tabel bisnis memakai kolom <code>user_id</code> = id OWNER tenant. Staf (cs/gudang) menulis dengan <code>user_id</code> = id owner-nya (via <code>getOwnerIdAktif()</code>), sehingga data satu tenant terkumpul di satu pemilik.</div>
+  </div>
+</section>
+
+<!-- ================= PENDAFTARAN ================= -->
+<section id="daftar">
+  <h2 class="sec">Data Flow: Pendaftaran (Daftar Akun)</h2>
+  <p class="sec-desc">User publik mendaftar sebagai calon Owner. Akun dibuat dengan status <b>menunggu</b> persetujuan superadmin.</p>
+
+  <div class="card">
+    <h3>Alur</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>User isi form di <code>/daftar</code></b><span class="sub">Nama lengkap, nama bisnis, email, password. Validasi client: email format, password ≥ 6, konfirmasi cocok. <span class="ref">src/app/daftar/page.js:17</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b><code>registerApi()</code> → POST <code>/api/auth/register</code></b><span class="sub">Fetch JSON. <span class="ref">src/lib/db.js:1107</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Validasi server</b><span class="sub">Email format (regex), password ≥ 6, nama wajib. <span class="ref">src/app/api/auth/register/route.js:32</span></span></div></div>
+      <div class="fstep gate"><span class="n">4</span><div class="body"><b>Rate-limit per-IP (in-memory)</b><span class="sub">Maks 5 pendaftaran / 10 menit per IP → 429. <span class="ref">src/app/api/auth/register/route.js:8</span></span></div></div>
+      <div class="fstep write"><span class="n">5</span><div class="body"><b>Buat user auth (service role)</b><span class="sub"><code>admin.auth.admin.createUser()</code> dengan <code>email_confirm: true</code> + metadata <code>status: "menunggu"</code>. <span class="ref">src/app/api/auth/register/route.js:57</span></span></div></div>
+      <div class="fstep write"><span class="n">6</span><div class="body"><b>Upsert profil</b><span class="sub">Tabel <code>profiles</code>: role <code>owner</code>, <code>is_active: false</code>, <code>status: "menunggu"</code>, <code>owner_id: null</code>. <span class="ref">src/app/api/auth/register/route.js:71</span></span></div></div>
+      <div class="fstep rpc"><span class="n">7</span><div class="body"><b>Catat admin log</b><span class="sub"><code>rpc_tambah_admin_log</code> aksi <code>daftar</code> → tabel <code>admin_logs</code>. <span class="ref">src/app/api/auth/register/route.js:87</span></span></div></div>
+      <div class="fstep"><span class="n">8</span><div class="body"><b>Balas 200 <code>{ok:true}</code> selalu</b><span class="sub">Bahkan jika email sudah terdaftar — anti skript deteksi email (anti enumeration). UI menampilkan pesan sukses. <span class="ref">src/app/api/auth/register/route.js:64</span></span></div></div>
+    </div>
+    <div class="note"><b>Lanjutan:</b> Akun <code>status='menunggu'</code> TIDAK bisa login (ditolak di gerbang login dengan 403 khas). Superadmin menyetujui lewat halaman Manajemen (lihat <a href="#manajemen">Data Flow Manajemen</a>).</div>
+  </div>
+</section>
+
+<!-- ================= LOGIN ================= -->
+<section id="login">
+  <h2 class="sec">Data Flow: Login</h2>
+  <p class="sec-desc">Alur paling kompleks: gerbang status, tangga penalti lockout, rate-limit IP, pencatatan log, dan notifikasi Telegram.</p>
+
+  <div class="card">
+    <h3>Alur</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>User submit di <code>/</code></b><span class="sub">Email + password → <code>loginApi()</code> → POST <code>/api/auth/login</code>. <span class="ref">src/app/page.js:41</span> <span class="ref">src/lib/db.js:1069</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Baca profil via service role</b><span class="sub">Query <code>profiles</code> by email: role, is_active, owner_id, failed_login, cooldown/locked, status, subscribed_until. <span class="ref">src/app/api/auth/login/route.js:103</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Gerbang status pendaftaran</b><span class="sub"><code>status='menunggu'</code> → 403 "menunggu persetujuan" + catat log gagal. <span class="ref">src/app/api/auth/login/route.js:112</span></span></div></div>
+      <div class="fstep gate"><span class="n">4</span><div class="body"><b>Gerbang langganan</b><span class="sub"><code>subscribed_until</code> lewat → 401 "langganan berakhir" + log gagal. <span class="ref">src/app/api/auth/login/route.js:119</span></span></div></div>
+      <div class="fstep gate"><span class="n">5</span><div class="body"><b>Gerbang akun nonaktif</b><span class="sub"><code>is_active=false</code> → 401 seragam "Email atau password salah" (anti enumeration) + log gagal. <span class="ref">src/app/api/auth/login/route.js:126</span></span></div></div>
+      <div class="fstep gate"><span class="n">6</span><div class="body"><b>Gerbang terkunci</b><span class="sub"><code>locked_until</code> masih berlaku → 423 + sisa menit + <code>retryAfterMs</code> + log gagal. <span class="ref">src/app/api/auth/login/route.js:132</span></span></div></div>
+      <div class="fstep gate"><span class="n">7</span><div class="body"><b>Gerbang cooldown</b><span class="sub"><code>cooldown_until</code> masih berlaku → 429 + sisa menit + log gagal. <span class="ref">src/app/api/auth/login/route.js:143</span></span></div></div>
+      <div class="fstep gate"><span class="n">8</span><div class="body"><b>Rate-limit per-IP</b><span class="sub">Hitung <code>login_logs</code> gagal dari IP sama dalam 10 menit; ≥ 20 → 429 + log gagal. <span class="ref">src/app/api/auth/login/route.js:154</span></span></div></div>
+      <div class="fstep"><span class="n">9</span><div class="body"><b>Sign-in server-side</b><span class="sub"><code>supabase.auth.signInWithPassword()</code> + set cookie sesi (<code>httpOnly:false</code> — wajib untuk SPA client-heavy). <span class="ref">src/app/api/auth/login/route.js:189</span></span></div></div>
+      <div class="fstep err"><span class="n">10</span><div class="body"><b>Jika gagal</b><span class="sub">Catat log gagal → <code>rpc_register_login_failure</code> naikkan <code>failed_login</code> ATOMIK (decay 24 jam) → terapkan tangga penalti: 3-5 gagal = cooldown 1 menit, 6-8 = 2 menit, ≥9 = kunci 30 menit → balas 401 seragam. <span class="ref">src/app/api/auth/login/route.js:191</span> <span class="ref">supabase/migration_lockout_counter.sql</span></span></div></div>
+      <div class="fstep write"><span class="n">11</span><div class="body"><b>Jika sukses</b><span class="sub">Reset semua penalti (failed_login=0, cooldown/locked null) → catat <code>login_sukses</code> ke <code>login_logs</code> → kirim notifikasi Telegram (jika dikonfigurasi) → balas <code>{ok:true}</code>. <span class="ref">src/app/api/auth/login/route.js:219</span></span></div></div>
+      <div class="fstep"><span class="n">12</span><div class="body"><b>Redirect ke <code>/dashboard</code></b><span class="sub">Halaman login: <code>window.location.href = "/dashboard"</code>. <span class="ref">src/app/page.js:58</span></span></div></div>
+    </div>
+    <h4>Notifikasi Telegram (fire-and-forget)</h4>
+    <div class="flow">
+      <div class="fstep opt"><span class="n">1</span><div class="body"><b>Dibaca dari <code>catatLoginLog()</code></b><span class="sub">Setiap event login (sukses/gagal) memanggil <code>kirimNotifTelegram()</code>. <span class="ref">src/app/api/auth/login/route.js:72</span></span></div></div>
+      <div class="fstep opt"><span class="n">2</span><div class="body"><b>Cari semua superadmin</b><span class="sub">Query <code>profiles</code> role='superadmin' → baca config <code>settings</code> key <code>telegram_login_notif</code> milik mereka. <span class="ref">src/app/api/auth/login/route.js:32</span></span></div></div>
+      <div class="fstep opt"><span class="n">3</span><div class="body"><b>Kirim ke Telegram API</b><span class="sub">Jika <code>aktif</code> + botToken + chatId + toggle event sesuai → <code>fetch(api.telegram.org/bot.../sendMessage)</code>. Kegagalan tidak mengganggu login. <span class="ref">src/app/api/auth/login/route.js:48</span></span></div></div>
+    </div>
+    <div class="note"><b>Konfigurasi:</b> Superadmin mengatur via tombol "Notifikasi Telegram" di halaman Log Login (lihat <a href="#loginlog">Log Login</a>). Config disimpan di tabel <code>settings</code> milik superadmin sendiri.</div>
+  </div>
+</section>
+
+<!-- ================= LOGOUT ================= -->
+<section id="logout">
+  <h2 class="sec">Data Flow: Logout</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>User klik Logout</b><span class="sub">Konfirmasi → <code>fetch("/api/auth/logout", {method:"POST"})</code>. <span class="ref">src/app/dashboard/layout.js:340</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Baca user dari sesi</b><span class="sub"><code>supabase.auth.getUser()</code> via server client. <span class="ref">src/app/api/auth/logout/route.js:32</span></span></div></div>
+      <div class="fstep write"><span class="n">3</span><div class="body"><b>Catat event <code>logout</code></b><span class="sub">Insert ke <code>login_logs</code> (email, owner_id, event='logout', ip, user_agent) SEBELUM sesi dihapus. <span class="ref">src/app/api/auth/logout/route.js:35</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Sign out + redirect</b><span class="sub"><code>supabase.auth.signOut()</code> → UI <code>window.location.href = "/"</code>. <span class="ref">src/app/api/auth/logout/route.js:60</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AKSES DASHBOARD ================= -->
+<section id="akses">
+  <h2 class="sec">Data Flow: Akses Dashboard (Guard)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep gate"><span class="n">1</span><div class="body"><b>Middleware <code>proxy.js</code></b><span class="sub">Path <code>/dashboard</code> tanpa cookie <code>sb-*-auth-token</code> → redirect ke <code>/</code>. Path <code>/api/admin</code> tanpa sesi → 401 JSON. <span class="ref">src/proxy.js:6</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Layout dashboard cek sesi</b><span class="sub"><code>supabase.auth.getSession()</code>; tanpa sesi → <code>router.push("/")</code>. <span class="ref">src/app/dashboard/layout.js:197</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Muat profil &amp; inisialisasi</b><span class="sub"><code>initSettings()</code> (sinkron localStorage ↔ tabel settings) → <code>getVersiGlobal()</code> → set <code>fitur_mode</code> → <code>getRole()</code> → <code>getAutoLogoutMenit()</code>. <span class="ref">src/app/dashboard/layout.js:205</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Render menu sesuai role</b><span class="sub"><code>MENU_GRUP</code> + <code>roleBolehAkses()</code> (HAK_MENU) + item berfitur hanya saat <code>getFITUR()</code> aktif. <span class="ref">src/lib/role.js:10</span> <span class="ref">src/app/dashboard/layout.js:63</span></span></div></div>
+      <div class="fstep"><span class="n">5</span><div class="body"><b>Polling versi global</b><span class="sub">Tiap 20 detik cek <code>getVersiGlobal()</code>; jika berubah → update <code>fitur_mode</code> + event <code>settingChanged</code> (tanpa perlu logout). <span class="ref">src/app/dashboard/layout.js:228</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INVENTARIS ================= -->
+<section id="inventaris">
+  <h2 class="sec">Data Flow: Inventaris (Katalog &amp; S/N)</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/inventaris</code>. Role: owner &amp; gudang.</p>
+
+  <div class="card">
+    <h3>Tambah Barang (Manual)</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Isi form</b><span class="sub">Jenis (satuan/bundling), nama, tipe sewa (fleksibel/harian), harga 6/12/24 jam, denda/jam, tag, kondisi, keterangan, S/N (satuan) atau komponen (bundling). <span class="ref">src/app/dashboard/inventaris/page.js:127</span></span></div></div>
+      <div class="fstep gate"><span class="n">2</span><div class="body"><b>Validasi</b><span class="sub">Nama wajib, tarif 24 jam wajib, minimal 1 S/N (satuan), S/N tidak kembar, S/N tidak duplikat di DB, bundling minimal 1 komponen. <span class="ref">src/app/dashboard/inventaris/page.js:137</span></span></div></div>
+      <div class="fstep opt"><span class="n">3</span><div class="body"><b>Jika nama sama (satuan)</b><span class="sub">S/N baru ditambahkan ke produk existing (bukan bikin baru). <span class="ref">src/app/dashboard/inventaris/page.js:153</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Simpan</b><span class="sub"><code>updateInventory([item])</code> → upsert tabel <code>inventory</code> (id = <code>Date.now()</code>, user_id = owner tenant) → event <code>dataChanged</code>. <span class="ref">src/lib/db.js:337</span></span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Import CSV</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Baca file CSV</b><span class="sub">Pemisah <code>;</code> atau <code>,</code>, header 10 kolom. <span class="ref">src/app/dashboard/inventaris/page.js:247</span></span></div></div>
+      <div class="fstep gate"><span class="n">2</span><div class="body"><b>Deteksi S/N duplikat</b><span class="sub">Modal pilihan: skip / tetap masukkan. <span class="ref">src/app/dashboard/inventaris/page.js:283</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Gabung per produk</b><span class="sub">Nama sama → tambah S/N ke item existing; nama baru → item baru. <span class="ref">src/app/dashboard/inventaris/page.js:306</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Simpan batch</b><span class="sub"><code>updateInventory([...byId.values()])</code> → upsert semua sekaligus. <span class="ref">src/app/dashboard/inventaris/page.js:323</span></span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Edit / Hapus / Hapus S/N / Export</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Edit</b><span class="sub">Ubah tarif/tipe/tag + tambah S/N baru (validasi duplikat) → <code>updateInventory([item])</code>. <span class="ref">src/app/dashboard/inventaris/page.js:217</span></span></div></div>
+      <div class="fstep gate"><span class="n">2</span><div class="body"><b>Hapus produk</b><span class="sub">Ditolak jika masih dipakai komponen bundling → konfirmasi → <code>hapusInventory([id])</code> (delete by user_id + id). <span class="ref">src/app/dashboard/inventaris/page.js:185</span> <span class="ref">src/lib/db.js:350</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Hapus S/N</b><span class="sub">Filter S/N terpilih dari array <code>sns</code> → <code>updateInventory([item])</code>. <span class="ref">src/app/dashboard/inventaris/page.js:339</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Export CSV</b><span class="sub"><code>getInventory()</code> → bangun CSV → <code>unduhCSV()</code> (Blob + download). <span class="ref">src/app/dashboard/inventaris/page.js:351</span> <span class="ref">src/lib/utils.js:78</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BUAT BOOKING ================= -->
+<section id="booking">
+  <h2 class="sec">Data Flow: Buat Booking</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/booking</code>. Role: owner &amp; cs. Alur paling penting: validasi stok per periode + penyimpanan transaksi.</p>
+
+  <div class="card">
+    <h3>Alur <code>buatBooking()</code></h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Validasi input</b><span class="sub">Identitas (nama + HP) wajib, keranjang tidak kosong, kalkulasi tidak error. <span class="ref">src/app/dashboard/booking/page.js:628</span></span></div></div>
+      <div class="fstep gate"><span class="n">2</span><div class="body"><b>Aturan DP</b><span class="sub">Jika <code>aturan_dp='wajib'</code> → DP harus &gt; 0; DP tidak boleh melebihi total biaya. <span class="ref">src/app/dashboard/booking/page.js:638</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Waktu ambil &amp; kembali wajib</b><span class="sub">Konversi ke ISO. <span class="ref">src/app/dashboard/booking/page.js:643</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Ambil data pendukung</b><span class="sub"><code>getInventoryByIds()</code> (barang keranjang + komponen) + <code>getTransactionsAktif()</code> → bangun indeks stok. <span class="ref">src/app/dashboard/booking/page.js:649</span></span></div></div>
+      <div class="fstep opt"><span class="n">5</span><div class="body"><b>Deteksi booking sama (gabung)</b><span class="sub">Jika <code>gabung_status</code> = booking/booking_disewa dan ada transaksi aktif dengan penyewa+HP+alamat+jaminan+periode SAMA → tawarkan gabung atau pisah. <span class="ref">src/app/dashboard/booking/page.js:659</span></span></div></div>
+      <div class="fstep gate"><span class="n">6</span><div class="body"><b>Validasi stok per periode</b><span class="sub">Satuan: tiap S/N dicek <code>snsTerpakaiIdx()</code> (tidak boleh dipakai transaksi aktif lain di periode overlap). Bundling: <code>hitungStokIdx()</code> (qty ≤ stok bebas). <span class="ref">src/app/dashboard/booking/page.js:690</span></span></div></div>
+      <div class="fstep write"><span class="n">7</span><div class="body"><b>Reservasi stok (in-memory)</b><span class="sub">Satuan: S/N dihapus dari array <code>sns</code> item. Bundling: pilih S/N komponen bebas → simpan <code>assignedSNs</code>. <span class="ref">src/app/dashboard/booking/page.js:706</span></span></div></div>
+      <div class="fstep opt"><span class="n">8</span><div class="body"><b>Jika gabung</b><span class="sub">Tambahkan items ke transaksi target, akumulasi biaya + diskon + DP → <code>updateTransactions()</code> → <code>pakaiPromo()</code> → <code>updateInventory()</code> → <code>tambahLogs()</code> "Item Ditambahkan". <span class="ref">src/app/dashboard/booking/page.js:739</span></span></div></div>
+      <div class="fstep write"><span class="n">9</span><div class="body"><b>Jika baru: buat transaksi</b><span class="sub"><code>buatIDUnik()</code> (RPC <code>increment_invoice_counter</code> atomik) → objek transaksi (status Booking, riwayatDilayani, pembayaran DP) → <code>tambahTransactions()</code>. <span class="ref">src/app/dashboard/booking/page.js:785</span> <span class="ref">src/lib/db.js:825</span></span></div></div>
+      <div class="fstep write"><span class="n">10</span><div class="body"><b>Konsumsi promo + simpan stok</b><span class="sub"><code>pakaiPromo()</code> (increment terpakai) → <code>updateInventory()</code> (stok berkurang). <span class="ref">src/app/dashboard/booking/page.js:823</span></span></div></div>
+      <div class="fstep"><span class="n">11</span><div class="body"><b>Reset form + notifikasi</b><span class="sub">"Booking berhasil! Invoice: INV-xxxxxx". <span class="ref">src/app/dashboard/booking/page.js:831</span></span></div></div>
+    </div>
+    <div class="note"><b>Model stok:</b> Stok TIDAK disimpan sebagai angka. Ketersediaan dihitung dari <code>inventory.sns</code> (S/N yang tersedia) dikurangi S/N yang sedang dipakai transaksi aktif (Booking/Disewa) yang periodenya overlap. Lihat <code>src/lib/utils.js</code>: <code>snsBebasPerPeriode()</code>, <code>stokBebasPerPeriode()</code>, <code>periodeOverlap()</code>.</div>
+  </div>
+</section>
+
+<!-- ================= EDIT BOOKING ================= -->
+<section id="editbooking">
+  <h2 class="sec">Data Flow: Edit Booking (Jadwal &amp; Item)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Buka modal edit</b><span class="sub">Salin data transaksi + items ke form edit. <span class="ref">src/app/dashboard/booking/page.js:933</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Kembalikan stok item lama</b><span class="sub">S/N lama dikembalikan ke <code>inventory.sns</code> (kecuali dirujuk transaksi aktif lain via <code>snsRujukLainIdx()</code>). <span class="ref">src/app/dashboard/booking/page.js:971</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Validasi periode baru</b><span class="sub">S/N tidak boleh bentrok transaksi lain di periode baru; stok bundling cukup. <span class="ref">src/app/dashboard/booking/page.js:993</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Reservasi stok item baru</b><span class="sub">Kurangi S/N terpilih dari inventaris (salinan). <span class="ref">src/app/dashboard/booking/page.js:1006</span></span></div></div>
+      <div class="fstep"><span class="n">5</span><div class="body"><b>Hitung ulang biaya + diskon</b><span class="sub"><code>hitungDurasi()</code> → subtotal per item → <code>hitungDiskon()</code> dengan member/promo lama. <span class="ref">src/app/dashboard/booking/page.js:1039</span></span></div></div>
+      <div class="fstep write"><span class="n">6</span><div class="body"><b>Simpan</b><span class="sub"><code>updateTransactions()</code> (upsert) + <code>updateInventory()</code> + riwayat aksi <code>edit</code>. <span class="ref">src/app/dashboard/booking/page.js:1086</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BATALKAN BOOKING ================= -->
+<section id="batalkan">
+  <h2 class="sec">Data Flow: Batalkan Booking</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep gate"><span class="n">1</span><div class="body"><b>Gate status</b><span class="sub">Jika status sudah <code>Disewa</code> → ditolak (harus lewat Terima Kembali di board Status). <span class="ref">src/app/dashboard/booking/page.js:1097</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Kembalikan semua S/N ke stok</b><span class="sub">Item satuan + komponen bundling (<code>assignedSNs</code>) dikembalikan, kecuali dirujuk transaksi lain. <span class="ref">src/app/dashboard/booking/page.js:1117</span></span></div></div>
+      <div class="fstep write"><span class="n">3</span><div class="body"><b>Simpan</b><span class="sub"><code>updateTransactions()</code> status → <code>Dibatalkan</code> + <code>waktuKembaliAktual</code> + riwayat <code>batalkan</code> → <code>updateInventory()</code> → <code>tambahLogs()</code> "Dibatalkan". <span class="ref">src/app/dashboard/booking/page.js:1138</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SERAHKAN BARANG ================= -->
+<section id="serahkan">
+  <h2 class="sec">Data Flow: Serahkan Barang (Booking → Disewa)</h2>
+  <p class="sec-desc">Board Status Sewa, kolom Booking → tombol serahkan.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Konfirmasi</b><span class="sub">"Serahkan barang ke {penyewa}?" <span class="ref">src/app/dashboard/status/page.js:209</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Set waktu ambil aktual + status</b><span class="sub"><code>waktuAmbilAktual = now</code>, status → <code>Disewa</code>. <span class="ref">src/app/dashboard/status/page.js:215</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Hitung ulang durasi &amp; biaya</b><span class="sub"><code>hitungDurasiDenganAturan()</code> (aturan ambil cepat/telat: rencana/aktual) → biaya dasar per item (harian: pembulatan; fleksibel: h6/h12/h24). <span class="ref">src/app/dashboard/status/page.js:223</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Simpan + log</b><span class="sub"><code>updateTransactions()</code> + <code>tambahLogs()</code> "Keluar (Disewa)" dengan detail S/N. <span class="ref">src/app/dashboard/status/page.js:248</span></span></div></div>
+      <div class="fstep opt"><span class="n">5</span><div class="body"><b>Jika belum lunas</b><span class="sub">Buka modal pembayaran otomatis. <span class="ref">src/app/dashboard/status/page.js:254</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TERIMA KEMBALI ================= -->
+<section id="terima">
+  <h2 class="sec">Data Flow: Terima Kembali (Disewa → Selesai / Belum Selesai)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Hitung keterlambatan</b><span class="sub"><code>telatMenit</code> vs <code>waktuKembaliRencana</code>; dispensasi menit (<code>denda_dispensasi_menit</code>, default 15); denda aktif? (<code>denda_aktif</code>). <span class="ref">src/app/dashboard/status/page.js:257</span></span></div></div>
+      <div class="fstep opt"><span class="n">2</span><div class="body"><b>Mode denda fleksibel (fitur baru)</b><span class="sub">Jika kena denda → modal pilihan: kenakan denda / tanpa denda. <span class="ref">src/app/dashboard/status/page.js:270</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Kembalikan S/N ke stok</b><span class="sub">Semua S/N item + komponen dikembalikan ke <code>inventory.sns</code> (kecuali dirujuk transaksi aktif lain). <span class="ref">src/app/dashboard/status/page.js:296</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Set status akhir</b><span class="sub"><code>waktuKembaliAktual</code>, <code>dendaTambahan</code>, <code>totalAkhir</code>. Status = <code>Belum Selesai</code> (jika fitur board aktif &amp; belum lunas) atau <code>Selesai</code>. <span class="ref">src/app/dashboard/status/page.js:319</span></span></div></div>
+      <div class="fstep write"><span class="n">5</span><div class="body"><b>Simpan + log</b><span class="sub"><code>updateTransactions()</code> + <code>updateInventory()</code> + <code>tambahLogs()</code> "Masuk (Selesai)" / "Masuk (Belum Selesai)" dengan nominal denda. <span class="ref">src/app/dashboard/status/page.js:327</span></span></div></div>
+      <div class="fstep opt"><span class="n">6</span><div class="body"><b>Jika belum lunas</b><span class="sub">Buka modal pembayaran. <span class="ref">src/app/dashboard/status/page.js:333</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PEMBAYARAN ================= -->
+<section id="bayar">
+  <h2 class="sec">Data Flow: Catat Pembayaran</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep gate"><span class="n">1</span><div class="body"><b>Validasi</b><span class="sub">Jumlah &gt; 0; transaksi belum lunas; jika melebihi sisa → konfirmasi kembalian. <span class="ref">src/app/dashboard/status/page.js:336</span></span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Simpan riwayat bayar</b><span class="sub">Push ke <code>pembayaran.riwayatBayar</code> (jumlah, metode, tgl, catatan); jika DP pertama → set dp/metodeDp/tglDp. <span class="ref">src/app/dashboard/status/page.js:347</span></span></div></div>
+      <div class="fstep write"><span class="n">3</span><div class="body"><b>Update + log</b><span class="sub"><code>updateTransactions()</code> + <code>tambahLogs()</code> "Pembayaran". <span class="ref">src/app/dashboard/status/page.js:357</span></span></div></div>
+      <div class="fstep opt"><span class="n">4</span><div class="body"><b>Jika jadi lunas (Belum Selesai → Selesai)</b><span class="sub">Status → <code>Selesai</code> + log "Masuk (Selesai) — Lunas setelah pembayaran". <span class="ref">src/app/dashboard/status/page.js:359</span></span></div></div>
+    </div>
+    <h4>Status pembayaran (helper)</h4>
+    <p><code>hitungPembayaran(trx)</code>: <code>dibayar</code> = sum riwayatBayar; status = <b>Lunas</b> (dibayar ≥ total), <b>DP</b> (dibayar &gt; 0), <b>Belum Bayar</b>. <span class="ref">src/lib/utils.js:62</span></p>
+  </div>
+</section>
+
+<!-- ================= MEMBER ================= -->
+<section id="member">
+  <h2 class="sec">Data Flow: Member (Pelanggan)</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/member</code>. Fitur aktif hanya saat mode <code>baru</code> (memberPromo). Role: owner &amp; cs.</p>
+  <div class="card">
+    <h3>CRUD Member + Template + Setting Diskon</h3>
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat data</b><span class="sub"><code>getMembers()</code> + <code>getMemberTemplates()</code> (filter user_id = owner tenant) + setting diskon via <code>getSettingTenant()</code>. <span class="ref">src/lib/db.js:596</span> <span class="ref">src/app/dashboard/member/page.js:69</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Diskon dibaca LIVE dari template</b><span class="sub">Member punya <code>tipe_id</code> → <code>diskon_persen</code> diambil dari template aktif saat itu juga (ubah template = otomatis ikut). <span class="ref">src/lib/db.js:608</span></span></div></div>
+      <div class="fstep write"><span class="n">3</span><div class="body"><b>Simpan member / template</b><span class="sub"><code>simpanMember()</code> / <code>simpanMemberTemplate()</code> → insert/update tabel <code>members</code> / <code>member_templates</code> (id identity, user_id = owner). <span class="ref">src/lib/db.js:639</span> <span class="ref">src/lib/db.js:675</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Hapus</b><span class="sub"><code>hapusMember()</code> / <code>hapusMemberTemplate()</code> → delete by id. <span class="ref">src/lib/db.js:664</span> <span class="ref">src/lib/db.js:700</span></span></div></div>
+      <div class="fstep write"><span class="n">5</span><div class="body"><b>Setting diskon</b><span class="sub"><code>setSettingTenant()</code>: <code>diskon_stack</code> (terbesar/terkecil), <code>diskon_maks_persen</code> (default 50), <code>promo_min_transaksi</code> (default 0) → tabel <code>settings</code> milik owner. <span class="ref">src/app/dashboard/member/page.js:103</span></span></div></div>
+    </div>
+    <div class="note"><b>Pemakaian di booking:</b> Saat booking, <code>hitungDiskon()</code> membaca member terpilih + promo + setting di atas untuk menghitung potongan (lihat <code>src/app/dashboard/booking/page.js:329</code>).</div>
+  </div>
+</section>
+
+<!-- ================= PROMO ================= -->
+<section id="promo">
+  <h2 class="sec">Data Flow: Kode Promo</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/promo</code>. Fitur mode <code>baru</code>.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat daftar</b><span class="sub"><code>getPromoCodes()</code> filter user_id = owner. <span class="ref">src/lib/db.js:712</span></span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Simpan promo</b><span class="sub"><code>simpanPromo()</code> → kode di-uppercase, insert/update <code>promo_codes</code> (kuota, diskon %, berlaku_dari/sampai, status). <span class="ref">src/lib/db.js:729</span></span></div></div>
+      <div class="fstep write"><span class="n">3</span><div class="body"><b>Hapus</b><span class="sub"><code>hapusPromo()</code> → delete by id. <span class="ref">src/lib/db.js:754</span></span></div></div>
+      <div class="fstep rpc"><span class="n">4</span><div class="body"><b>Pakai saat booking</b><span class="sub"><code>pakaiPromo(id)</code>: cek status aktif + kuota belum habis → increment <code>terpakai</code>. <span class="ref">src/lib/db.js:765</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SDM ================= -->
+<section id="sdm">
+  <h2 class="sec">Data Flow: SDM (Owner kelola Staf)</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/sdm</code>. Khusus owner. Staf: cs / gudang.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat daftar staf</b><span class="sub"><code>listStaff()</code> → RPC <code>rpc_list_staff</code> (staf milik owner ini: email, role, is_active, locked_until, failed_login, status, subscribed_until). <span class="ref">src/lib/db.js:938</span> <span class="ref">supabase/migration_daftar_langganan.sql:50</span></span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Tambah staf</b><span class="sub"><code>createUser()</code> → POST <code>/api/admin/users</code> → validasi role caller (owner hanya bisa buat cs/gudang) → <code>admin.auth.admin.createUser()</code> + upsert <code>profiles</code> (owner_id = id owner) + admin log. <span class="ref">src/lib/db.js:1016</span> <span class="ref">src/app/api/admin/users/route.js:25</span></span></div></div>
+      <div class="fstep rpc"><span class="n">3</span><div class="body"><b>Ubah role</b><span class="sub"><code>setRole()</code> → RPC <code>rpc_set_role</code> (owner hanya bisa set cs/gudang, bukan owner/superadmin). <span class="ref">src/lib/db.js:982</span></span></div></div>
+      <div class="fstep rpc"><span class="n">4</span><div class="body"><b>Aktif/nonaktif</b><span class="sub"><code>toggleActive()</code> → RPC <code>rpc_toggle_active</code> (tidak bisa nonaktifkan diri sendiri). <span class="ref">src/lib/db.js:993</span></span></div></div>
+      <div class="fstep write"><span class="n">5</span><div class="body"><b>Edit / ganti password / buka kunci</b><span class="sub"><code>updateUser()</code> (PATCH <code>/api/admin/users</code>: nama, username, password, unlock) → update auth + profiles + admin log. <span class="ref">src/lib/db.js:1050</span> <span class="ref">src/app/api/admin/users/route.js:236</span></span></div></div>
+      <div class="fstep write"><span class="n">6</span><div class="body"><b>Hapus staf</b><span class="sub"><code>deleteUser()</code> → DELETE <code>/api/admin/users?email=...</code> → RPC <code>rpc_hapus_data_user</code> (hapus data staf) + <code>admin.auth.admin.deleteUser()</code>. <span class="ref">src/lib/db.js:1034</span> <span class="ref">src/app/api/admin/users/route.js:134</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MANAJEMEN ================= -->
+<section id="manajemen">
+  <h2 class="sec">Data Flow: Manajemen (Superadmin kelola Owner)</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/manajemen</code>. Khusus superadmin. Termasuk persetujuan pendaftaran &amp; langganan.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat data</b><span class="sub"><code>listOwners()</code> (RPC <code>rpc_list_owners</code>: semua owner + jumlah staf + status + langganan) + <code>getAdminLogs()</code> (RPC <code>rpc_list_admin_logs</code>). <span class="ref">src/lib/db.js:927</span> <span class="ref">src/lib/db.js:949</span></span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Tambah owner</b><span class="sub"><code>createUser()</code> role='owner' → POST <code>/api/admin/users</code> (superadmin hanya bisa buat owner). <span class="ref">src/app/dashboard/manajemen/page.js:182</span></span></div></div>
+      <div class="fstep rpc"><span class="n">3</span><div class="body"><b>Aktif/nonaktif owner</b><span class="sub"><code>toggleActive()</code> → <code>rpc_toggle_active</code>. <span class="ref">src/app/dashboard/manajemen/page.js:70</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Setujui pendaftaran</b><span class="sub"><code>setujuiPendaftaran(email, durasi)</code> → PATCH <code>/api/admin/users</code> {approve, durasi 1/3/6/12} → update profiles: status='aktif', is_active=true, owner_id=dirinya, subscribed_until = now+durasi + admin log. <span class="ref">src/lib/db.js:1126</span> <span class="ref">src/app/api/admin/users/route.js:322</span></span></div></div>
+      <div class="fstep write"><span class="n">5</span><div class="body"><b>Tolak pendaftaran</b><span class="sub"><code>tolakPendaftaran()</code> → PATCH {reject} → status='diblokir', is_active=false + admin log. <span class="ref">src/lib/db.js:1145</span> <span class="ref">src/app/api/admin/users/route.js:349</span></span></div></div>
+      <div class="fstep write"><span class="n">6</span><div class="body"><b>Perpanjang langganan</b><span class="sub"><code>perpanjangLangganan(email, durasi)</code> → PATCH {perpanjang} → subscribed_until +durasi dari tanggal berakhir (atau sekarang) + admin log. <span class="ref">src/lib/db.js:1164</span> <span class="ref">src/app/api/admin/users/route.js:371</span></span></div></div>
+      <div class="fstep write"><span class="n">7</span><div class="body"><b>Hapus owner</b><span class="sub"><code>deleteUser()</code> → RPC <code>rpc_hapus_data_user</code> (hapus data owner + semua stafnya secara transaksional) + hapus auth users. <span class="ref">src/app/dashboard/manajemen/page.js:114</span></span></div></div>
+      <div class="fstep write"><span class="n">8</span><div class="body"><b>Buka kunci / edit / ganti password</b><span class="sub"><code>unlockUser()</code>, <code>updateUser()</code> → PATCH <code>/api/admin/users</code>. <span class="ref">src/app/dashboard/manajemen/page.js:86</span></span></div></div>
+    </div>
+    <div class="note"><b>Keamanan:</b> Semua aksi di route <code>/api/admin/users</code> memvalidasi role caller via service role; yang tidak berhak mendapat 404 seragam (anti email enumeration). Trigger <code>protect_profile_self_escalation</code> mencegah user mengubah role/owner/is_active akun sendiri.</div>
+  </div>
+</section>
+
+<!-- ================= VERSI PENGGUNA ================= -->
+<section id="versi">
+  <h2 class="sec">Data Flow: Versi Pengguna (Mode Baru/Lama)</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/versi</code>. Khusus superadmin.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Baca versi global</b><span class="sub"><code>getVersiGlobal()</code> → RPC <code>rpc_get_versi_global</code> (tabel <code>app_config</code> key <code>versi_global</code>). <span class="ref">src/lib/db.js:960</span></span></div></div>
+      <div class="fstep rpc"><span class="n">2</span><div class="body"><b>Set versi global</b><span class="sub"><code>setVersiGlobal(mode)</code> → RPC <code>rpc_set_versi_global</code> (hanya superadmin; mode 'baru'/'lama'). <span class="ref">src/lib/db.js:971</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Propagasi ke semua user</b><span class="sub">Layout dashboard polling tiap 20 detik → update <code>fitur_mode</code> lokal → event <code>settingChanged</code> → UI menyesuaikan (menu, fitur). <span class="ref">src/app/dashboard/layout.js:228</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LAPORAN ================= -->
+<section id="laporan">
+  <h2 class="sec">Data Flow: Laporan Keuangan</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/laporan</code>. Role: owner &amp; cs (export hanya owner &amp; superadmin).</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat transaksi</b><span class="sub"><code>getTransactionsLaporan()</code> (semua) atau <code>getTransactionsLaporanRange()</code> (filter <code>waktuKembaliRencana</code>). <span class="ref">src/lib/db.js:211</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Rekap di client</b><span class="sub">Filter status sesuai <code>basis_pendapatan</code> (selesai/aktif/semua) → total biaya dasar, denda, total akhir, total diterima, pecahan per metode (Tunai/QRIS/Transfer). <span class="ref">src/app/dashboard/laporan/page.js:90</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Export CSV (gate role)</b><span class="sub">Tombol export hanya tampil untuk owner/superadmin (<code>bolehExport</code>). <span class="ref">src/app/dashboard/laporan/page.js:36</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Export Pelanggan / Keuangan</b><span class="sub">Bangun CSV dari data → <code>unduhCSV()</code>. <span class="ref">src/app/dashboard/laporan/page.js:115</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RIWAYAT INVOICE ================= -->
+<section id="riwayat">
+  <h2 class="sec">Data Flow: Riwayat Invoice + Cetak</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/riwayat</code>. Role: owner &amp; cs.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat ringkasan</b><span class="sub"><code>getTransactionsRingkas()</code> (id, noInvoice, penyewa, status, total, waktu) → tampil terbalik (terbaru dulu), paginasi 50/halaman. <span class="ref">src/lib/db.js:45</span> <span class="ref">src/app/dashboard/riwayat/page.js:13</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Buka struk</b><span class="sub"><code>getTransactionById(id)</code> → data penuh → render <code>InvoiceView</code>. <span class="ref">src/lib/db.js:204</span> <span class="ref">src/app/dashboard/riwayat/page.js:39</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Cetak / PDF</b><span class="sub"><code>window.print()</code> (cetak) atau download PDF via <code>html2pdf</code> (import dinamis). Logo invoice dari bucket storage <code>invoice-logo</code>. <span class="ref">src/components/InvoiceView.jsx:48</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOG AKTIVITAS ================= -->
+<section id="log">
+  <h2 class="sec">Data Flow: Log Aktivitas</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/log</code>. Role: owner &amp; gudang.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat log</b><span class="sub"><code>getLogsTerbaru(offset, limit=200)</code> → tabel <code>logs</code> urut id desc, infinite scroll. <span class="ref">src/lib/db.js:445</span> <span class="ref">src/app/dashboard/log/page.js:22</span></span></div></div>
+      <div class="fstep write"><span class="n">2</span><div class="body"><b>Penulisan log</b><span class="sub">Dari berbagai aksi: <code>tambahLogs()</code> dengan <code>buatLog()</code> (waktu, aktivitas, detail, catatan, pelayan, trx_info). Contoh aktivitas: "Keluar (Disewa)", "Masuk (Selesai)", "Pembayaran", "Dibatalkan", "Item Ditambahkan". <span class="ref">src/lib/db.js:363</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOG LOGIN + TELEGRAM ================= -->
+<section id="loginlog">
+  <h2 class="sec">Data Flow: Log Login + Notifikasi Telegram</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/loginlog</code>. Role: superadmin (semua tenant) &amp; owner (tenant sendiri).</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat log login</b><span class="sub"><code>getLoginLogs()</code> → RPC <code>rpc_list_login_logs</code>: superadmin lihat semua (limit 500), owner lihat tenant-nya. <span class="ref">src/lib/db.js:1005</span> <span class="ref">supabase/migration_login_logs.sql:23</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Event yang dicatat</b><span class="sub"><code>login_sukses</code>, <code>login_gagal</code>, <code>logout</code> — ditulis server-side (login/logout route) dengan email, owner_id, ip, user_agent. Retensi 30 hari via trigger. <span class="ref">supabase/migration_login_logs.sql:54</span></span></div></div>
+      <div class="fstep opt"><span class="n">3</span><div class="body"><b>Config Telegram (superadmin only)</b><span class="sub">Tombol "Notifikasi Telegram" → modal (createPortal) → baca/simpan <code>settings</code> key <code>telegram_login_notif</code> milik superadmin: aktif, botToken, chatId, kirimSukses, kirimGagal. <span class="ref">src/app/dashboard/loginlog/page.js:84</span></span></div></div>
+      <div class="fstep opt"><span class="n">4</span><div class="body"><b>Kirim pesan uji</b><span class="sub">POST <code>/api/telegram/test</code> → route server baca config superadmin → kirim ke Telegram API. <span class="ref">src/app/api/telegram/test/route.js</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KOSONGKAN DATA ================= -->
+<section id="kosongkan">
+  <h2 class="sec">Data Flow: Kosongkan Semua Data</h2>
+  <p class="sec-desc">Aksi di panel pengaturan sidebar. Hanya owner/superadmin (staf ditolak).</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep gate"><span class="n">1</span><div class="body"><b>Konfirmasi ganda</b><span class="sub">Dua tingkat konfirmasi (peringatan + konfirmasi terakhir). <span class="ref">src/app/dashboard/layout.js:348</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b><code>hapusSemuaData()</code> → POST <code>/api/admin/data</code></b><span class="sub">Bukan lagi client-side — dipindah ke server route (audit keamanan). <span class="ref">src/lib/db.js:454</span></span></div></div>
+      <div class="fstep gate"><span class="n">3</span><div class="body"><b>Validasi role server</b><span class="sub">Hanya owner/superadmin; superadmin tidak punya data bisnis → 400. <span class="ref">src/app/api/admin/data/route.js:51</span></span></div></div>
+      <div class="fstep write"><span class="n">4</span><div class="body"><b>Hapus data tenant</b><span class="sub">Delete <code>inventory</code>, <code>transactions</code>, <code>logs</code> by <code>user_id</code> (service role) → reset <code>invoice_counter</code> ke (INVOICE_MULAI - 1). <span class="ref">src/app/api/admin/data/route.js:69</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KALENDER ================= -->
+<section id="kalender">
+  <h2 class="sec">Data Flow: Kalender Jadwal</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/kalender</code>. Role: owner &amp; cs.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat transaksi rentang</b><span class="sub"><code>getTransactionsRangeRingkas(mulai, akhir)</code> — filter overlap <code>waktuAmbilRencana</code> ≤ akhir &amp; <code>waktuKembaliRencana</code> ≥ mulai. <span class="ref">src/lib/db.js:400</span> <span class="ref">src/app/dashboard/kalender/page.js:111</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Render event bar</b><span class="sub">Span hari sesuai durasi; warna status (Booking/Disewa/Mendekati/Telat/Selesai); toggle tampil selesai via <code>kalender_selesai</code>. <span class="ref">src/app/dashboard/kalender/page.js:74</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRACKING ================= -->
+<section id="tracking">
+  <h2 class="sec">Data Flow: Tracking Alat</h2>
+  <p class="sec-desc">Halaman <code>/dashboard/tracking</code>. Role: owner, cs, gudang.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Muat data</b><span class="sub"><code>getInventory()</code> + <code>getTransactionsAktif()</code> (atau <code>getTransactionsRange()</code> untuk rentang). <span class="ref">src/app/dashboard/tracking/page.js:90</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Hitung ketersediaan per periode</b><span class="sub">Pakai helper <code>snsBebasPerPeriode()</code> / <code>stokBebasPerPeriode()</code> + jam operasional (<code>jam_mode</code>, <code>jam_buka</code>, <code>jam_tutup</code>). <span class="ref">src/app/dashboard/tracking/page.js:411</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DASHBOARD ================= -->
+<section id="dashboard">
+  <h2 class="sec">Data Flow: Dashboard</h2>
+  <p class="sec-desc">Halaman <code>/dashboard</code>. Semua role (tampilan berbeda).</p>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Deteksi role</b><span class="sub"><code>getRole(email)</code>. <span class="ref">src/app/dashboard/page.js:26</span></span></div></div>
+      <div class="fstep opt"><span class="n">2</span><div class="body"><b>Superadmin</b><span class="sub"><code>getDashboardManajemen()</code> → rekap akun dari tabel <code>profiles</code> (total owner/staf, aktif/nonaktif). <span class="ref">src/lib/db.js:169</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Owner/CS/Gudang</b><span class="sub"><code>getDashboardStatistik(rentang)</code> (barang, aktif, selesai, pendapatan) + <code>getRekapStatus(rentang)</code> (booking/disewa/mendekati/telat/belum selesai) + <code>getPembayaranRentang(rentang)</code> (totalAkhir, diterima, per metode). <span class="ref">src/lib/db.js:76</span> <span class="ref">src/lib/db.js:96</span> <span class="ref">src/lib/db.js:135</span></span></div></div>
+      <div class="fstep"><span class="n">4</span><div class="body"><b>Reaktif</b><span class="sub">Refresh ulang saat event <code>storage</code>, <code>dataChanged</code>, <code>settingChanged</code>. <span class="ref">src/app/dashboard/page.js:78</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AUTO-LOGOUT ================= -->
+<section id="autologout">
+  <h2 class="sec">Data Flow: Auto-logout</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="fstep"><span class="n">1</span><div class="body"><b>Catat aktivitas</b><span class="sub">Event mousedown/keydown/touchstart/scroll → tulis <code>rentalpro_last_activity</code> ke localStorage (debounce 500ms). <span class="ref">src/app/dashboard/layout.js:298</span></span></div></div>
+      <div class="fstep"><span class="n">2</span><div class="body"><b>Baca batas per-tenant</b><span class="sub"><code>getAutoLogoutMenit()</code> → tabel <code>settings</code> key <code>auto_logout_minutes</code> milik OWNER (staf ikut nilai owner). <span class="ref">src/lib/db.js:535</span></span></div></div>
+      <div class="fstep"><span class="n">3</span><div class="body"><b>Cek tiap menit</b><span class="sub">Jika idle &gt; batas → POST <code>/api/auth/logout</code> → redirect <code>/</code>. <span class="ref">src/app/dashboard/layout.js:315</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TABEL & RLS ================= -->
+<section id="tabel">
+  <h2 class="sec">Tabel Database &amp; RLS</h2>
+  <p class="sec-desc">Skema aktual dari file migrasi di <code>supabase/</code>.</p>
+
+  <div class="card">
+    <h3>Tabel Bisnis (multi-tenant via <code>user_id</code>)</h3>
+    <table>
+      <tr><th>Tabel</th><th>Kolom penting</th><th>RLS</th><th>Sumber</th></tr>
+      <tr><td><code>inventory</code></td><td>id, nama, jenis (satuan/bundling), tipeSewa, h6/h12/h24, denda, sns JSONB, komponen JSONB, kondisi, keterangan, tag, user_id</td><td><code>access_own_or_owner</code> (user_id = auth.uid() atau = owner_id profil)</td><td>migration.sql, alter2-6, migration_multi_owner.sql</td></tr>
+      <tr><td><code>transactions</code></td><td>id, noInvoice, penyewa, hpPenyewa, alamatPenyewa, jaminanSewa, waktuAmbil/Kembali (Rencana/Aktual), status, items JSONB, biayaDasar, dendaTambahan, totalAkhir, pembayaran JSONB, diskon JSONB, dilayani_oleh, riwayatDilayani JSONB, user_id</td><td><code>access_own_or_owner</code></td><td>migration.sql, alter2-5, migration_member_promo.sql, migration_multi_owner.sql</td></tr>
+      <tr><td><code>logs</code></td><td>id, waktu, aktivitas, detail, catatan, pelayan, trx_info, user_id</td><td><code>access_own_or_owner</code></td><td>migration.sql, alter2, migration_log_pelayan.sql</td></tr>
+      <tr><td><code>members</code></td><td>id, user_id, nama, hp, alamat, tipe_id, status, created_at</td><td><code>members_access_own_or_owner</code> (+ guard is_active)</td><td>migration_member_promo.sql, migration_member_template.sql</td></tr>
+      <tr><td><code>member_templates</code></td><td>id, user_id, nama, diskon_persen, status</td><td><code>member_templates_access_own_or_owner</code></td><td>migration_member_template.sql</td></tr>
+      <tr><td><code>promo_codes</code></td><td>id, user_id, kode (unique per user), diskon_persen, berlaku_dari/sampai, kuota, terpakai, status</td><td><code>promo_codes_access_own_or_owner</code></td><td>migration_member_promo.sql</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Tabel Akun &amp; Sistem</h3>
+    <table>
+      <tr><th>Tabel</th><th>Kolom penting</th><th>RLS / Akses</th><th>Sumber</th></tr>
+      <tr><td><code>profiles</code></td><td>user_id (PK), email (unique), role (superadmin/owner/cs/gudang), nama_lengkap, username, nama_invoice, is_active, owner_id, failed_login, last_failed_at, cooldown_until, locked_until, status (menunggu/aktif/diblokir), subscribed_until</td><td>SELECT: diri sendiri / superadmin / owner_id; WRITE: superadmin / diri / owner_id + trigger anti-eskalasi</td><td>migration_multi_user.sql, migration_multi_owner.sql, migration_lockout_*.sql, migration_daftar_langganan.sql, hardening_profiles_policy.sql</td></tr>
+      <tr><td><code>settings</code></td><td>user_id + key (PK), value, updated_at</td><td>per user (user_id = auth.uid())</td><td>alter7_settings.sql</td></tr>
+      <tr><td><code>login_logs</code></td><td>id, email, owner_id, event (login_sukses/gagal/logout), detail, ip, user_agent, created_at</td><td>via RPC <code>rpc_list_login_logs</code> (superadmin semua / owner tenant); retensi 30 hari</td><td>migration_login_logs.sql</td></tr>
+      <tr><td><code>admin_logs</code></td><td>id, actor_email, aksi, target_email, detail, created_at</td><td>SELECT superadmin; INSERT owner/superadmin</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>app_config</code></td><td>key (PK), value, updated_at</td><td>SELECT semua; WRITE superadmin</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>versi_akun</code></td><td>email (PK), mode (baru/lama), updated_at</td><td>SELECT diri/owner; WRITE owner</td><td>migration_fitur_per_user.sql</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Storage</h3>
+    <table>
+      <tr><th>Bucket</th><th>Policy</th><th>Sumber</th></tr>
+      <tr><td><code>invoice-logo</code></td><td>Read: semua authenticated/anon; Manage: user di folder <code>{auth.uid()}/</code></td><td>alter8_invoice_bucket.sql</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================= RPC ================= -->
+<section id="rpc">
+  <h2 class="sec">Fungsi RPC (Supabase)</h2>
+  <p class="sec-desc">Fungsi SQL <code>SECURITY DEFINER</code> — validasi role dilakukan di dalam body.</p>
+  <div class="card">
+    <table>
+      <tr><th>RPC</th><th>Pemanggil</th><th>Fungsi</th><th>Sumber</th></tr>
+      <tr><td><code>increment_invoice_counter(step)</code></td><td>authenticated</td><td>Naikkan counter invoice ATOMIK (race-safe) di tabel settings</td><td>alter7_settings.sql</td></tr>
+      <tr><td><code>rpc_list_owners()</code></td><td>superadmin</td><td>Daftar semua owner + jumlah staf + status + langganan</td><td>migration_multi_owner.sql / daftar_langganan.sql</td></tr>
+      <tr><td><code>rpc_list_staff()</code></td><td>owner</td><td>Daftar staf milik owner ini</td><td>migration_multi_owner.sql / lockout / daftar_langganan</td></tr>
+      <tr><td><code>rpc_set_role(email, role)</code></td><td>superadmin (owner) / owner (staf)</td><td>Ubah role; owner tidak bisa jadikan owner/superadmin</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_toggle_active(email)</code></td><td>superadmin / owner</td><td>Aktif/nonaktif; tidak untuk diri sendiri</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_list_admin_logs()</code></td><td>superadmin</td><td>Daftar log aktivitas admin (limit 500)</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_get_versi_global()</code></td><td>authenticated</td><td>Baca mode versi global</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_set_versi_global(mode)</code></td><td>superadmin</td><td>Set mode versi global</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_tambah_admin_log(...)</code></td><td>service role (API)</td><td>Catat log admin</td><td>migration_multi_owner.sql</td></tr>
+      <tr><td><code>rpc_list_login_logs()</code></td><td>superadmin / owner</td><td>Daftar log login (limit 500)</td><td>migration_login_logs.sql</td></tr>
+      <tr><td><code>rpc_register_login_failure(user_id)</code></td><td>service role</td><td>Naikkan failed_login ATOMIK + decay 24 jam</td><td>migration_lockout_counter.sql</td></tr>
+      <tr><td><code>rpc_hapus_data_user(email)</code></td><td>service role (API)</td><td>Hapus semua data user + stafnya secara transaksional</td><td>migration_multi_owner.sql (referensi)</td></tr>
+      <tr><td><code>rpc_list_akun()</code></td><td>owner</td><td>Daftar semua email dari auth.users</td><td>migration_fitur_per_user.sql</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================= ROLE & MENU ================= -->
+<section id="role">
+  <h2 class="sec">Role &amp; Hak Akses Menu</h2>
+  <p class="sec-desc">Definisi di <code>src/lib/role.js</code> (HAK_MENU). Guard UI + validasi server.</p>
+  <div class="card">
+    <table>
+      <tr><th>Halaman</th><th>Superadmin</th><th>Owner</th><th>CS</th><th>Gudang</th></tr>
+      <tr><td>Dashboard</td><td>✅ (rekap akun)</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Booking Baru</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>Status Sewa</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>Kalender Jadwal</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>Tracking Alat</td><td>—</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Katalog &amp; Inventaris</td><td>—</td><td>✅</td><td>—</td><td>✅</td></tr>
+      <tr><td>Log Aktivitas</td><td>—</td><td>✅</td><td>—</td><td>✅</td></tr>
+      <tr><td>Laporan Keuangan</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>Riwayat Invoice</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>SDM (kelola staf)</td><td>—</td><td>✅</td><td>—</td><td>—</td></tr>
+      <tr><td>Log Login</td><td>✅ (semua)</td><td>✅ (tenant)</td><td>—</td><td>—</td></tr>
+      <tr><td>Member / Kode Promo</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+      <tr><td>Manajemen (kelola owner)</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Versi Pengguna</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Progres / To Do</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+    </table>
+    <div class="note"><b>Catatan:</b> Menu "Progres" &amp; "Manajemen" sengaja tidak ditampilkan di sidebar (masih internal). Export laporan dibatasi owner/superadmin. Config Telegram hanya superadmin.</div>
+  </div>
+</section>
+
+<!-- ================= FITUR MODE ================= -->
+<section id="fitur">
+  <h2 class="sec">Fitur Mode (Baru / Lama)</h2>
+  <p class="sec-desc">Dikontrol superadmin via halaman Versi Pengguna. <code>getFITUR()</code> di <code>src/lib/features.js</code>.</p>
+  <div class="card">
+    <table>
+      <tr><th>Fitur</th><th>Mode Baru</th><th>Mode Lama</th><th>Efek</th></tr>
+      <tr><td><code>invoiceCustom</code></td><td>✅</td><td>—</td><td>Invoice custom (logo, footer, format)</td></tr>
+      <tr><td><code>dendaFleksibel</code></td><td>✅</td><td>—</td><td>Modal pilihan kenakan/tanpa denda saat terima kembali</td></tr>
+      <tr><td><code>boardBelumSelesai</code></td><td>✅</td><td>—</td><td>Kolom "Belum Selesai" di board status (transaksi belum lunas)</td></tr>
+      <tr><td><code>memberPromo</code></td><td>✅</td><td>—</td><td>Menu Member &amp; Kode Promo + perhitungan diskon di booking</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Dokumentasi Data Flow — Aplikasi Sewara · Dibuat dari kode aktual · Referensi file: <code>src/</code> &amp; <code>supabase/</code>
+</footer>
+
+</body>
+</html>
