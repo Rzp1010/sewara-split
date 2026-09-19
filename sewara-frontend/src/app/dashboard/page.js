@@ -117,23 +117,44 @@ export default function DashboardPage() {
           });
         } else if (role && userId) {
           const rt = buatRentang(rentangKey, customMulai, customAkhir);
-          const stats = await api.dashboard.getStats();
+          const params = rt ? { mulai: rt.mulai, akhir: rt.akhir } : {};
+          const data = await api.dashboard.getStats(params);
           
-          setStats(stats.rekapStatus || { barang: 0, aktif: 0, selesai: 0, pendapatan: 0 });
-          setRekap(stats.rekapStatus || {
-            booking: 0,
-            disewa: 0,
-            mendekati: 0,
-            telat: 0,
-            belumSelesai: 0,
-            selesai: 0,
+          const rekap = data.rekapStatus || {};
+          const bayar = data.pembayaran || {};
+          
+          // Map ke stats card: barang (dari inventory), aktif (booking+disewa), selesai, pendapatan
+          let invCount = 0;
+          try {
+            const inv = await api.inventory.getAll();
+            const arr = inv?.inventory || inv;
+            invCount = Array.isArray(arr) ? arr.length : 0;
+          } catch (invErr) {
+            console.error("[Dashboard] inventory.getAll error:", invErr);
+          }
+          
+          setStats({
+            barang: invCount,
+            aktif: (rekap.booking || 0) + (rekap.disewa || 0),
+            selesai: rekap.selesai || 0,
+            pendapatan: bayar.diterima || 0,
           });
-          setBayar(stats.pembayaran || {
-            total_akhir: 0,
-            diterima: 0,
-            tunai: 0,
-            transfer: 0,
-            qris: 0,
+          
+          setRekap({
+            booking: rekap.booking || 0,
+            disewa: rekap.disewa || 0,
+            mendekati: rekap.mendekati || 0,
+            telat: rekap.telat || 0,
+            belumSelesai: rekap.belumSelesai || 0,
+            selesai: rekap.selesai || 0,
+          });
+          
+          setBayar({
+            total_akhir: bayar.total_akhir || 0,
+            diterima: bayar.diterima || 0,
+            tunai: bayar.tunai || 0,
+            transfer: bayar.transfer || 0,
+            qris: bayar.qris || 0,
           });
         }
       } catch (e) {
