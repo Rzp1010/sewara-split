@@ -569,7 +569,6 @@ export default function InventarisPage() {
             byId.set(existing.id, existing);
           } else {
             const itemBaru = {
-              id: Date.now() + i,
               jenis: "satuan",
               nama: r.nama,
               tipeSewa: r.tipeSewa,
@@ -583,7 +582,7 @@ export default function InventarisPage() {
               sns: r.sns,
             };
             inv.push(itemBaru);
-            byId.set(itemBaru.id, itemBaru);
+            byId.set(itemBaru, itemBaru);
           }
           jml++;
         });

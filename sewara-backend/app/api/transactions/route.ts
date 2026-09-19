@@ -39,7 +39,7 @@ export const GET = withErrorHandler(async (request) => {
   const { searchParams } = new URL(request.url);
   const kolom = KOLOM[searchParams.get('kolom')] || '*';
   const nested = searchParams.get('nested') === '1';
-  const select = nested ? `${kolom}, transaction_items(*), transaction_payments(*)` : kolom;
+  const select = nested ? `${kolom}, transaction_items!transaction_id(*), transaction_payments!transaction_id(*)` : kolom;
 
   const ids = searchParams.get('ids');
   const status = searchParams.get('status');
