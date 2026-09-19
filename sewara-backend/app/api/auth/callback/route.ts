@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "nodejs";
 
@@ -28,7 +28,7 @@ export async function GET(request) {
   if (!code) return resultRedirect("verified");
 
   const cookieStore = await cookies();
-  const supabase = createClient(supabaseUrl, anonKey, {
+  const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
       setAll: (list) => {
