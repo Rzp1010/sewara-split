@@ -14,7 +14,11 @@ export const GET = withErrorHandler(async (request, { params }) => {
   
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select('*, transaction_items(*), transaction_payments(*)')
+    .select(`
+      *,
+      transaction_items!transaction_id(*),
+      transaction_payments!transaction_id(*)
+    `)
     .eq('id', id)
     .single();
   
@@ -35,9 +39,12 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
   const { id } = await params;
   const body = await request.json();
   
+  // Filter: buang child tables & metadata sebelum update
+  const { transaction_items, transaction_payments, created_at, updated_at, ...updateData } = body;
+  
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .update(body)
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();

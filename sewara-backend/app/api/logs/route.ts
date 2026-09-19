@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
+import { getTenantId, withTenant } from '@/lib/api/tenant';
 import { successResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
 
@@ -40,14 +41,17 @@ export const GET = withErrorHandler(async (request) => {
  */
 export const POST = withErrorHandler(async (request) => {
   const supabase = await getServerClient();
-  await requireAuth(supabase);
+  const user = await requireAuth(supabase);
 
   const body = await request.json();
   const rows = Array.isArray(body) ? body : [body];
+  
+  // Stamp user_id untuk RLS
+  const stamped = await withTenant(supabase, user.id, rows);
 
   const { data, error } = await supabase
     .from('activity_logs')
-    .insert(rows)
+    .insert(stamped)
     .select();
 
   if (error) throw error;
