@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { successResponse, errorResponse } from "@/lib/api/response";
 
 export const runtime = "nodejs";
 
@@ -93,7 +94,7 @@ export async function POST(request) {
     // Supabase dapat mengembalikan identities kosong untuk email yang sudah ada.
     if (signupErr || !created?.user || created.user.identities?.length === 0) {
       if (signupErr) console.error("register signUp:", signupErr.message);
-      return NextResponse.json({ ok: true });
+      return successResponse({ ok: true });
     }
 
     const admin = createClient(supabaseUrl, serviceKey, {
@@ -116,7 +117,7 @@ export async function POST(request) {
     );
     if (profileErr) {
       console.error("register upsert profil:", profileErr.message);
-      return NextResponse.json({ ok: true });
+      return successResponse({ ok: true });
     }
 
     try {
@@ -130,7 +131,7 @@ export async function POST(request) {
       console.error("rpc_tambah_admin_log register error:", e.message);
     }
 
-    return NextResponse.json({ ok: true });
+    return successResponse({ ok: true });
   } catch (err) {
     console.error("API auth register error:", err);
     return NextResponse.json(

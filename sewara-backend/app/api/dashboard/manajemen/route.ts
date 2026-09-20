@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getServerClient } from '@/lib/api/supabase';
+import { getServerClient, getServiceRoleClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
 import { successResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
@@ -13,7 +13,8 @@ export const GET = withErrorHandler(async () => {
   const supabase = await getServerClient();
   await requireAuth(supabase);
 
-  const { data, error } = await supabase
+  const serviceSupabase = getServiceRoleClient();
+  const { data, error } = await serviceSupabase
     .from('profiles')
     .select('role, is_active');
   if (error) throw error;

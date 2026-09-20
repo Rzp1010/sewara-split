@@ -27,6 +27,7 @@ import {
   deleteAdminUser,
   applyUserPatch,
 } from "@/lib/services/admin-user";
+import { logAdminAction } from "@/lib/services/audit";
 import { requireAuth, requireRole } from '@/lib/api/auth';
 import { getServiceRoleClient } from '@/lib/api/supabase';
 
@@ -57,6 +58,21 @@ async function listUsersHandler(request) {
 
   const { data: users, error } = await query;
   if (error) throw error;
+
+  // Aggregate jumlah_staff per owner (untuk superadmin view)
+  if (profile.role === 'superadmin') {
+    const staffCounts = {};
+    users.forEach(u => {
+      if (u.owner_id && u.role !== 'owner') {
+        staffCounts[u.owner_id] = (staffCounts[u.owner_id] || 0) + 1;
+      }
+    });
+    users.forEach(u => {
+      if (u.role === 'owner') {
+        u.jumlah_staff = staffCounts[u.user_id] || 0;
+      }
+    });
+  }
 
   return successResponse({ users });
 }
@@ -141,7 +157,7 @@ async function usersHandler(request) {
     return errorResponse(created.error, undefined, status);
   }
 
-  return successResponse();
+  return successResponse({ ok: true });
 }
 
 async function deleteHandler(request) {
@@ -349,7 +365,7 @@ const DURASI_VALID = [1, 3, 6, 12];
       .update({ role })
       .eq("email", email);
     if (error) return errorResponse("Gagal mengubah role.", undefined, 500);
-    await logAdminActionSafely(callerEmail, "set_role", email, `role=${role}`);
+    logAdminAction(callerEmail, "set_role", email, `role=${role}`).catch(() => {});
     return successResponse({ ok: true });
   }
 
@@ -369,12 +385,12 @@ const DURASI_VALID = [1, 3, 6, 12];
       .update({ is_active: berikutnya })
       .eq("email", email);
     if (error) return errorResponse("Gagal mengubah status akun.", undefined, 500);
-    await logAdminActionSafely(
+    logAdminAction(
       callerEmail,
       "toggle_active",
       email,
       berikutnya ? "diaktifkan" : "dinonaktifkan",
-    );
+    ).catch(() => {});
     return successResponse({ ok: true, is_active: berikutnya });
   }
 
@@ -411,7 +427,7 @@ const DURASI_VALID = [1, 3, 6, 12];
     });
     if (result.error)
       return errorResponse(result.error, undefined, result.status || 500);
-    return successResponse(result);
+    return successResponse({ ok: true });
   }
 
   if (unlock) {
@@ -436,7 +452,7 @@ const DURASI_VALID = [1, 3, 6, 12];
     });
     if (result.error)
       return errorResponse(result.error, undefined, result.status || 500);
-    return successResponse(result);
+    return successResponse({ ok: true });
   }
 
   const result = await applyUserPatch({
@@ -456,7 +472,7 @@ const DURASI_VALID = [1, 3, 6, 12];
   });
   if (result.error)
     return errorResponse(result.error, undefined, result.status || 500);
-  return successResponse(result);
+  return successResponse({ ok: true });
 }
 
 export const GET = withErrorHandler(listUsersHandler);
