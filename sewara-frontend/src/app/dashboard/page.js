@@ -105,8 +105,8 @@ export default function DashboardPage() {
       setIsRefreshing(true);
       try {
         if (role === ROLE_SUPERADMIN) {
-          // Superadmin stats via admin API or skip for now
-          setMng({
+          const data = await api.dashboard.getManajemen();
+          setMng(data.manajemen || {
             totalOwner: 0,
             ownerAktif: 0,
             ownerNonaktif: 0,
