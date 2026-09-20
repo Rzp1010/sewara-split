@@ -57,10 +57,10 @@ async function loginHandler(request) {
   const rateLimit = await checkLoginRateLimit(admin, email, request.headers, now);
   if (rateLimit.blocked) return gagal(`rate limit ${rateLimit.reason}`, "Terlalu banyak percobaan dari perangkat ini. Coba lagi nanti.", 429, { retryAfterMs: rateLimit.retryAfterMs }, { "Retry-After": String(rateLimit.retryAfterSeconds) });
   const cookieStore = await cookies();
+  const isSecure = process.env.NODE_ENV === "production" || request.headers.get("x-forwarded-proto") === "https";
   const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: { getAll: () => cookieStore.getAll(), setAll: (list) => { try { list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {} } },
     // cookieOptions: httpOnly=false WAJIB — app ini SPA client-heavy, sesi dibaca via document.cookie oleh createBrowserClient. httpOnly=true memutus alur session (getSession() tak melihat cookie). secure hanya kalau request via HTTPS (deteksi x-forwarded-proto dari Nginx/Cloudflare).
-    const isSecure = process.env.NODE_ENV === "production" || request.headers.get("x-forwarded-proto") === "https";
     cookieOptions: { sameSite: "lax", path: "/", secure: isSecure, httpOnly: false },
   });
   const { data: sess, error: signErr } = await supabase.auth.signInWithPassword({ email, password });
