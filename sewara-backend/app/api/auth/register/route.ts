@@ -70,7 +70,7 @@ export async function POST(request) {
       return errorResponse("Server belum dikonfigurasi.", undefined, 500);
     }
 
-    const emailRedirectTo = `${frontendUrl}/auth/callback`;
+    const emailRedirectTo = `${frontendUrl}/api/auth/callback`;
     const supabase = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
