@@ -43,8 +43,18 @@ export const POST = withErrorHandler(async (request) => {
   const user = await requireAuth(supabase);
 
   const body = await request.json();
-  const { id, ...cleanBody } = body; // Strip id — biar Postgres auto-generate
-  const [row] = await withTenant(supabase, user.id, [cleanBody]);
+  const { id, ...cleanBody } = body; // Strip id dari frontend
+  
+  // Generate id: max+1 (workaround sequence rusak)
+  const { data: maxRow } = await supabase
+    .from('inventory')
+    .select('id')
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextId = (maxRow?.id || 0) + 1;
+  
+  const [row] = await withTenant(supabase, user.id, [{ ...cleanBody, id: nextId }]);
 
   const { data, error } = await supabase
     .from('inventory')
