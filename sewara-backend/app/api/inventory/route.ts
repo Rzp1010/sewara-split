@@ -43,7 +43,8 @@ export const POST = withErrorHandler(async (request) => {
   const user = await requireAuth(supabase);
 
   const body = await request.json();
-  const [row] = await withTenant(supabase, user.id, [body]);
+  const { id, ...cleanBody } = body; // Strip id — biar Postgres auto-generate
+  const [row] = await withTenant(supabase, user.id, [cleanBody]);
 
   const { data, error } = await supabase
     .from('inventory')
