@@ -65,14 +65,12 @@ export async function POST(request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const frontendUrl = process.env.FRONTEND_URL || new URL(request.url).origin;
     if (!supabaseUrl || !anonKey || !serviceKey) {
-      return NextResponse.json(
-        { error: "Server belum dikonfigurasi." },
-        { status: 500 },
-      );
+      return errorResponse("Server belum dikonfigurasi.", undefined, 500);
     }
 
-    const emailRedirectTo = `${new URL(request.url).origin}/auth/callback`;
+    const emailRedirectTo = `${frontendUrl}/auth/callback`;
     const supabase = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
