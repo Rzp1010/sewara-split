@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { getSetting, updateUser, hapusSemuaData, initSettings } from "@/lib/db";
+import { initSettings } from "@/lib/db";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import NotificationProvider, {
   useNotify,
 } from "@/components/NotificationProvider";
-const SettingsModal = dynamic(() => import("./SettingsModal"), { ssr: false });
-import ThemeProvider, { useTheme } from "@/components/ThemeProvider";
-import { VERSI_APLIKASI } from "@/lib/version";
+import ThemeProvider from "@/components/ThemeProvider";
 import { api } from "@/lib/api-client";
 import { getFITUR } from "@/lib/features";
 // Full Tailwind migration in progress
@@ -300,21 +297,9 @@ const MENU_GRUP = [
     icon: I.gear,
     items: [
       { href: "/dashboard/todo", label: "To Do", icon: I.list },
-      { href: "/dashboard/pengaturan", label: "Pengaturan", icon: I.gear },
     ],
   },
 ];
-
-const LABEL_TAB = {
-  tampilan: "Tampilan",
-  profil: "Profil",
-  invoice: "Invoice",
-  notifikasi: "Notifikasi",
-  aturan: "Aturan Sewa",
-  laporan: "Laporan & Pendapatan",
-  pengembangan: "Pengembangan",
-  info: "Info Aplikasi",
-};
 
 // Item menu dengan properti `fitur` hanya tampil saat fitur aktif (getFITUR)
 function itemMenuBoleh(it) {
@@ -328,30 +313,21 @@ function SidebarContent({ children }) {
   /* Full-screen: halaman tanpa icon sidebar + submenu (konten penuh).
      Navbar tetap tampil (akun, logout, timer). Kembali via tombol di navbar. */
   const isFullscreen = pathname === "/dashboard/pengaturan";
-  const { confirm, confirmChoice, notify } = useNotify();
-  const { theme, setTheme } = useTheme();
+  const { confirm, notify } = useNotify();
   const mounted = useSyncExternalStore(
     subscribeHydrated,
     getClientSnapshot,
     getServerSnapshot,
   );
   const [waktu, setWaktu] = useState("");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userNama, setUserNama] = useState("");
   const [userUsername, setUserUsername] = useState("");
-  const [profilUsername, setProfilUsername] = useState("");
-  const [profilNama, setProfilNama] = useState("");
-  const [profilLocks, setProfilLocks] = useState({
-    nama: true,
-    username: true,
-  });
   const [userRole, setUserRole] = useState("");
   const [userActive, setUserActive] = useState(true);
   const [profilHilang, setProfilHilang] = useState(false);
-  const [profilSubscribed, setProfilSubscribed] = useState(null);
-  const [kini, setKini] = useState(() => Date.now());
+  const [autoLogoutMin, setAutoLogoutMin] = useState(15);
   /* Grup terbuka saat mount mengikuti pathname (deep-link), default Operasional.
      Setelah mount: klik icon = pin (toggle), hover icon = flyout buka sementara.
      Hover menang atas pin saat aktif; keluar dari zona nav → hover hilang. */
@@ -372,23 +348,6 @@ function SidebarContent({ children }) {
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
-  const [invPrefix, setInvPrefix] = useState("");
-  const [invDigit, setInvDigit] = useState("6");
-  const [invMulai, setInvMulai] = useState("1");
-  const [invFooter, setInvFooter] = useState("");
-  const [notifJam, setNotifJam] = useState("2");
-  const [aturanAmbilCepat, setAturanAmbilCepat] = useState("rencana");
-  const [aturanAmbilTelat, setAturanAmbilTelat] = useState("aktual");
-  const [aturanDp, setAturanDp] = useState("bebas");
-  const [gabungStatus, setGabungStatus] = useState("booking");
-  const [jamMode, setJamMode] = useState("buka_tutup");
-  const [jamBuka, setJamBuka] = useState("6");
-  const [jamTutup, setJamTutup] = useState("22");
-  const [basisPendapatan, setBasisPendapatan] = useState("selesai");
-  const [dendaAktif, setDendaAktif] = useState("1");
-  const [dendaDispensasi, setDendaDispensasi] = useState("15");
-  const [tabSetting, setTabSetting] = useState("tampilan");
-  const [autoLogoutMin, setAutoLogoutMin] = useState(15);
 
   useEffect(() => {
     (async () => {
@@ -405,7 +364,6 @@ function SidebarContent({ children }) {
         setUserRole(user.role || "");
         setUserActive(user.is_active !== false);
         setProfilHilang(!user.role);
-        setProfilSubscribed(user.subscribed_until || null);
 
         // auto_logout_minutes = setting tenant, ambil best-effort
         try {
@@ -439,11 +397,6 @@ function SidebarContent({ children }) {
   }, []);
 
   useEffect(() => {
-    const iv = setInterval(() => setKini(Date.now()), 30000);
-    return () => clearInterval(iv);
-  }, []);
-
-  useEffect(() => {
     function handler(e) {
       if (accountOpen && !e.target.closest(".account-dropdown, .flex"))
         setAccountOpen(false);
@@ -451,35 +404,6 @@ function SidebarContent({ children }) {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [accountOpen]);
-
-  useEffect(() => {
-    if (settingsOpen) {
-      (async () => {
-        setInvPrefix(getSetting("invoice_prefix", "INV"));
-        setInvDigit(getSetting("invoice_digit", "6"));
-        setInvMulai(getSetting("invoice_mulai", "1"));
-        setInvFooter(getSetting("invoice_footer", ""));
-        setNotifJam(getSetting("notif_jam", "2"));
-        setAturanAmbilCepat(getSetting("aturan_ambil_cepat", "rencana"));
-        setAturanAmbilTelat(getSetting("aturan_ambil_telat", "aktual"));
-        setAturanDp(getSetting("aturan_dp", "bebas"));
-        setGabungStatus(getSetting("gabung_status", "booking"));
-        setJamMode(getSetting("jam_mode", "buka_tutup"));
-        setJamBuka(getSetting("jam_buka", "6"));
-        setJamTutup(getSetting("jam_tutup", "22"));
-        setBasisPendapatan(getSetting("basis_pendapatan", "selesai"));
-        setDendaAktif(getSetting("denda_aktif", "1"));
-        setDendaDispensasi(getSetting("denda_dispensasi_menit", "15"));
-        setProfilUsername(userUsername);
-        setProfilNama(userNama);
-        setProfilLocks({ nama: true, username: true });
-        try {
-          const { setting } = await api.settings.get("auto_logout_minutes");
-          if (setting?.value) setAutoLogoutMin(Number(setting.value));
-        } catch {}
-      })();
-    }
-  }, [settingsOpen, userUsername, userNama]);
 
   /* Grup menu sesuai pathname saat ini (fallback Operasional) */
   function grupUntukPath() {
@@ -546,38 +470,6 @@ function SidebarContent({ children }) {
       } catch {}
       window.location.href = "/";
     }
-  }
-
-  async function kosongkanSemua() {
-    const ok1 = await confirmChoice(
-      "⚠️ KOSONGKAN SEMUA DATA? Semua inventaris (item & S/N), semua transaksi/booking/riwayat, dan semua log S/N akan dihapus PERMANEN. Nomor invoice ikut di-reset. Data yang dihapus TIDAK BISA DIKEMBALIKAN. Lanjut?",
-      [{ label: "Ya, Lanjut", value: "ya", bg: "block" }],
-    );
-    if (ok1 !== "ya") return;
-    const ok2 = await confirmChoice(
-      "⚠️ KONFIRMASI TERAKHIR. Yakin hapus SEMUA data? Tindakan ini permanen dan tidak bisa diulang. Tidak ada backup otomatis.",
-      [{ label: "Ya, Saya Yakin — Hapus Semua", value: "ya", bg: "block" }],
-    );
-    if (ok2 !== "ya") return;
-    const total = await hapusSemuaData();
-    if (total)
-      notify(
-        `Semua data berhasil dikosongkan: ${total.inventaris} inventaris, ${total.transaksi} transaksi, ${total.log} log.`,
-      );
-  }
-
-  async function simpanProfil() {
-    const hasil = await updateUser({
-      email: userEmail,
-      username: profilUsername.trim(),
-      nama_lengkap: profilNama.trim(),
-      nama_invoice: profilNama.trim(),
-    });
-    if (!hasil.ok)
-      return notify(`Gagal menyimpan profil: ${hasil.error}`, "error");
-    setUserUsername(profilUsername.trim());
-    setUserNama(profilNama.trim());
-    notify("Profil berhasil diperbarui.");
   }
 
   if (!mounted) return null;
@@ -689,7 +581,7 @@ function SidebarContent({ children }) {
                     <button
                       onClick={() => {
                         setAccountOpen(false);
-                        setSettingsOpen(true);
+                        router.push("/dashboard/pengaturan");
                       }}
                       className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 border-0 transition-colors"
                     >
@@ -876,58 +768,6 @@ function SidebarContent({ children }) {
           </div>
         )}
       </main>
-
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        userRole={userRole}
-        theme={theme}
-        setTheme={setTheme}
-        tabSetting={tabSetting}
-        setTabSetting={setTabSetting}
-        autoLogoutMin={autoLogoutMin}
-        setAutoLogoutMin={setAutoLogoutMin}
-        profilSubscribed={profilSubscribed}
-        kini={kini}
-        profilUsername={profilUsername}
-        setProfilUsername={setProfilUsername}
-        profilNama={profilNama}
-        setProfilNama={setProfilNama}
-        profilLocks={profilLocks}
-        setProfilLocks={setProfilLocks}
-        simpanProfil={simpanProfil}
-        kosongkanSemua={kosongkanSemua}
-        invPrefix={invPrefix}
-        setInvPrefix={setInvPrefix}
-        invDigit={invDigit}
-        setInvDigit={setInvDigit}
-        invMulai={invMulai}
-        setInvMulai={setInvMulai}
-        invFooter={invFooter}
-        setInvFooter={setInvFooter}
-        notifJam={notifJam}
-        setNotifJam={setNotifJam}
-        aturanAmbilCepat={aturanAmbilCepat}
-        setAturanAmbilCepat={setAturanAmbilCepat}
-        aturanAmbilTelat={aturanAmbilTelat}
-        setAturanAmbilTelat={setAturanAmbilTelat}
-        aturanDp={aturanDp}
-        setAturanDp={setAturanDp}
-        gabungStatus={gabungStatus}
-        setGabungStatus={setGabungStatus}
-        jamMode={jamMode}
-        setJamMode={setJamMode}
-        jamBuka={jamBuka}
-        setJamBuka={setJamBuka}
-        jamTutup={jamTutup}
-        setJamTutup={setJamTutup}
-        basisPendapatan={basisPendapatan}
-        setBasisPendapatan={setBasisPendapatan}
-        dendaAktif={dendaAktif}
-        setDendaAktif={setDendaAktif}
-        dendaDispensasi={dendaDispensasi}
-        setDendaDispensasi={setDendaDispensasi}
-      />
     </>
   );
 }

@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getSetting, getSettingTenant, setSetting, setSettingTenant } from "@/lib/db";
+import {
+  getSetting,
+  getSettingTenant,
+  setSetting,
+  setSettingTenant,
+  updateUser,
+  hapusSemuaData,
+} from "@/lib/db";
 import { api, API_BASE } from "@/lib/api-client";
-import { ROLE_SUPERADMIN } from "@/lib/role";
+import { ROLE_SUPERADMIN, ROLE_OWNER } from "@/lib/role";
+import { VERSI_APLIKASI } from "@/lib/version";
+import { useTheme } from "@/components/ThemeProvider";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import PasswordInput from "@/components/PasswordInput";
@@ -21,14 +30,20 @@ const BTN_SEKUNDER =
 
 const TABS = [
   { id: "invoice", label: "Invoice & Dokumen" },
+  { id: "profil", label: "Profil" },
   { id: "operasional", label: "Operasional" },
   { id: "tampilan", label: "Tampilan" },
   { id: "integrasi", label: "Integrasi & Notifikasi" },
+  { id: "pengembangan", label: "Pengembangan" },
   { id: "diskon", label: "Diskon & Promo" },
+  { id: "info", label: "Info Aplikasi" },
 ];
 
 const KEYS_TAB = {
   invoice: ["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer"],
+  profil: [],
+  pengembangan: [],
+  info: [],
   operasional: [
     "jam_mode",
     "jam_buka",
@@ -99,14 +114,37 @@ const Ikon = {
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
   ),
+  user: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+    </svg>
+  ),
+  alert: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  info: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+  ),
 };
 
 const IKON_TAB = {
   invoice: Ikon.dok,
+  profil: Ikon.user,
   operasional: Ikon.jam,
   tampilan: Ikon.mata,
   integrasi: Ikon.plug,
+  pengembangan: Ikon.alert,
   diskon: Ikon.tag,
+  info: Ikon.info,
 };
 
 /* ===== Komponen kecil ===== */
@@ -285,7 +323,8 @@ function BarisSimpan({ dirty, saving, onSimpan, label = "Simpan Perubahan" }) {
 /* ===== Halaman ===== */
 
 export default function PengaturanPage() {
-  const { notify } = useNotify();
+  const { notify, confirmChoice } = useNotify();
+  const { theme, setTheme } = useTheme();
   const [userRole, setUserRole] = useState("");
   const [tab, setTab] = useState("invoice");
   const [form, setForm] = useState(null);
@@ -293,19 +332,35 @@ export default function PengaturanPage() {
   const [saving, setSaving] = useState(false);
   const [printilanBaru, setPrintilanBaru] = useState("");
 
+  /* Profil (owner) */
+  const [userEmail, setUserEmail] = useState("");
+  const [profilUsername, setProfilUsername] = useState("");
+  const [profilNama, setProfilNama] = useState("");
+  const [profilLocks, setProfilLocks] = useState({ nama: true, username: true });
+  const [profilSubscribed, setProfilSubscribed] = useState(null);
+  const [kini, setKini] = useState(() => Date.now());
+  const [simpanProfilLoading, setSimpanProfilLoading] = useState(false);
+
   /* Muat semua setting + role (pola halaman dashboard lain) */
   useEffect(() => {
     let aktif = true;
     (async () => {
       let email = "";
       let role = "";
+      let meUser = null;
       try {
         const me = await api.auth.me();
+        meUser = me?.user || null;
         email = me?.user?.email || "";
         role = me?.user?.role || "";
       } catch {}
       if (!aktif) return;
       setUserRole(role);
+      setUserEmail(email);
+      setProfilUsername(meUser?.username || "");
+      setProfilNama(meUser?.nama_lengkap || "");
+      setProfilSubscribed(meUser?.subscribed_until || null);
+      setKini(Date.now());
 
       /* Setting diskon dibaca tenant (sama seperti halaman member/booking) */
       const [diskStack, diskMaks, promoMin, printilanDaftar, printilanMode] =
@@ -533,6 +588,48 @@ export default function PengaturanPage() {
     }
   }
 
+  async function simpanProfil() {
+    setSimpanProfilLoading(true);
+    try {
+      const hasil = await updateUser({
+        email: userEmail,
+        username: profilUsername.trim(),
+        nama_lengkap: profilNama.trim(),
+        nama_invoice: profilNama.trim(),
+      });
+      if (!hasil.ok)
+        return notify(`Gagal menyimpan profil: ${hasil.error}`, "error");
+      setProfilLocks({ nama: true, username: true });
+      window.dispatchEvent(new CustomEvent("settingChanged"));
+      notify("Profil berhasil diperbarui.");
+    } finally {
+      setSimpanProfilLoading(false);
+    }
+  }
+
+  async function kosongkanSemua() {
+    const ok1 = await confirmChoice(
+      "⚠️ KOSONGKAN SEMUA DATA? Semua inventaris (item & S/N), semua transaksi/booking/riwayat, dan semua log S/N akan dihapus PERMANEN. Nomor invoice ikut di-reset. Data yang dihapus TIDAK BISA DIKEMBALIKAN. Lanjut?",
+      [{ label: "Ya, Lanjut", value: "ya", bg: "block" }],
+    );
+    if (ok1 !== "ya") return;
+    const ok2 = await confirmChoice(
+      "⚠️ KONFIRMASI TERAKHIR. Yakin hapus SEMUA data? Tindakan ini permanen dan tidak bisa diulang. Tidak ada backup otomatis.",
+      [{ label: "Ya, Saya Yakin — Hapus Semua", value: "ya", bg: "block" }],
+    );
+    if (ok2 !== "ya") return;
+    const total = await hapusSemuaData();
+    if (total)
+      notify(
+        `Semua data berhasil dikosongkan: ${total.inventaris} inventaris, ${total.transaksi} transaksi, ${total.log} log.`,
+      );
+  }
+
+  const ubahTema = (v) => {
+    setTheme(v);
+    window.dispatchEvent(new CustomEvent("settingChanged"));
+  };
+
   if (!form) {
     return <LoadingOverlay />;
   }
@@ -566,7 +663,10 @@ export default function PengaturanPage() {
         <aside className="lg:col-span-1">
           <nav className="flex gap-1 overflow-x-auto pb-1 lg:sticky lg:top-6 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
             {TABS.filter(
-              (t) => t.id !== "integrasi" || userRole === ROLE_SUPERADMIN,
+              (t) =>
+                (t.id !== "integrasi" || userRole === ROLE_SUPERADMIN) &&
+                ((t.id !== "profil" && t.id !== "pengembangan") ||
+                  userRole === ROLE_OWNER),
             ).map((t) => (
               <button
                 key={t.id}
@@ -663,6 +763,116 @@ export default function PengaturanPage() {
             onSimpan={simpanSeksi}
           />
         </KartuSeksi>
+      )}
+
+      {/* ===== Tab: Profil (owner) ===== */}
+      {tab === "profil" && (
+        userRole === ROLE_OWNER ? (
+          <KartuSeksi
+            ikon={Ikon.user}
+            judul="Profil"
+            deskripsi="Informasi langganan dan identitas akun yang tampil di aplikasi."
+          >
+            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Langganan
+              </p>
+              <p className="m-0 mt-1 text-sm font-medium text-gray-800">
+                {profilSubscribed ? (
+                  new Date(profilSubscribed).getTime() > kini ? (
+                    <>
+                      Aktif sampai{" "}
+                      {new Date(profilSubscribed).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </>
+                  ) : (
+                    "Langganan berakhir"
+                  )
+                ) : (
+                  "Tanpa batas"
+                )}
+              </p>
+              <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
+                Masa aktif langganan bisnis Anda. Hubungi admin untuk perpanjang.
+              </p>
+            </div>
+
+            <Field
+              label="Username"
+              hint="Ditampilkan di navbar & dropdown profil."
+            >
+              <div className="flex gap-2">
+                <input
+                  value={profilUsername}
+                  onChange={(e) => setProfilUsername(e.target.value)}
+                  disabled={profilLocks.username}
+                  placeholder="nama tampil di aplikasi"
+                  className={`${INPUT_CLS} disabled:bg-gray-100 disabled:text-gray-500`}
+                />
+                {profilLocks.username && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProfilLocks((l) => ({ ...l, username: false }))
+                    }
+                    className={BTN_SEKUNDER}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            </Field>
+
+            <Field
+              label="Nama"
+              hint="Nama ini juga akan tertulis di invoice & riwayat pelayan."
+            >
+              <div className="flex gap-2">
+                <input
+                  value={profilNama}
+                  onChange={(e) => setProfilNama(e.target.value)}
+                  disabled={profilLocks.nama}
+                  placeholder="nama tampil di aplikasi & nota"
+                  className={`${INPUT_CLS} disabled:bg-gray-100 disabled:text-gray-500`}
+                />
+                {profilLocks.nama && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProfilLocks((l) => ({ ...l, nama: false }))
+                    }
+                    className={BTN_SEKUNDER}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            </Field>
+
+            <div className="flex items-center justify-end gap-3 pt-1">
+              {simpanProfilLoading && (
+                <span className="text-xs text-gray-500">Menyimpan...</span>
+              )}
+              <button
+                type="button"
+                onClick={simpanProfil}
+                disabled={simpanProfilLoading}
+                className={BTN_UTAMA}
+              >
+                Simpan Profil
+              </button>
+            </div>
+          </KartuSeksi>
+        ) : (
+          <KartuSeksi ikon={Ikon.user} judul="Profil">
+            <p className="text-sm leading-relaxed text-gray-600">
+              Tab ini tidak tersedia untuk role Anda.
+            </p>
+          </KartuSeksi>
+        )
       )}
 
       {/* ===== Tab: Operasional ===== */}
@@ -990,6 +1200,21 @@ export default function PengaturanPage() {
           deskripsi="Preferensi tampilan board, kalender, dan pencarian."
         >
           <Field
+            label="Tema"
+            hint="Berlaku untuk akun Anda di perangkat ini."
+          >
+            <Seg
+              value={theme}
+              onChange={ubahTema}
+              options={[
+                { value: "light", label: "Terang" },
+                { value: "dark", label: "Gelap" },
+                { value: "system", label: "Sistem" },
+              ]}
+            />
+          </Field>
+
+          <Field
             label="Tampilan Board Status Sewa"
           >
             <Seg
@@ -1158,6 +1383,43 @@ export default function PengaturanPage() {
         </div>
       )}
 
+      {/* ===== Tab: Pengembangan (owner) ===== */}
+      {tab === "pengembangan" && (
+        userRole === ROLE_OWNER ? (
+          <KartuSeksi
+            ikon={Ikon.alert}
+            judul="Pengembangan"
+            deskripsi="Khusus saat developing. Fitur ini akan dihapus di versi final."
+          >
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <p className="m-0 text-sm font-semibold text-red-700">
+                Zona Berbahaya
+              </p>
+              <p className="m-0 mt-1 text-xs leading-relaxed text-red-600">
+                Menghapus PERMANEN: semua item & S/N inventaris, semua
+                transaksi/booking/riwayat, dan semua log S/N. Nomor invoice juga
+                di-reset. Data yang dihapus TIDAK BISA DIKEMBALIKAN.
+              </p>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+              <button
+                type="button"
+                onClick={kosongkanSemua}
+                className="rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#d03a2f]"
+              >
+                Kosongkan Semua Data
+              </button>
+            </div>
+          </KartuSeksi>
+        ) : (
+          <KartuSeksi ikon={Ikon.alert} judul="Pengembangan">
+            <p className="text-sm leading-relaxed text-gray-600">
+              Tab ini tidak tersedia untuk role Anda.
+            </p>
+          </KartuSeksi>
+        )
+      )}
+
       {/* ===== Tab: Diskon & Promo ===== */}
       {tab === "diskon" && (
         <KartuSeksi
@@ -1214,6 +1476,72 @@ export default function PengaturanPage() {
             saving={saving}
             onSimpan={simpanSeksi}
           />
+        </KartuSeksi>
+      )}
+
+      {/* ===== Tab: Info Aplikasi ===== */}
+      {tab === "info" && (
+        <KartuSeksi
+          ikon={Ikon.info}
+          judul="Info Aplikasi"
+          deskripsi="Versi, lingkungan, dan riwayat pembaruan aplikasi."
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Aplikasi
+              </p>
+              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+                {VERSI_APLIKASI.nama} — {VERSI_APLIKASI.versi}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Lingkungan
+              </p>
+              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+                {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(
+                  "srgmeoipuybrkhsxmtsf",
+                )
+                  ? "Tester (Uji)"
+                  : "Pribadi (Produksi)"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Tanggal Rilis
+              </p>
+              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+                {VERSI_APLIKASI.tanggal}
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-5">
+            <p className="mb-3 text-sm font-semibold text-gray-800">
+              Riwayat Versi
+            </p>
+            <div className="space-y-4">
+              {VERSI_APLIKASI.riwayat.map((r) => (
+                <div
+                  key={r.versi}
+                  className="rounded-lg border border-gray-100 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="m-0 text-sm font-semibold text-[#7181E0]">
+                      {r.versi}
+                    </p>
+                    <span className="text-xs text-gray-400">{r.tanggal}</span>
+                  </div>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-gray-600">
+                    {r.perubahan.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
         </KartuSeksi>
       )}
         </div>
