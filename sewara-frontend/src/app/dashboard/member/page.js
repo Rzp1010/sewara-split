@@ -17,7 +17,102 @@ const EMPTY = {
   tipe_id: "",
   foto_jaminan: [],
 };
-const EMPTY_TIER = { nama: "", diskon_persen: "", status: "aktif" };
+const EMPTY_TIER = {
+  nama: "",
+  diskon_persen: "",
+  status: "aktif",
+  diskon_durasi_aturan: [],
+};
+
+// Normalisasi diskon_durasi_aturan: array / string JSON / gagal → []
+function normalisasiAturanDurasi(value) {
+  try {
+    const arr = value
+      ? typeof value === "string"
+        ? JSON.parse(value)
+        : value
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function DurasiTierEditor({ value, onChange }) {
+  const rows = normalisasiAturanDurasi(value);
+  const update = (newRows) => onChange(newRows);
+  const tambah = () => {
+    const last = rows[rows.length - 1];
+    update([...rows, { min_hari: (last?.min_hari || 0) + 1, persentase: 10 }]);
+  };
+  const hapus = (idx) => update(rows.filter((_, i) => i !== idx));
+  const ubahField = (idx, field, val) => {
+    update(
+      rows.map((r, i) =>
+        i === idx ? { ...r, [field]: Number(val) || 0 } : r,
+      ),
+    );
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+          <tr>
+            <th className="px-4 py-2 text-left">Durasi (≥ hari)</th>
+            <th className="px-4 py-2 text-left">Diskon %</th>
+            <th className="px-4 py-2 text-center w-16">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-t border-gray-100">
+              <td className="px-4 py-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={r.min_hari}
+                  onChange={(e) => ubahField(i, "min_hari", e.target.value)}
+                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                />
+              </td>
+              <td className="px-4 py-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={r.persentase}
+                  onChange={(e) => ubahField(i, "persentase", e.target.value)}
+                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                />
+                <span className="ml-1 text-xs text-gray-400">%</span>
+              </td>
+              <td className="px-4 py-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => hapus(i)}
+                  className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                  title="Hapus tier ini"
+                >
+                  &times;
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="border-t border-gray-100 px-4 py-2">
+        <button
+          type="button"
+          onClick={tambah}
+          className="text-xs font-medium text-[#7181E0] hover:underline"
+        >
+          + Tambah Tier
+        </button>
+      </div>
+    </div>
+  );
+}
 const DOCUMENT_SLOTS = [
   { key: "ktp", label: "KTP" },
   { key: "kk", label: "Kartu Keluarga" },
@@ -286,6 +381,16 @@ export default function MemberPage() {
 
   async function saveTier() {
     if (!tierForm.nama.trim()) return notify("Nama tipe wajib diisi", "error");
+    const aturanDurasi = normalisasiAturanDurasi(tierForm.diskon_durasi_aturan)
+      .map((r) => ({
+        min_hari: Math.max(1, Math.floor(Number(r?.min_hari) || 0)),
+        persentase: Math.min(
+          100,
+          Math.max(0, Math.round(Number(r?.persentase) || 0)),
+        ),
+      }))
+      .filter((r) => r.persentase > 0)
+      .sort((a, b) => b.min_hari - a.min_hari);
     const d = {
       ...tierForm,
       nama: tierForm.nama.trim(),
@@ -293,6 +398,7 @@ export default function MemberPage() {
         100,
         Math.max(0, Number(tierForm.diskon_persen) || 0),
       ),
+      diskon_durasi_aturan: aturanDurasi,
     };
     if (tierEditing?.id) d.id = tierEditing.id;
     const r = await simpanMemberTemplate(d);
@@ -486,7 +592,25 @@ export default function MemberPage() {
                               className="odd:bg-white even:bg-slate-50"
                             >
                               <td className="px-4 py-3">{t.nama}</td>
-                              <td className="px-4 py-3">{t.diskon_persen}%</td>
+                              <td className="px-4 py-3">
+                                {t.diskon_persen}%
+                                {(() => {
+                                  const at = normalisasiAturanDurasi(
+                                    t.diskon_durasi_aturan,
+                                  ).filter((r) => Number(r?.persentase) > 0);
+                                  if (!at.length) return null;
+                                  const ps = at.map((r) =>
+                                    Number(r.persentase),
+                                  );
+                                  const lo = Math.min(...ps);
+                                  const hi = Math.max(...ps);
+                                  return (
+                                    <div className="text-xs text-gray-500">
+                                      {lo === hi ? lo : `${lo}–${hi}`}% (durasi)
+                                    </div>
+                                  );
+                                })()}
+                              </td>
                               <td className="px-4 py-3">{t.status}</td>
                               <td className="px-4 py-3">
                                 <button
@@ -498,6 +622,10 @@ export default function MemberPage() {
                                       nama: t.nama,
                                       diskon_persen: String(t.diskon_persen),
                                       status: t.status,
+                                      diskon_durasi_aturan:
+                                        normalisasiAturanDurasi(
+                                          t.diskon_durasi_aturan,
+                                        ),
                                     });
                                     setTierModal(true);
                                   }}
@@ -999,6 +1127,22 @@ export default function MemberPage() {
                       }
                     />
                   </label>
+                  <div className="mb-3">
+                    <div className="mb-1 text-sm font-semibold">
+                      Diskon Berdasarkan Durasi Sewa (opsional)
+                    </div>
+                    <p className="mb-2 text-xs leading-relaxed text-gray-500">
+                      Jika diisi, persentase ini menggantikan Diskon (%) biasa
+                      selama durasi sewa memenuhi syarat. Semakin lama sewa,
+                      semakin besar diskon. Contoh: ≥1 hari 10%, ≥2 hari 15%.
+                    </p>
+                    <DurasiTierEditor
+                      value={tierForm.diskon_durasi_aturan}
+                      onChange={(v) =>
+                        setTierForm({ ...tierForm, diskon_durasi_aturan: v })
+                      }
+                    />
+                  </div>
                   <label className="mb-3 block text-sm font-semibold">
                     Status
                     <select

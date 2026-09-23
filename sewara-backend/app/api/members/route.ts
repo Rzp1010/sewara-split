@@ -36,6 +36,10 @@ export const GET = withErrorHandler(async () => {
       tipeNama: tpl?.nama || null,
       diskon_persen:
         tpl && tpl.status === 'aktif' ? Number(tpl.diskon_persen) || 0 : 0,
+      diskon_durasi_aturan:
+        tpl && tpl.status === 'aktif' && Array.isArray(tpl.diskon_durasi_aturan)
+          ? tpl.diskon_durasi_aturan
+          : [],
     };
   });
 

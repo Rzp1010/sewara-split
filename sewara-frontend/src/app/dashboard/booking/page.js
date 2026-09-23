@@ -136,6 +136,32 @@ const getStatusClass = (status) =>
     Selesai: "bg-[#579171] text-white",
   })[status] || "bg-gray-500 text-white";
 
+// Persentase member efektif: tier durasi (jika ada & durasi diketahui) menang;
+// fallback ke diskon_persen fixed. Non-member / 0 → { persen: 0, sumber: null }.
+function persentaseMemberEfektif(memberObj, totalJam) {
+  const aturan = Array.isArray(memberObj?.diskon_durasi_aturan)
+    ? memberObj.diskon_durasi_aturan
+    : [];
+  if (aturan.length && Number(totalJam) > 0) {
+    const cocok = aturan
+      .filter(
+        (r) =>
+          Number(r?.min_hari) >= 1 &&
+          Number(r?.persentase) > 0 &&
+          totalJam >= Number(r.min_hari) * 24,
+      )
+      .sort((a, b) => Number(b.min_hari) - Number(a.min_hari))[0];
+    if (cocok)
+      return {
+        persen: Math.min(100, Number(cocok.persentase)),
+        sumber: `durasi ≥${cocok.min_hari} hari`,
+      };
+  }
+  const fixed = Number(memberObj?.diskon_persen) || 0;
+  return fixed > 0 ? { persen: fixed, sumber: "member" } : { persen: 0, sumber: null };
+}
+
+
 export default function BookingPage() {
   const { notify, confirm, confirmChoice } = useNotify();
   const [inv, setInv] = useState([]);
@@ -563,24 +589,30 @@ export default function BookingPage() {
     return new Date(iso).toISOString().slice(0, 16);
   }
 
-  function hitungDiskon(biaya, memberOverride, promoOverride, nowOverride) {
+  function hitungDiskon(biaya, memberOverride, promoOverride, nowOverride, durasiOverride) {
     if (!getFITUR().memberPromo)
       return {
         diskonMember: 0,
         diskonPromo: 0,
         totalDiskon: 0,
         biayaAkhir: biaya,
+        persenEfektif: 0,
+        sumberDiskon: null,
       };
     const biayaNum = Number(biaya) || 0;
     const member =
       memberOverride !== undefined ? memberOverride : memberDipilih;
     const promo = promoOverride !== undefined ? promoOverride : promoDipilih;
     const { stack, maksPersen, minTransaksi } = aturanDiskon;
+    const totalJam =
+      durasiOverride !== undefined ? durasiOverride : kalkulasi.totalJam;
 
+    const { persen: persenEfektif, sumber: sumberDiskon } =
+      persentaseMemberEfektif(member, totalJam);
     const memberAktif =
-      member && member.status === "aktif" && Number(member.diskon_persen) > 0;
+      member && member.status === "aktif" && persenEfektif > 0;
     const diskonMember = memberAktif
-      ? Math.round((biayaNum * Number(member.diskon_persen)) / 100)
+      ? Math.round((biayaNum * persenEfektif) / 100)
       : 0;
 
     let diskonPromo = 0;
@@ -631,7 +663,15 @@ export default function BookingPage() {
         : Math.min(nilaiCustom, dasarDiskonCustom);
     totalDiskon += diskonCustom;
     const biayaAkhir = Math.max(0, biayaNum - totalDiskon);
-    return { diskonMember, diskonPromo, diskonCustom, totalDiskon, biayaAkhir };
+    return {
+      diskonMember,
+      diskonPromo,
+      diskonCustom,
+      totalDiskon,
+      biayaAkhir,
+      persenEfektif,
+      sumberDiskon,
+    };
   }
 
   async function terapkanPromo() {
@@ -789,10 +829,12 @@ export default function BookingPage() {
     setKembaliWaktu(waktu);
     setShowCustom(true);
     setSelectedDurasi(null);
+    /* Override ISO eksplisit: state kembaliWaktu belum ke-update di closure ini.
+       Tanpa override, hitungTotal pakai nilai lama → harga custom gak refresh. */
+    const ambilISO = ambilWaktu ? new Date(ambilWaktu).toISOString() : "";
+    const kembaliISO = waktu ? new Date(waktu).toISOString() : "";
     setTimeout(() => {
-      hitungTotal(cartRef.current);
-      const ambilISO = ambilWaktu ? new Date(ambilWaktu).toISOString() : "";
-      const kembaliISO = waktu ? new Date(waktu).toISOString() : "";
+      hitungTotal(cartRef.current, ambilISO, kembaliISO);
       revalidasiKeranjang(ambilISO, kembaliISO);
     }, 0);
   }
@@ -1296,6 +1338,8 @@ export default function BookingPage() {
                     ? memberDipilih.nama
                     : null,
                 diskonMember: d.diskonMember,
+                memberPersen: d.persenEfektif,
+                memberSumber: d.sumberDiskon,
                 kodePromo: promoDipilih?.kode || null,
                 diskonPromo: d.diskonPromo,
                 totalDiskon: d.totalDiskon,
@@ -1661,7 +1705,13 @@ export default function BookingPage() {
       const promoLama = t.diskon?.kodePromo
         ? daftarPromo.find((p) => p.kode === t.diskon.kodePromo)
         : null;
-      const dEdit = hitungDiskon(totalBiaya, memberLama, promoLama, Date.now());
+      const dEdit = hitungDiskon(
+        totalBiaya,
+        memberLama,
+        promoLama,
+        Date.now(),
+        dur.totalJam,
+      );
 
       const namaPelayan = (await getNamaInvoice()) || "-";
       const trxBaru = {
@@ -1682,6 +1732,8 @@ export default function BookingPage() {
                 memberId: memberLama?.id || null,
                 memberNama: memberLama?.nama || null,
                 diskonMember: dEdit.diskonMember,
+                memberPersen: dEdit.persenEfektif,
+                memberSumber: dEdit.sumberDiskon,
                 kodePromo: promoLama?.kode || null,
                 diskonPromo: dEdit.diskonPromo,
                 totalDiskon: dEdit.totalDiskon,
@@ -2184,6 +2236,63 @@ export default function BookingPage() {
 
             {getFITUR().memberPromo && (
               <div className="mt-4">
+                {(() => {
+                  const d = hitungDiskon(kalkulasi.biaya || 0);
+                  if (d.totalDiskon <= 0) return null;
+                  return (
+                    <div className="mb-4 text-13">
+                      {d.diskonMember > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-gray-500">
+                            <span>
+                              Diskon Member
+                              {d.sumberDiskon?.startsWith("durasi") &&
+                                ` (${d.sumberDiskon})`}
+                            </span>
+                            {d.persenEfektif > 0 && (
+                              <span className="rounded-full bg-[#7181E0]/10 px-2 py-0.5 text-xs font-semibold text-[#7181E0]">
+                                {d.persenEfektif}%
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-danger">
+                            -{formatRupiah(d.diskonMember)}
+                          </span>
+                        </div>
+                      )}
+                      {d.diskonPromo > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Diskon Promo</span>
+                          <span className="text-danger">
+                            -{formatRupiah(d.diskonPromo)}
+                          </span>
+                        </div>
+                      )}
+                      {d.diskonCustom > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Discount Custom</span>
+                          <span className="text-danger">
+                            -{formatRupiah(d.diskonCustom)}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className="flex items-center justify-between mt-2"
+                        style={{
+                          borderTop: "1px dashed rgba(87, 145, 113, 0.3)",
+                          paddingTop: 8,
+                        }}
+                      >
+                        <span className="font-semibold text-base">
+                          Total Setelah Diskon
+                        </span>
+                        <span className="font-bold text-xl text-[#579171]">
+                          {formatRupiah(d.biayaAkhir)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <button
                   type="button"
                   onClick={() => setShowPromoDiskon((v) => !v)}
@@ -2288,58 +2397,6 @@ export default function BookingPage() {
                           </button>
                         </div>
                       )}
-                    {(() => {
-                      const d = hitungDiskon(kalkulasi.biaya || 0);
-                      if (d.totalDiskon <= 0) return null;
-                      return (
-                        <div className="mt-6 text-13">
-                          {d.diskonMember > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">
-                                Diskon Member
-                              </span>
-                              <span className="text-danger">
-                                -{formatRupiah(d.diskonMember)}
-                              </span>
-                            </div>
-                          )}
-                          {d.diskonPromo > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">
-                                Diskon Promo
-                              </span>
-                              <span className="text-danger">
-                                -{formatRupiah(d.diskonPromo)}
-                              </span>
-                            </div>
-                          )}
-                          {d.diskonCustom > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-500">
-                                Discount Custom
-                              </span>
-                              <span className="text-danger">
-                                -{formatRupiah(d.diskonCustom)}
-                              </span>
-                            </div>
-                          )}
-                          <div
-                            className="flex items-center justify-between mt-2"
-                            style={{
-                              borderTop: "1px dashed rgba(87, 145, 113, 0.3)",
-                              paddingTop: 8,
-                            }}
-                          >
-                            <span className="font-semibold text-base">
-                              Total Setelah Diskon
-                            </span>
-                            <span className="font-bold text-xl text-[#579171]">
-                              {formatRupiah(d.biayaAkhir)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })()}
                   </>
                 )}
               </div>
@@ -2347,7 +2404,7 @@ export default function BookingPage() {
           </div>
 
           {printilanDaftar.length > 0 && (
-            <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mt-6 mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
               <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                 Printilan
               </label>

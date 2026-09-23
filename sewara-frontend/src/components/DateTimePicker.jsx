@@ -132,22 +132,20 @@ export default function DateTimePicker({
       setOpen(false);
       return;
     }
-    setDraft((prev) => {
-      const t = new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate());
-      const src = prev || new Date();
-      t.setHours(src.getHours(), src.getMinutes(), 0, 0);
-      return t;
-    });
+    const t = new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate());
+    const src = draft || new Date();
+    t.setHours(src.getHours(), src.getMinutes(), 0, 0);
+    setDraft(t);
+    onChange(t); // live update saat tanggal dipilih
     setView(new Date(tgl.getFullYear(), tgl.getMonth(), 1));
   }
 
   function pilihSlot(hour, minute) {
-    setDraft((prev) => {
-      if (!prev) return prev;
-      const t = new Date(prev);
-      t.setHours(hour, minute, 0, 0);
-      return t;
-    });
+    if (!draft) return;
+    const t = new Date(draft);
+    t.setHours(hour, minute, 0, 0);
+    setDraft(t);
+    onChange(t);
   }
 
   function konfirmasi() {
