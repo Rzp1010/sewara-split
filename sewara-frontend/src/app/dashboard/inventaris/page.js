@@ -5,7 +5,14 @@ import { getStok, getInventory, updateInventory, hapusInventory, getTransactions
 import Image from "next/image";
 import { createPortal } from "react-dom";
 
-import { formatRupiah, unduhCSV } from "@/lib/utils";
+import {
+  formatRupiah,
+  unduhCSV,
+  kondisiUnit,
+  catatanUnit,
+  opsiKondisi,
+} from "@/lib/utils";
+import { api } from "@/lib/api-client";
 import { useNotify } from "@/components/NotificationProvider";
 import { Button } from "@/components/ui";
 
@@ -17,6 +24,8 @@ export default function InventarisPage() {
   const [refresh, setRefresh] = useState(0);
   const [dupModal, setDupModal] = useState(null);
   const [snDelModal, setSnDelModal] = useState(null);
+  const [kondisiModal, setKondisiModal] = useState(null);
+  const [userRole, setUserRole] = useState("");
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({
     tipeSewa: "fleksibel",
@@ -100,6 +109,62 @@ export default function InventarisPage() {
     window.addEventListener("dataChanged", handler);
     return () => window.removeEventListener("dataChanged", handler);
   }, []);
+
+  useEffect(() => {
+    let aktif = true;
+    (async () => {
+      let role = "";
+      try {
+        const me = await api.auth.me();
+        role = me?.user?.role || "";
+      } catch {}
+      if (aktif) setUserRole(role);
+    })();
+    return () => {
+      aktif = false;
+    };
+  }, []);
+
+  function bukaKondisi(item) {
+    setKondisiModal({
+      id: item.id,
+      nama: item.nama,
+      sns: [...(item.sns || [])],
+      // draft: { [sn]: { kondisi, catatan } } — prefill dari map tersimpan
+      draft: Object.fromEntries(
+        (item.sns || []).map((s) => [
+          s,
+          {
+            kondisi: kondisiUnit(item, s),
+            catatan: catatanUnit(item, s) || "",
+          },
+        ]),
+      ),
+    });
+  }
+
+  async function simpanKondisi() {
+    const inv = await getInventory();
+    const item = inv.find((i) => i.id === kondisiModal.id);
+    if (!item) return;
+    const map = { ...(item.kondisi_sn || {}) };
+    for (const s of kondisiModal.sns) {
+      const d = kondisiModal.draft[s];
+      if (!d || d.kondisi === "baik") {
+        delete map[s]; // SN baik = bersih dari map
+        continue;
+      }
+      if (d.kondisi === "bermasalah" && !String(d.catatan || "").trim())
+        return notify(`Catatan wajib untuk S/N ${s} yang bermasalah!`, "error");
+      map[s] = { kondisi: d.kondisi, catatan: d.catatan?.trim() || null };
+    }
+    item.kondisi_sn = map;
+    if (!(await updateInventory([item])))
+      return notify("Gagal menyimpan kondisi. Silakan coba lagi.", "error");
+    setKondisiModal(null);
+    muat();
+    notify("Kondisi unit disimpan!");
+  }
 
   function toggleJenis(e) {
     const v = e.target.value;
@@ -1281,7 +1346,26 @@ export default function InventarisPage() {
                                   color: "var(--text-muted)",
                                 }}
                               >
-                                {item.sns.join(", ")}
+                                {item.sns.map((s, si) => {
+                                  const k = kondisiUnit(item, s);
+                                  const warna =
+                                    k === "maintenance"
+                                      ? "#dc2626"
+                                      : k === "bermasalah"
+                                        ? "#ea580c"
+                                        : "var(--text-muted)";
+                                  return (
+                                    <span key={s}>
+                                      {si > 0 && ", "}
+                                      <span
+                                        style={{ color: warna }}
+                                        title={catatanUnit(item, s) || undefined}
+                                      >
+                                        {s}
+                                      </span>
+                                    </span>
+                                  );
+                                })}
                               </div>
                             )}
                           {item.jenis === "bundling" && item.komponen && (
@@ -1312,6 +1396,15 @@ export default function InventarisPage() {
                             >
                               Edit
                             </button>
+                            {item.jenis === "satuan" && item.sns?.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => bukaKondisi(item)}
+                                className="rounded-lg border-0 bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                              >
+                                Kondisi
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -1547,6 +1640,111 @@ export default function InventarisPage() {
                   <button
                     type="button"
                     onClick={() => setSnDelModal(null)}
+                    className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {/* Modal Kondisi per-S/N */}
+      {typeof document !== "undefined" &&
+        kondisiModal &&
+        createPortal(
+          <div
+            onClick={() => setKondisiModal(null)}
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
+                <h3 className="text-lg font-semibold">
+                  Kondisi Unit - {kondisiModal.nama}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setKondisiModal(null)}
+                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-h-72 overflow-y-auto">
+                  {kondisiModal.sns.map((s) => {
+                    const d = kondisiModal.draft[s] || {
+                      kondisi: "baik",
+                      catatan: "",
+                    };
+                    return (
+                      <div
+                        key={s}
+                        className="border-b border-solid border-slate-200 py-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="font-semibold flex-1"
+                            style={{ fontFamily: "ui-monospace, monospace" }}
+                          >
+                            {s}
+                          </span>
+                          <select
+                            value={d.kondisi}
+                            onChange={(e) =>
+                              setKondisiModal({
+                                ...kondisiModal,
+                                draft: {
+                                  ...kondisiModal.draft,
+                                  [s]: { ...d, kondisi: e.target.value },
+                                },
+                              })
+                            }
+                            className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
+                          >
+                            {opsiKondisi(userRole).map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {d.kondisi === "bermasalah" && (
+                          <input
+                            value={d.catatan}
+                            onChange={(e) =>
+                              setKondisiModal({
+                                ...kondisiModal,
+                                draft: {
+                                  ...kondisiModal.draft,
+                                  [s]: { ...d, catatan: e.target.value },
+                                },
+                              })
+                            }
+                            placeholder="Catatan masalah (wajib)"
+                            className="mt-2 w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={simpanKondisi}
+                    className="rounded-lg border-0 bg-[#579171] hover:bg-[#447057] px-4 py-2 text-sm font-semibold text-white transition-colors flex-1"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKondisiModal(null)}
                     className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
                   >
                     Batal

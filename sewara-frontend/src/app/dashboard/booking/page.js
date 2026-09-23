@@ -13,6 +13,8 @@ import {
   formatTanggal,
   hitungDurasi,
   hitungPembayaran,
+  kondisiUnit,
+  catatanUnit,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import { useNotify } from "@/components/NotificationProvider";
@@ -855,13 +857,24 @@ export default function BookingPage() {
         mulaiISO && selesaiISO
           ? snsBebasIdx(indeks, item.id, mulaiISO, selesaiISO)
           : [...(item.sns || [])];
-      const snTersedia = snBebas.filter((s) => !snDiCart.includes(s));
+      // Maintenance tak boleh disewa; sembunyikan dari opsi (server tetap otoritatif).
+      const snTersedia = snBebas.filter(
+        (s) => !snDiCart.includes(s) && kondisiUnit(item, s) !== "maintenance",
+      );
       if (snTersedia.length === 0) {
         setSnOptions([]);
         setSnDipilih("");
       } else {
         const opts = [];
-        snTersedia.forEach((s) => opts.push({ value: s, label: `S/N: ${s}` }));
+        snTersedia.forEach((s) => {
+          const catatan = catatanUnit(item, s);
+          const bermasalah = kondisiUnit(item, s) === "bermasalah";
+          opts.push({
+            value: s,
+            label: `S/N: ${s}${bermasalah ? " ⚠ Bermasalah" : ""}`,
+            title: catatan || undefined,
+          });
+        });
         if (!mulaiISO || !selesaiISO)
           opts.push({
             value: "",
@@ -1496,13 +1509,23 @@ export default function BookingPage() {
         mulaiISO && selesaiISO
           ? snsBebasIdx(indeks, item.id, mulaiISO, selesaiISO, editModal.id)
           : [...(item.sns || [])];
-      const snAvail = snBebas.filter((s) => !snInEdit.includes(s));
+      const snAvail = snBebas.filter(
+        (s) => !snInEdit.includes(s) && kondisiUnit(item, s) !== "maintenance",
+      );
       if (snAvail.length === 0) {
         setEditSnOptions([]);
         setEditSnDipilih("");
       } else {
         const opts = [];
-        snAvail.forEach((s) => opts.push({ value: s, label: `S/N: ${s}` }));
+        snAvail.forEach((s) => {
+          const catatan = catatanUnit(item, s);
+          const bermasalah = kondisiUnit(item, s) === "bermasalah";
+          opts.push({
+            value: s,
+            label: `S/N: ${s}${bermasalah ? " ⚠ Bermasalah" : ""}`,
+            title: catatan || undefined,
+          });
+        });
         if (!mulaiISO || !selesaiISO)
           opts.push({
             value: "",
@@ -2188,7 +2211,30 @@ export default function BookingPage() {
                         {c.ref.nama}
                       </td>
                       <td className="text-xs py-3 px-2 border-r border-slate-200 truncate text-[#7181E0]">
-                        {c.ref.jenis === "satuan" ? c.sn : "Paket Bundling"}
+                        {c.ref.jenis === "satuan" ? (
+                          <>
+                            <div className="truncate">{c.sn}</div>
+                            {(c.sn || "")
+                              .split(", ")
+                              .filter(Boolean)
+                              .map((s) => {
+                                const cat = catatanUnit(c.ref, s);
+                                if (kondisiUnit(c.ref, s) !== "bermasalah")
+                                  return null;
+                                return (
+                                  <div
+                                    key={s}
+                                    className="text-[10px] text-orange-600"
+                                    style={{ whiteSpace: "normal" }}
+                                  >
+                                    ⚠ Bermasalah{cat ? `: ${cat}` : ""}
+                                  </div>
+                                );
+                              })}
+                          </>
+                        ) : (
+                          "Paket Bundling"
+                        )}
                       </td>
                       <td className="text-center py-3 px-2 border-r border-slate-200">
                         {c.qty}

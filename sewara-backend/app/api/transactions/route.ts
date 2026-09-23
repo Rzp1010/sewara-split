@@ -3,6 +3,7 @@ import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
 import { successResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
+import { guardMaintenance } from '@/lib/api/kondisi-sn';
 
 export const runtime = 'nodejs';
 
@@ -91,6 +92,10 @@ export const POST = withErrorHandler(async (request) => {
   await requireAuth(supabase);
 
   const body = await request.json();
+
+  // Guard: tolak SN berstatus maintenance sebelum simpan (bermasalah tetap boleh).
+  const guardError = await guardMaintenance(supabase, body?.items ?? []);
+  if (guardError) return guardError;
 
   const { data, error } = await supabase.rpc('rpc_save_transaction', {
     p_transaction: body?.transaction ?? body,

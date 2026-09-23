@@ -10,6 +10,9 @@ import {
   formatTanggal,
   hitungDurasiDenganAturan,
   hitungPembayaran,
+  kondisiUnit,
+  catatanUnit,
+  opsiKondisi,
   snsDirujukLainnya,
 } from "@/lib/utils";
 import { useNotify } from "@/components/NotificationProvider";
@@ -325,6 +328,7 @@ export default function StatusPage() {
     window.localStorage.removeItem(filterSettingsKey);
   }
   const [userRole, setUserRole] = useState("");
+  const [kondisiModal, setKondisiModal] = useState(null);
   const [editBayarIdx, setEditBayarIdx] = useState(null);
   const [editBayarJumlah, setEditBayarJumlah] = useState("");
   const [editBayarMetode, setEditBayarMetode] = useState("Tunai");
@@ -887,6 +891,63 @@ export default function StatusPage() {
       }
     });
 
+    // Modal kondisi barang kembali — catat kondisi tiap unit S/N sebelum simpan.
+    // Batal = tidak menyimpan apa-apa; transaksi tetap Disewa (alur lama tak jalan).
+    const logKondisi = [];
+    {
+      const entries = [];
+      (trx.items || []).forEach((c) => {
+        const daftar = [];
+        if (c.ref.jenis === "satuan") {
+          daftar.push({
+            idBarang: c.idBarang,
+            sns: (c.sn || "").split(", ").filter(Boolean),
+          });
+        } else {
+          (c.assignedSNs || []).forEach((a) =>
+            daftar.push({ idBarang: a.idKomp, sns: a.sns || [] }),
+          );
+        }
+        daftar.forEach(({ idBarang, sns }) => {
+          const db = inv.find((i) => i.id == idBarang);
+          sns.forEach((sn) =>
+            entries.push({
+              idBarang,
+              sn,
+              nama: db?.nama || "",
+              kondisi: kondisiUnit(db, sn),
+              catatan: catatanUnit(db, sn) || "",
+            }),
+          );
+        });
+      });
+      if (entries.length > 0) {
+        const hasil = await new Promise((resolve) => {
+          setKondisiModal({
+            judul: `Kondisi Barang Kembali - ${trx.penyewa}`,
+            entries,
+            resolve,
+          });
+        });
+        if (!hasil) return; // batal: tidak simpan apa-apa
+        hasil.forEach((e) => {
+          const db = inv.find((i) => i.id == e.idBarang);
+          if (!db) return;
+          db.kondisi_sn = { ...(db.kondisi_sn || {}) };
+          if (e.kondisi === "baik") delete db.kondisi_sn[e.sn];
+          else
+            db.kondisi_sn[e.sn] = {
+              kondisi: e.kondisi,
+              catatan: e.catatan?.trim() || null,
+            };
+          invDiubah.add(db.id);
+          logKondisi.push(
+            `ubah kondisi: ${e.sn} → ${e.kondisi}${e.catatan?.trim() ? ` (${e.catatan.trim()})` : ""}`,
+          );
+        });
+      }
+    }
+
     trx.waktu_kembali_aktual = aktual.toISOString();
     trx.denda = denda;
     trx.total_akhir = (trx.biaya || 0) + denda;
@@ -921,12 +982,38 @@ export default function StatusPage() {
           namaPelayan,
           `${trx.penyewa} • ${trx.no_invoice}`,
         ),
+        // Log entri kondisi terpisah (bukan prioritas, tapi data kondisi tetap tersimpan).
+        ...(logKondisi.length > 0
+          ? [
+              buatLog(
+                "Ubah Kondisi",
+                logKondisi.join(", "),
+                "-",
+                aktual.toISOString(),
+                namaPelayan,
+                `${trx.penyewa} • ${trx.no_invoice}`,
+              ),
+            ]
+          : []),
       ]))
     )
       return notify("Barang diterima, tapi gagal mencatat log.", "error");
     setRefresh((r) => r + 1);
     notify(`Barang sudah diterima.\nTotal: ${formatRupiah(trx.total_akhir)}`);
     if (hitungPembayaran(trx).status !== "Lunas") bukaBayar(trx);
+  }
+
+  function submitKondisiModal() {
+    if (!kondisiModal) return;
+    for (const e of kondisiModal.entries) {
+      if (e.kondisi === "bermasalah" && !String(e.catatan || "").trim())
+        return notify(
+          `Catatan wajib untuk S/N ${e.sn} yang bermasalah!`,
+          "error",
+        );
+    }
+    kondisiModal.resolve(kondisiModal.entries);
+    setKondisiModal(null);
   }
 
   async function catatBayar() {
@@ -2033,6 +2120,94 @@ export default function StatusPage() {
               </div>
             );
           })(),
+          document.body,
+        )}
+
+      {typeof document !== "undefined" &&
+        kondisiModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
+          >
+            <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl">
+              <div className="mb-4 flex items-center justify-between px-6 pt-6">
+                <h3 className="text-lg font-semibold">{kondisiModal.judul}</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <p className="text-sm text-gray-600 mb-3">
+                  Catat kondisi tiap unit saat barang kembali.
+                </p>
+                <div className="max-h-72 overflow-y-auto">
+                  {kondisiModal.entries.map((e, i) => (
+                    <div
+                      key={`${e.idBarang}-${e.sn}`}
+                      className="border-b border-solid border-slate-200 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex-1 text-sm">
+                          {e.nama && (
+                            <span className="text-gray-500">{e.nama} • </span>
+                          )}
+                          <span
+                            className="font-semibold"
+                            style={{ fontFamily: "ui-monospace, monospace" }}
+                          >
+                            {e.sn}
+                          </span>
+                        </span>
+                        <select
+                          value={e.kondisi}
+                          onChange={(ev) => {
+                            const entries = [...kondisiModal.entries];
+                            entries[i] = { ...e, kondisi: ev.target.value };
+                            setKondisiModal({ ...kondisiModal, entries });
+                          }}
+                          className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
+                        >
+                          {opsiKondisi(userRole).map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {e.kondisi === "bermasalah" && (
+                        <input
+                          value={e.catatan}
+                          onChange={(ev) => {
+                            const entries = [...kondisiModal.entries];
+                            entries[i] = { ...e, catatan: ev.target.value };
+                            setKondisiModal({ ...kondisiModal, entries });
+                          }}
+                          placeholder="Catatan masalah (wajib)"
+                          className="mt-2 w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={submitKondisiModal}
+                    className="rounded-lg border-0 bg-[#579171] hover:bg-[#447057] px-4 py-2 text-sm font-semibold text-white transition-colors flex-1"
+                  >
+                    Lanjut Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      kondisiModal.resolve(null);
+                      setKondisiModal(null);
+                    }}
+                    className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
           document.body,
         )}
 

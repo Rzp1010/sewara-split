@@ -1,3 +1,5 @@
+import { ROLE_CS } from "./role";
+
 export function formatRupiah(angka) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -109,6 +111,26 @@ function snsItemDalamTrx(item, idBarang) {
     return a ? [...a.sns] : [];
   }
   return [];
+}
+
+// Opsi dropdown kondisi sesuai role. CS hanya Baik/Bermasalah;
+// gudang/owner/superadmin boleh Maintenance. Server tetap otoritatif.
+export function opsiKondisi(role) {
+  const opsi = [
+    { value: "baik", label: "Baik" },
+    { value: "bermasalah", label: "Bermasalah" },
+  ];
+  if (role && role !== ROLE_CS) opsi.push({ value: "maintenance", label: "Maintenance" });
+  return opsi;
+}
+
+// Kondisi per-unit S/N dari map item.kondisi_sn. SN tak ada di map = "baik".
+export function kondisiUnit(item, sn) {
+  return item?.kondisi_sn?.[sn]?.kondisi || "baik";
+}
+
+export function catatanUnit(item, sn) {
+  return item?.kondisi_sn?.[sn]?.catatan || null;
 }
 
 export function periodeOverlap(mulaiA, selesaiA, mulaiB, selesaiB) {

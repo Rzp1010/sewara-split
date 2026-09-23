@@ -76,7 +76,10 @@ export default function SearchableSelect({
         className="flex min-h-12 w-full items-center justify-between rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 leading-[1.6] cursor-pointer transition-colors focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 hover:border-gray-400"
         onClick={() => bukaDropdown()}
       >
-        <span className={selected ? "truncate" : "truncate text-gray-500"}>
+        <span
+          className={selected ? "truncate" : "truncate text-gray-500"}
+          title={selected?.title}
+        >
           {selected ? selected.label : placeholder}
         </span>
       </div>
@@ -110,6 +113,7 @@ export default function SearchableSelect({
                 <div
                   key={o.value}
                   className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${o.value === value ? "bg-blue-50 text-blue-700" : ""}`}
+                  title={o.title}
                   onClick={() => {
                     onChange(o.value);
                     setOpen(false);
