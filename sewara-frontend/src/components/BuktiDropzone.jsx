@@ -101,12 +101,16 @@ export default function BuktiDropzone({
           setHover(false);
           terima(e.dataTransfer.files?.[0]);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 border-[1.5px] text-center transition-colors ${r} ${pad} ${teks} ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 text-center transition-colors ${r} ${pad} ${teks} ${
+          compact ? "border-2" : "border-[1.5px]"
+        } ${
           isi
             ? "border-solid border-emerald-500 bg-green-50"
             : hover
               ? "border-dashed border-[#7181E0] bg-[#EEF2FF]"
-              : "border-dashed border-gray-200 hover:border-[#7181E0] hover:bg-[#EEF2FF]"
+              : compact
+                ? "border-dashed border-gray-400 hover:border-[#7181E0] hover:bg-[#EEF2FF]"
+                : "border-dashed border-gray-200 hover:border-[#7181E0] hover:bg-[#EEF2FF]"
         }`}
       >
         {isi ? (
