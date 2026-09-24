@@ -47,7 +47,7 @@ async function exportHandler(request) {
     const from = page * PAGE_SIZE;
     const { data, error } = await supabase
       .from('transactions')
-      .select('id,kode,no_invoice,penyewa,pembayaran')
+      .select('id,no_invoice,id_transaksi,penyewa,pembayaran')
       .eq('user_id', ownerId)
       .range(from, from + PAGE_SIZE - 1);
     if (error) throw error;
@@ -74,7 +74,7 @@ async function exportHandler(request) {
           tglEntri(r).startsWith(bulan)
       )
       .sort((a, b) => tglEntri(a).localeCompare(tglEntri(b)));
-    const base = sanitize(trx.no_invoice || trx.kode || trx.id);
+    const base = sanitize(trx.no_invoice || trx.id_transaksi || trx.id);
     const penyewa = sanitize(trx.penyewa);
     hits.forEach((r, i) => {
       const suffix = i === 0 ? '' : ` (${i + 1})`;
