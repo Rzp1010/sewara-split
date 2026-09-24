@@ -62,16 +62,18 @@ async function exportHandler(request) {
     const riwayat = Array.isArray(trx.pembayaran?.riwayatBayar)
       ? trx.pembayaran.riwayatBayar
       : [];
+    // Key tanggal entri riwayatBayar frontend = `tgl` (bisa juga `tanggal`).
+    const tglEntri = (r) =>
+      typeof r?.tanggal === 'string' ? r.tanggal : typeof r?.tgl === 'string' ? r.tgl : '';
     const hits = riwayat
       .filter(
         (r) =>
           r &&
           typeof r.bukti === 'string' &&
           r.bukti &&
-          typeof r.tanggal === 'string' &&
-          r.tanggal.startsWith(bulan)
+          tglEntri(r).startsWith(bulan)
       )
-      .sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal)));
+      .sort((a, b) => tglEntri(a).localeCompare(tglEntri(b)));
     const base = sanitize(trx.no_invoice || trx.kode || trx.id);
     const penyewa = sanitize(trx.penyewa);
     hits.forEach((r, i) => {
