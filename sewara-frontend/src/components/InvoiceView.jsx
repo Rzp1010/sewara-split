@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { getSetting } from "@/lib/db";
+import { useSyncExternalStore, useEffect, useState } from "react";
+import { getSetting, getUrlBuktiBayar } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { formatRupiah, formatTanggal, hitungPembayaran } from "@/lib/utils";
 
@@ -35,9 +35,45 @@ function BarisTotal({ label, value }) {
   );
 }
 
+// Thumbnail bukti bayar 40px (ambil signed URL saat mount).
+function ThumbBukti({ path, onOpen }) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let aktif = true;
+    getUrlBuktiBayar(path).then((u) => {
+      if (aktif) setUrl(u);
+    });
+    return () => {
+      aktif = false;
+    };
+  }, [path]);
+  if (!url) return null;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(url);
+      }}
+      title="Lihat bukti"
+      className="border-solid border-slate-300 overflow-hidden rounded border bg-white p-0"
+      style={{ width: 40, height: 40, lineHeight: 0 }}
+    >
+      <img
+        src={url}
+        alt="Bukti bayar"
+        style={{ objectFit: "cover", width: 40, height: 40 }}
+      />
+    </button>
+  );
+}
+
 export default function InvoiceView({ data, onClose }) {
   const footer = getSetting("invoice_footer", "") || FOOTER_DEFAULT;
   const pay = hitungPembayaran(data);
+  const [viewerBukti, setViewerBukti] = useState(null);
+  const [gagalViewer, setGagalViewer] = useState(false);
+  const buktiList = (data.pembayaran?.riwayatBayar || []).filter((b) => b?.bukti);
   const namaAksi = (aksi) =>
     data.riwayatDilayani?.find((r) => r.aksi === aksi)?.nama || "";
   const mounted = useSyncExternalStore(
@@ -322,6 +358,26 @@ export default function InvoiceView({ data, onClose }) {
                 </tbody>
               </table>
             </div>
+
+            {buktiList.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#666]">
+                  Bukti Pembayaran
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {buktiList.map((b, i) => (
+                    <ThumbBukti
+                      key={b.id || i}
+                      path={b.bukti}
+                      onOpen={(url) => {
+                        setGagalViewer(false);
+                        setViewerBukti(url);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -348,6 +404,41 @@ export default function InvoiceView({ data, onClose }) {
           )}
         </div>
       </div>
+
+      {viewerBukti &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewerBukti(null);
+            }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 p-4"
+          >
+            {gagalViewer ? (
+              <p className="mb-4 text-center text-sm font-semibold text-white">
+                Bukti terhapus otomatis (retensi 3 bulan)
+              </p>
+            ) : (
+              <img
+                src={viewerBukti}
+                alt="Bukti pembayaran"
+                onClick={(e) => e.stopPropagation()}
+                onError={() => setGagalViewer(true)}
+                className="max-h-[80vh] max-w-full rounded-md object-contain"
+              />
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewerBukti(null);
+              }}
+              className="mt-4 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            >
+              Tutup
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 

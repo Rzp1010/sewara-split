@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions } from "@/lib/db";
+import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar } from "@/lib/db";
 import { useDebounce } from "use-debounce";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
@@ -195,6 +195,8 @@ export default function BookingPage() {
   const [editSelectedId, setEditSelectedId] = useState("");
   const [dpJumlah, setDpJumlah] = useState("");
   const [dpMetode, setDpMetode] = useState("Tunai");
+  const [buktiFile, setBuktiFile] = useState(null);
+  const buktiInputRef = useRef(null);
   const [printilanTerpilih, setPrintilanTerpilih] = useState([]);
   const [printilanCustom, setPrintilanCustom] = useState("");
   const [printilanDaftar, setPrintilanDaftar] = useState([]);
@@ -1046,6 +1048,7 @@ export default function BookingPage() {
     setSnDipilih("");
     setSnOptions([]);
     setDpJumlah("");
+    setBuktiFile(null);
     setKodePromoInput("");
     setDiskonCustomInput("");
     setDiskonCustomTipe("%");
@@ -1279,6 +1282,7 @@ export default function BookingPage() {
         if (dp > 0) {
           const riwayat = [...(target.pembayaran?.riwayatBayar || [])];
           riwayat.push({
+            id: crypto.randomUUID(),
             jumlah: dp,
             metode: dpMetode,
             tgl: new Date().toISOString(),
@@ -1298,6 +1302,19 @@ export default function BookingPage() {
               "Gagal menggabungkan item ke booking. Silakan coba lagi.",
             "error",
           );
+        if (dp > 0 && buktiFile) {
+          const idxBaru = target.pembayaran.riwayatBayar.length - 1;
+          const path = await uploadBuktiBayar(buktiFile, target.id);
+          if (!path) {
+            notify("Pembayaran tercatat, tapi foto bukti gagal diupload.", "warning");
+          } else {
+            target.pembayaran.riwayatBayar[idxBaru] = {
+              ...target.pembayaran.riwayatBayar[idxBaru],
+              bukti: path,
+            };
+            await updateTransactions([target]);
+          }
+        }
         if (promoDipilih) {
           const r = await pakaiPromo(promoDipilih.id);
           if (!r.ok) notify("Gagal menerapkan promo: " + r.error, "error");
@@ -1373,6 +1390,7 @@ export default function BookingPage() {
                 tglDp: new Date().toISOString(),
                 riwayatBayar: [
                   {
+                    id: crypto.randomUUID(),
                     jumlah: dp,
                     metode: dpMetode,
                     tgl: new Date().toISOString(),
@@ -1390,6 +1408,15 @@ export default function BookingPage() {
           getLastDbError() || "Gagal menyimpan booking. Silakan coba lagi.",
           "error",
         );
+      if (dp > 0 && buktiFile) {
+        const path = await uploadBuktiBayar(buktiFile, trxBaru.id);
+        if (!path) {
+          notify("Pembayaran tercatat, tapi foto bukti gagal diupload.", "warning");
+        } else {
+          trxBaru.pembayaran.riwayatBayar[0].bukti = path;
+          await updateTransactions([trxBaru]);
+        }
+      }
       if (promoDipilih) {
         const r = await pakaiPromo(promoDipilih.id);
         if (!r.ok) notify("Gagal menerapkan promo: " + r.error, "error");
@@ -2542,6 +2569,59 @@ export default function BookingPage() {
                 </div>
               </div>
             </div>
+            {parseFloat(dpJumlah) > 0 && (
+              <div className="mt-3">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                  Bukti Pembayaran (Opsional)
+                </label>
+                <input
+                  ref={buktiInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    if (f && f.size > 5 * 1024 * 1024) {
+                      notify("Ukuran file maksimal 5MB.", "error");
+                      e.target.value = "";
+                      return;
+                    }
+                    setBuktiFile(f);
+                  }}
+                />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => buktiInputRef.current?.click()}
+                    className="rounded-lg px-4 py-2 text-sm font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
+                  >
+                    Pilih Berkas
+                  </button>
+                  {buktiFile ? (
+                    <>
+                      <span className="text-sm text-gray-700" style={{ wordBreak: "break-word" }}>
+                        {buktiFile.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBuktiFile(null);
+                          if (buktiInputRef.current) buktiInputRef.current.value = "";
+                        }}
+                        className="text-xs font-medium text-red-600 bg-transparent border-0"
+                      >
+                        Hapus
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-500">Belum ada berkas dipilih.</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  JPG, PNG, atau WEBP. Maksimal 5MB.
+                </p>
+              </div>
+            )}
             <p className="text-xs text-gray-500">
               {getSetting("aturan_dp", "bebas") === "wajib"
                 ? "Aturan DP aktif: wajib diisi sebelum booking disimpan."

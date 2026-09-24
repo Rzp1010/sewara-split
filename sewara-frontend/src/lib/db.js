@@ -11,7 +11,7 @@
  * initSettings() menarik semua setting tenant ke localStorage saat mount.
  */
 
-import { api, apiRequest } from '@/lib/api-client';
+import { api, apiRequest, API_BASE } from '@/lib/api-client';
 
 // ============================================================================
 // EVENT HELPERS — halaman mendengarkan event ini untuk refresh
@@ -380,7 +380,12 @@ export async function tambahTransactions(rows) {
   if (!rows || rows.length === 0) return true;
   _dbError = null;
   try {
-    for (const tx of rows) await api.transactions.create(tx);
+    for (const tx of rows) {
+      const res = await api.transactions.create(tx);
+      // RPC pakai IDENTITY — id klien (Date.now()) dibuang DB.
+      // Backfill id asli supaya caller (mis. upload bukti bayar) bisa lanjut update.
+      if (res?.transaction?.id != null) tx.id = res.transaction.id;
+    }
   } catch (e) {
     console.error('tambahTransactions error:', e.message);
     _dbError = e.message;
@@ -450,6 +455,88 @@ export async function getTransactionPayments(transactionId) {
 export async function saveTransactionPayments(transactionId, payments) {
   if (!payments || payments.length === 0) return;
   await api.transactions.payments.save(transactionId, payments);
+}
+
+// ============================================================================
+// BUKTI BAYAR — upload/foto/ekspor (multipart + blob, bukan JSON)
+// ============================================================================
+
+// Signed URL berlaku 1 jam; cache module-level agar thumbnail tidak refetch.
+const _cacheBuktiUrl = new Map();
+
+/** Upload file bukti. -> path string | null */
+export async function uploadBuktiBayar(file, transaksiId) {
+  if (!file) return null;
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('transaksiId', String(transaksiId));
+    const res = await fetch(`${API_BASE}/api/pembayaran/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.message || 'Upload gagal');
+    return data.path || null;
+  } catch (e) {
+    console.error('uploadBuktiBayar error:', e.message);
+    return null;
+  }
+}
+
+/** URL signed bukti (cache 1 jam). -> url string | null */
+export async function getUrlBuktiBayar(path) {
+  if (!path) return null;
+  const cached = _cacheBuktiUrl.get(path);
+  if (cached && cached.exp > Date.now()) return cached.url;
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/pembayaran/photo?path=${encodeURIComponent(path)}`,
+      { credentials: 'include' },
+    );
+    const data = await res.json();
+    if (!res.ok || !data.ok || !data.url) throw new Error(data.message || 'Gagal memuat foto');
+    _cacheBuktiUrl.set(path, { url: data.url, exp: Date.now() + 55 * 60 * 1000 });
+    return data.url;
+  } catch (e) {
+    console.error('getUrlBuktiBayar error:', e.message);
+    return null;
+  }
+}
+
+/** Ekspor bukti bulan YYYY-MM. -> { ok, message } ; trigger download saat ok. */
+export async function eksporBuktiBayar(bulan) {
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/pembayaran/export?bulan=${encodeURIComponent(bulan)}`,
+      { credentials: 'include' },
+    );
+    const ctype = res.headers.get('content-type') || '';
+    if (!res.ok || ctype.includes('application/json')) {
+      let msg = 'Gagal mengekspor bukti bayar.';
+      try {
+        const data = await res.json();
+        msg = data.message || msg;
+      } catch {
+        /* biarkan pesan default */
+      }
+      return { ok: false, message: msg };
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bukti-bayar-${bulan}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return { ok: true };
+  } catch (e) {
+    console.error('eksporBuktiBayar error:', e.message);
+    return { ok: false, message: e.message };
+  }
 }
 
 /** Nomor invoice berikutnya. */

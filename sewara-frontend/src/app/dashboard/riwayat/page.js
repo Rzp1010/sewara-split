@@ -1,10 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getTransactionsRingkas, getTransactionById } from "@/lib/db";
+import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { formatRupiah } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
+import { useNotify } from "@/components/NotificationProvider";
+
+const BULAN_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+function labelBulan(value) {
+  const [y, m] = String(value || "").split("-");
+  const idx = parseInt(m, 10) - 1;
+  if (!y || idx < 0 || idx > 11) return value;
+  return `${BULAN_ID[idx]} ${y}`;
+}
 
 const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
   ssr: false,
@@ -17,9 +30,13 @@ const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
 });
 
 export default function RiwayatPage() {
+  const { notify } = useNotify();
   const [trx, setTrx] = useState([]);
   const [halaman, setHalaman] = useState(1);
   const perHalaman = 50;
+  const [bulanEkspor, setBulanEkspor] = useState(
+    new Date().toISOString().slice(0, 7),
+  );
 
   useEffect(() => {
     (async () => {
@@ -60,15 +77,55 @@ export default function RiwayatPage() {
 
   const [dataCetak, setDataCetak] = useState(null);
 
+  async function ekspor() {
+    const hasil = await eksporBuktiBayar(bulanEkspor);
+    if (!hasil.ok) notify(hasil.message, "error");
+  }
+
+  const pilihanBulan = (() => {
+    const out = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push(d.toISOString().slice(0, 7));
+    }
+    return out;
+  })();
+
   return (
     <div className="min-h-full bg-gray-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">
-          Riwayat Invoice
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Daftar transaksi yang sudah selesai.
-        </p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">
+            Riwayat Invoice
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Daftar transaksi yang sudah selesai.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl border-2 border-solid border-slate-200 bg-white p-3 shadow-lg">
+          <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+            Ekspor Bukti Bayar
+          </span>
+          <select
+            value={bulanEkspor}
+            onChange={(e) => setBulanEkspor(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-600"
+          >
+            {pilihanBulan.map((b) => (
+              <option key={b} value={b}>
+                {labelBulan(b)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={ekspor}
+            className="rounded-lg bg-[#7181E0] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#5d6fcc]"
+          >
+            Ekspor
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
         <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">

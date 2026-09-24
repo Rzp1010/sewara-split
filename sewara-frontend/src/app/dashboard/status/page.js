@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react";
-import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice } from "@/lib/db";
+import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, getUrlBuktiBayar } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import {
@@ -268,6 +268,8 @@ export default function StatusPage() {
   const [bayarJumlah, setBayarJumlah] = useState("");
   const [bayarMetode, setBayarMetode] = useState("Tunai");
   const [bayarCatatan, setBayarCatatan] = useState("");
+  const [bayarBukti, setBayarBukti] = useState(null);
+  const bayarBuktiRef = useRef(null);
   const [rentangKunci, setRentangKunci] = useState("7_hari");
   const [kustomMulai, setKustomMulai] = useState("");
   const [kustomAkhir, setKustomAkhir] = useState("");
@@ -353,6 +355,10 @@ export default function StatusPage() {
   const [editBayarJumlah, setEditBayarJumlah] = useState("");
   const [editBayarMetode, setEditBayarMetode] = useState("Tunai");
   const [editBayarCatatan, setEditBayarCatatan] = useState("");
+  const [editBayarBuktiBaru, setEditBayarBuktiBaru] = useState(null);
+  const [editBayarBuktiLama, setEditBayarBuktiLama] = useState(null);
+  const [editBayarHapusBukti, setEditBayarHapusBukti] = useState(false);
+  const editBayarBuktiRef = useRef(null);
   const [boardScrollState, setBoardScrollState] = useState({
     left: true,
     right: false,
@@ -1064,12 +1070,14 @@ export default function StatusPage() {
         ...trx.pembayaran,
         riwayatBayar: [],
       };
-    trx.pembayaran.riwayatBayar.push({
+    const entriBaru = {
+      id: crypto.randomUUID(),
       jumlah,
       metode: bayarMetode,
       tgl: new Date().toISOString(),
       catatan: bayarCatatan,
-    });
+    };
+    trx.pembayaran.riwayatBayar.push(entriBaru);
     if (trx.pembayaran.dp === 0) {
       trx.pembayaran.dp = jumlah;
       trx.pembayaran.metodeDp = bayarMetode;
@@ -1083,6 +1091,15 @@ export default function StatusPage() {
     trx.dilayani_oleh = namaPelayan;
     if (!(await updateTransactions([trx])))
       return notify("Gagal mencatat pembayaran. Silakan coba lagi.", "error");
+    if (bayarBukti) {
+      const path = await uploadBuktiBayar(bayarBukti, trx.id);
+      if (!path) {
+        notify("Pembayaran tercatat, tapi foto bukti gagal diupload.", "warning");
+      } else {
+        entriBaru.bukti = path;
+        await updateTransactions([trx]);
+      }
+    }
     if (
       !(await tambahLogs([
         buatLog(
@@ -1125,6 +1142,7 @@ export default function StatusPage() {
     setBayarTrx(null);
     setBayarJumlah("");
     setBayarCatatan("");
+    setBayarBukti(null);
     setRefresh((r) => r + 1);
     notify(`Pembayaran ${formatRupiah(jumlah)} dicatat.`);
   }
@@ -1133,6 +1151,7 @@ export default function StatusPage() {
     setBayarTrx(trx);
     setBayarJumlah("");
     setBayarCatatan("");
+    setBayarBukti(null);
     setEditBayarIdx(null);
   }, []);
 
@@ -1149,6 +1168,10 @@ export default function StatusPage() {
     setEditBayarJumlah(String(b.jumlah || ""));
     setEditBayarMetode(b.metode || "Tunai");
     setEditBayarCatatan(b.catatan || "");
+    setEditBayarBuktiBaru(null);
+    setEditBayarBuktiLama(null);
+    setEditBayarHapusBukti(false);
+    if (b.bukti) getUrlBuktiBayar(b.bukti).then(setEditBayarBuktiLama);
   };
 
   async function sinkronSetelahUbahBayar(trx, aksi, detailLog) {
@@ -1212,15 +1235,29 @@ export default function StatusPage() {
       metode: editBayarMetode,
       catatan: editBayarCatatan,
     };
+    if (editBayarHapusBukti) delete riwayat[editBayarIdx].bukti;
     trx.pembayaran = { ...(trx.pembayaran || {}), riwayatBayar: riwayat };
     await sinkronSetelahUbahBayar(
       trx,
       "Pembayaran diubah",
       `${formatRupiah(jumlah)} via ${editBayarMetode}`,
     );
+    if (editBayarBuktiBaru) {
+      const path = await uploadBuktiBayar(editBayarBuktiBaru, trx.id);
+      if (!path) {
+        notify("Pembayaran tersimpan, tapi foto bukti gagal diupload.", "warning");
+      } else {
+        riwayat[editBayarIdx] = { ...riwayat[editBayarIdx], bukti: path };
+        trx.pembayaran = { ...(trx.pembayaran || {}), riwayatBayar: riwayat };
+        await updateTransactions([trx]);
+      }
+    }
     setEditBayarIdx(null);
     setEditBayarJumlah("");
     setEditBayarCatatan("");
+    setEditBayarBuktiBaru(null);
+    setEditBayarBuktiLama(null);
+    setEditBayarHapusBukti(false);
     notify("Pembayaran diubah.");
   }
 
@@ -2121,6 +2158,56 @@ export default function StatusPage() {
                         </p>
                       </div>
                     )}
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium">
+                        Bukti Bayar (opsional)
+                      </label>
+                      <input
+                        ref={bayarBuktiRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] || null;
+                          if (f && f.size > 5 * 1024 * 1024) {
+                            notify("Ukuran file maksimal 5MB.", "error");
+                            e.target.value = "";
+                            return;
+                          }
+                          setBayarBukti(f);
+                        }}
+                      />
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => bayarBuktiRef.current?.click()}
+                          className="rounded-lg px-4 py-2 text-sm font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
+                        >
+                          Pilih Berkas
+                        </button>
+                        {bayarBukti ? (
+                          <>
+                            <span className="text-sm text-gray-700" style={{ wordBreak: "break-word" }}>
+                              {bayarBukti.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBayarBukti(null);
+                                if (bayarBuktiRef.current) bayarBuktiRef.current.value = "";
+                              }}
+                              className="text-xs font-medium text-red-600 bg-transparent border-0"
+                            >
+                              Hapus
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-500">
+                            JPG, PNG, atau WEBP. Maksimal 5MB.
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setBayarTrx(null)}
@@ -2370,6 +2457,76 @@ export default function StatusPage() {
                       placeholder="opsional"
                       className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
                     />
+                    <label className="block text-sm font-medium mt-3">
+                      Bukti Bayar
+                    </label>
+                    <input
+                      ref={editBayarBuktiRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] || null;
+                        if (f && f.size > 5 * 1024 * 1024) {
+                          notify("Ukuran file maksimal 5MB.", "error");
+                          e.target.value = "";
+                          return;
+                        }
+                        setEditBayarBuktiBaru(f);
+                        setEditBayarHapusBukti(false);
+                      }}
+                    />
+                    <div className="mt-2">
+                      {!editBayarHapusBukti && editBayarBuktiLama && (
+                        <img
+                          src={editBayarBuktiLama}
+                          alt="Bukti pembayaran"
+                          className="mb-2 h-24 w-24 rounded-md border border-border object-cover"
+                        />
+                      )}
+                      {!editBayarHapusBukti && !editBayarBuktiLama && entri.bukti && (
+                        <p className="text-xs text-gray-500 mb-2">Memuat pratinjau...</p>
+                      )}
+                      {editBayarHapusBukti && (
+                        <p className="text-xs text-gray-500 mb-2">Bukti akan dihapus.</p>
+                      )}
+                      {editBayarBuktiBaru && (
+                        <p className="text-xs text-gray-700 mb-2" style={{ wordBreak: "break-word" }}>
+                          Ganti ke: {editBayarBuktiBaru.name}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => editBayarBuktiRef.current?.click()}
+                          className="rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
+                        >
+                          Ganti
+                        </button>
+                        {(editBayarBuktiLama || entri.bukti) && !editBayarHapusBukti && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditBayarHapusBukti(true);
+                              setEditBayarBuktiBaru(null);
+                              if (editBayarBuktiRef.current) editBayarBuktiRef.current.value = "";
+                            }}
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-transparent text-red-600 border-0"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                        {editBayarHapusBukti && (
+                          <button
+                            type="button"
+                            onClick={() => setEditBayarHapusBukti(false)}
+                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-transparent text-gray-600 border-0"
+                          >
+                            Batal Hapus
+                          </button>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setEditBayarIdx(null)}
