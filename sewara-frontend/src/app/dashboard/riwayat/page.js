@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { formatRupiah } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
+import ModalBuktiBayar from "@/components/ModalBuktiBayar";
 
 const BULAN_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -76,6 +77,20 @@ export default function RiwayatPage() {
   }
 
   const [dataCetak, setDataCetak] = useState(null);
+
+  const [buktiTrx, setBuktiTrx] = useState(null);
+  const [loadingBuktiId, setLoadingBuktiId] = useState(null);
+
+  async function bukaBukti(id) {
+    if (loadingBuktiId) return;
+    setLoadingBuktiId(id);
+    try {
+      const penuh = await getTransactionById(id);
+      if (penuh) setBuktiTrx(penuh);
+    } finally {
+      setLoadingBuktiId(null);
+    }
+  }
 
   async function ekspor() {
     const hasil = await eksporBuktiBayar(bulanEkspor);
@@ -165,13 +180,23 @@ export default function RiwayatPage() {
                   {formatRupiah(t.total_akhir || 0)}
                 </td>
                 <td className="px-4 py-3">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => bukaCetak(t.id)}
-                  >
-                    Struk
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => bukaBukti(t.id)}
+                      disabled={loadingBuktiId === t.id}
+                      className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {loadingBuktiId === t.id ? "Memuat..." : "Bukti"}
+                    </button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => bukaCetak(t.id)}
+                    >
+                      Struk
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -211,6 +236,13 @@ export default function RiwayatPage() {
             setCetakId(null);
             setDataCetak(null);
           }}
+        />
+      )}
+
+      {buktiTrx && (
+        <ModalBuktiBayar
+          transaksi={buktiTrx}
+          onClose={() => setBuktiTrx(null)}
         />
       )}
     </div>
