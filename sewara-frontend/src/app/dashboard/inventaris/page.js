@@ -16,6 +16,26 @@ import { api } from "@/lib/api-client";
 import { useNotify } from "@/components/NotificationProvider";
 import { Button } from "@/components/ui";
 
+// Inisial avatar dari S/N: potongan paling kiri (max 4 char), fallback karakter pertama.
+function inisialSN(sn) {
+  const s = String(sn || "");
+  return (s.split("-")[0] || s).slice(0, 4) || "?";
+}
+
+// Hitung jumlah kondisi live dari daftar draft.
+function ringkasKondisi(list) {
+  const r = { baik: 0, bermasalah: 0, maintenance: 0 };
+  for (const d of list) {
+    const k = d?.kondisi || "baik";
+    if (r[k] !== undefined) r[k]++;
+    else r.baik++;
+  }
+  return r;
+}
+
+// Emoji per value; label teks tetap dari opsiKondisi().
+const labelKondisi = (o) => o.label;
+
 export default function InventarisPage() {
   const { notify, confirm: konfirm } = useNotify();
   const [inv, setInv] = useState([]);
@@ -1661,22 +1681,43 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
-                <h3 className="text-lg font-semibold">
-                  Kondisi Unit - {kondisiModal.nama}
-                </h3>
+              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Kondisi Unit
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {kondisiModal.nama}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setKondisiModal(null)}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="border-0 bg-transparent text-gray-400 transition-colors hover:text-gray-600"
+                  aria-label="Tutup"
                 >
-                  &times;
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-h-72 overflow-y-auto">
+              <div className="max-h-[60vh] flex-1 overflow-y-auto p-6">
+                <p className="mb-6 text-sm text-gray-600">
+                  Pilih kondisi unit sebelum dikembalikan oleh penyewa:
+                </p>
+                <div className="space-y-4">
                   {kondisiModal.sns.map((s) => {
                     const d = kondisiModal.draft[s] || {
                       kondisi: "baik",
@@ -1685,34 +1726,43 @@ export default function InventarisPage() {
                     return (
                       <div
                         key={s}
-                        className="border-b border-solid border-slate-200 py-3"
+                        className="rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50"
                       >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="font-semibold flex-1"
-                            style={{ fontFamily: "ui-monospace, monospace" }}
-                          >
-                            {s}
-                          </span>
-                          <select
-                            value={d.kondisi}
-                            onChange={(e) =>
-                              setKondisiModal({
-                                ...kondisiModal,
-                                draft: {
-                                  ...kondisiModal.draft,
-                                  [s]: { ...d, kondisi: e.target.value },
-                                },
-                              })
-                            }
-                            className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
-                          >
-                            {opsiKondisi(userRole).map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-1 items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100">
+                              <span className="text-sm font-semibold text-indigo-600">
+                                {inisialSN(s)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Unit {s}
+                              </p>
+                              <p className="text-xs text-gray-500">Serial: {s}</p>
+                            </div>
+                          </div>
+                          <div className="w-32">
+                            <select
+                              value={d.kondisi}
+                              onChange={(e) =>
+                                setKondisiModal({
+                                  ...kondisiModal,
+                                  draft: {
+                                    ...kondisiModal.draft,
+                                    [s]: { ...d, kondisi: e.target.value },
+                                  },
+                                })
+                              }
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              {opsiKondisi(userRole).map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {labelKondisi(o)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                         {d.kondisi === "bermasalah" && (
                           <input
@@ -1726,30 +1776,68 @@ export default function InventarisPage() {
                                 },
                               })
                             }
-                            placeholder="Catatan masalah (wajib)"
-                            className="mt-2 w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm"
+                            placeholder="Catatan masalah (wajib)..."
+                            className="mt-2 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         )}
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex items-center gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={simpanKondisi}
-                    className="rounded-lg border-0 bg-[#579171] hover:bg-[#447057] px-4 py-2 text-sm font-semibold text-white transition-colors flex-1"
-                  >
-                    Simpan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setKondisiModal(null)}
-                    className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
-                  >
-                    Batal
-                  </button>
-                </div>
+                {(() => {
+                  const r = ringkasKondisi(
+                    kondisiModal.sns.map(
+                      (s) => kondisiModal.draft[s] || { kondisi: "baik" },
+                    ),
+                  );
+                  return (
+                    <div className="mt-6 rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+                      <p className="mb-3 text-xs font-semibold text-indigo-900">
+                        Ringkasan Kondisi
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <p className="mb-1 text-xs text-indigo-700">Baik</p>
+                          <p className="text-lg font-bold text-green-600">
+                            {r.baik}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="mb-1 text-xs text-indigo-700">
+                            Bermasalah
+                          </p>
+                          <p className="text-lg font-bold text-yellow-600">
+                            {r.bermasalah}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="mb-1 text-xs text-indigo-700">
+                            Maintenance
+                          </p>
+                          <p className="text-lg font-bold text-orange-600">
+                            {r.maintenance}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="flex gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => setKondisiModal(null)}
+                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={simpanKondisi}
+                  className="flex-1 rounded-lg border-0 bg-[#579171] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#447057]"
+                >
+                  Simpan
+                </button>
               </div>
             </div>
           </div>,
