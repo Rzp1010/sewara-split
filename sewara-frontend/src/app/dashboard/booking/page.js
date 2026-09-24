@@ -18,6 +18,7 @@ import {
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import { useNotify } from "@/components/NotificationProvider";
+import BuktiDropzone from "@/components/BuktiDropzone";
 import SearchableSelect from "@/components/SearchableSelect";
 const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
   ssr: false,
@@ -196,7 +197,6 @@ export default function BookingPage() {
   const [dpJumlah, setDpJumlah] = useState("");
   const [dpMetode, setDpMetode] = useState("Tunai");
   const [buktiFile, setBuktiFile] = useState(null);
-  const buktiInputRef = useRef(null);
   const [printilanTerpilih, setPrintilanTerpilih] = useState([]);
   const [printilanCustom, setPrintilanCustom] = useState("");
   const [printilanDaftar, setPrintilanDaftar] = useState([]);
@@ -2574,52 +2574,7 @@ export default function BookingPage() {
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                   Bukti Pembayaran (Opsional)
                 </label>
-                <input
-                  ref={buktiInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    if (f && f.size > 5 * 1024 * 1024) {
-                      notify("Ukuran file maksimal 5MB.", "error");
-                      e.target.value = "";
-                      return;
-                    }
-                    setBuktiFile(f);
-                  }}
-                />
-                <div className="flex items-center gap-3 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => buktiInputRef.current?.click()}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
-                  >
-                    Pilih Berkas
-                  </button>
-                  {buktiFile ? (
-                    <>
-                      <span className="text-sm text-gray-700" style={{ wordBreak: "break-word" }}>
-                        {buktiFile.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBuktiFile(null);
-                          if (buktiInputRef.current) buktiInputRef.current.value = "";
-                        }}
-                        className="text-xs font-medium text-red-600 bg-transparent border-0"
-                      >
-                        Hapus
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-xs text-gray-500">Belum ada berkas dipilih.</span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  JPG, PNG, atau WEBP. Maksimal 5MB.
-                </p>
+                <BuktiDropzone value={buktiFile} onChange={setBuktiFile} />
               </div>
             )}
             <p className="text-xs text-gray-500">

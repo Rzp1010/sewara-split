@@ -16,6 +16,7 @@ import {
   snsDirujukLainnya,
 } from "@/lib/utils";
 import { useNotify } from "@/components/NotificationProvider";
+import BuktiDropzone from "@/components/BuktiDropzone";
 import { useTransactionsAktif } from "@/hooks/useTransactions";
 import { getFITUR } from "@/lib/features";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
@@ -269,7 +270,6 @@ export default function StatusPage() {
   const [bayarMetode, setBayarMetode] = useState("Tunai");
   const [bayarCatatan, setBayarCatatan] = useState("");
   const [bayarBukti, setBayarBukti] = useState(null);
-  const bayarBuktiRef = useRef(null);
   const [rentangKunci, setRentangKunci] = useState("7_hari");
   const [kustomMulai, setKustomMulai] = useState("");
   const [kustomAkhir, setKustomAkhir] = useState("");
@@ -358,7 +358,6 @@ export default function StatusPage() {
   const [editBayarBuktiBaru, setEditBayarBuktiBaru] = useState(null);
   const [editBayarBuktiLama, setEditBayarBuktiLama] = useState(null);
   const [editBayarHapusBukti, setEditBayarHapusBukti] = useState(false);
-  const editBayarBuktiRef = useRef(null);
   const [boardScrollState, setBoardScrollState] = useState({
     left: true,
     right: false,
@@ -2160,54 +2159,14 @@ export default function StatusPage() {
                     )}
                     {(parseFloat(bayarJumlah) || 0) > 0 && (
                     <div className="mt-3">
-                      <label className="block text-sm font-medium">
+                      <label className="block text-sm font-medium mb-2">
                         Bukti Bayar (opsional)
                       </label>
-                      <input
-                        ref={bayarBuktiRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0] || null;
-                          if (f && f.size > 5 * 1024 * 1024) {
-                            notify("Ukuran file maksimal 5MB.", "error");
-                            e.target.value = "";
-                            return;
-                          }
-                          setBayarBukti(f);
-                        }}
+                      <BuktiDropzone
+                        value={bayarBukti}
+                        onChange={setBayarBukti}
+                        compact
                       />
-                      <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => bayarBuktiRef.current?.click()}
-                          className="rounded-lg px-4 py-2 text-sm font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
-                        >
-                          Pilih Berkas
-                        </button>
-                        {bayarBukti ? (
-                          <>
-                            <span className="text-sm text-gray-700" style={{ wordBreak: "break-word" }}>
-                              {bayarBukti.name}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBayarBukti(null);
-                                if (bayarBuktiRef.current) bayarBuktiRef.current.value = "";
-                              }}
-                              className="text-xs font-medium text-red-600 bg-transparent border-0"
-                            >
-                              Hapus
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-500">
-                            JPG, PNG, atau WEBP. Maksimal 5MB.
-                          </span>
-                        )}
-                      </div>
                     </div>
                     )}
                     <div className="flex items-center gap-2 mt-4">
@@ -2459,76 +2418,39 @@ export default function StatusPage() {
                       placeholder="opsional"
                       className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
                     />
-                    <label className="block text-sm font-medium mt-3">
+                    <label className="block text-sm font-medium mt-3 mb-2">
                       Bukti Bayar
                     </label>
-                    <input
-                      ref={editBayarBuktiRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] || null;
-                        if (f && f.size > 5 * 1024 * 1024) {
-                          notify("Ukuran file maksimal 5MB.", "error");
-                          e.target.value = "";
-                          return;
-                        }
+                    {editBayarHapusBukti && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        Bukti akan dihapus.{" "}
+                        <button
+                          type="button"
+                          onClick={() => setEditBayarHapusBukti(false)}
+                          className="border-0 bg-transparent text-xs font-semibold text-[#5A6CD6]"
+                        >
+                          Batal hapus
+                        </button>
+                      </p>
+                    )}
+                    {!editBayarHapusBukti && !editBayarBuktiLama && entri.bukti && (
+                      <p className="text-xs text-gray-500 mb-2">Memuat pratinjau...</p>
+                    )}
+                    <BuktiDropzone
+                      value={editBayarBuktiBaru}
+                      onChange={(f) => {
                         setEditBayarBuktiBaru(f);
                         setEditBayarHapusBukti(false);
                       }}
+                      compact
+                      previewUrl={
+                        !editBayarHapusBukti ? editBayarBuktiLama : null
+                      }
+                      onHapusPreview={() => {
+                        setEditBayarHapusBukti(true);
+                        setEditBayarBuktiBaru(null);
+                      }}
                     />
-                    <div className="mt-2">
-                      {!editBayarHapusBukti && editBayarBuktiLama && (
-                        <img
-                          src={editBayarBuktiLama}
-                          alt="Bukti pembayaran"
-                          className="mb-2 h-24 w-24 rounded-md border border-border object-cover"
-                        />
-                      )}
-                      {!editBayarHapusBukti && !editBayarBuktiLama && entri.bukti && (
-                        <p className="text-xs text-gray-500 mb-2">Memuat pratinjau...</p>
-                      )}
-                      {editBayarHapusBukti && (
-                        <p className="text-xs text-gray-500 mb-2">Bukti akan dihapus.</p>
-                      )}
-                      {editBayarBuktiBaru && (
-                        <p className="text-xs text-gray-700 mb-2" style={{ wordBreak: "break-word" }}>
-                          Ganti ke: {editBayarBuktiBaru.name}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => editBayarBuktiRef.current?.click()}
-                          className="rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"
-                        >
-                          Ganti
-                        </button>
-                        {(editBayarBuktiLama || entri.bukti) && !editBayarHapusBukti && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditBayarHapusBukti(true);
-                              setEditBayarBuktiBaru(null);
-                              if (editBayarBuktiRef.current) editBayarBuktiRef.current.value = "";
-                            }}
-                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-transparent text-red-600 border-0"
-                          >
-                            Hapus
-                          </button>
-                        )}
-                        {editBayarHapusBukti && (
-                          <button
-                            type="button"
-                            onClick={() => setEditBayarHapusBukti(false)}
-                            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-transparent text-gray-600 border-0"
-                          >
-                            Batal Hapus
-                          </button>
-                        )}
-                      </div>
-                    </div>
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setEditBayarIdx(null)}
