@@ -13,6 +13,12 @@ const BULAN_ID = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
+// YYYY-MM waktu LOKAL — jangan toISOString(): tanggal 1 dini hari WIB
+// bergeser ke bulan sebelumnya di UTC.
+function bulanLokal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function labelBulan(value) {
   const [y, m] = String(value || "").split("-");
   const idx = parseInt(m, 10) - 1;
@@ -35,9 +41,7 @@ export default function RiwayatPage() {
   const [trx, setTrx] = useState([]);
   const [halaman, setHalaman] = useState(1);
   const perHalaman = 50;
-  const [bulanEkspor, setBulanEkspor] = useState(
-    new Date().toISOString().slice(0, 7),
-  );
+  const [bulanEkspor, setBulanEkspor] = useState(() => bulanLokal(new Date()));
 
   useEffect(() => {
     (async () => {
@@ -102,7 +106,7 @@ export default function RiwayatPage() {
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      out.push(d.toISOString().slice(0, 7));
+      out.push(bulanLokal(d));
     }
     return out;
   })();
