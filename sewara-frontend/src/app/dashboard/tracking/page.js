@@ -5,7 +5,7 @@ import { getSetting, getInventory, getTransactionsRange } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTransactionsAktif } from "@/hooks/useTransactions";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, kondisiUnit } from "@/lib/utils";
 import DateTimePicker from "@/components/DateTimePicker";
 import { Button } from "@/components/ui";
 
@@ -352,6 +352,7 @@ export default function TrackingPage() {
             label: sn,
             sn,
             kompId: null,
+            maintenance: kondisiUnit(item, sn) === "maintenance",
           }),
         );
         trxRange.forEach((t) => {
@@ -387,6 +388,7 @@ export default function TrackingPage() {
               label: sn,
               sn,
               kompId: k.idBarang,
+              maintenance: kondisiUnit(komp, sn) === "maintenance",
             }),
           );
         });
@@ -554,6 +556,8 @@ export default function TrackingPage() {
         String(p.sn || "") === String(sn || ""),
     );
   const togglePrefill = (item, sn, isBundling) => {
+    // Unit maintenance tidak boleh masuk prefill booking (server juga menolak).
+    if (!isBundling && kondisiUnit(item, sn) === "maintenance") return;
     if (isBundling) {
       const ada = prefillItems.some(
         (p) => String(p.idBarang) === String(item.id) && p.sn === null,
@@ -1347,17 +1351,25 @@ export default function TrackingPage() {
                             <input
                               type="checkbox"
                               checked={isPrefillChecked(row.item, row.sn)}
+                              disabled={row.maintenance}
                               onChange={() =>
                                 togglePrefill(row.item, row.sn, false)
                               }
                               aria-label={`Pilih S/N ${row.label}`}
+                              title={
+                                row.maintenance
+                                  ? "Sedang maintenance, tidak bisa dipesan"
+                                  : undefined
+                              }
                               style={{
                                 flexShrink: 0,
                                 width: 15,
                                 height: 15,
                                 marginRight: 8,
                                 accentColor: "var(--color-primary)",
-                                cursor: "pointer",
+                                cursor: row.maintenance
+                                  ? "not-allowed"
+                                  : "pointer",
                               }}
                             />
                             <span
@@ -1369,16 +1381,31 @@ export default function TrackingPage() {
                                 fontWeight: 500,
                                 fontFamily:
                                   "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-                                ...(row.pseudo
-                                  ? {
-                                      fontStyle: "italic",
-                                      color: "var(--text-muted)",
-                                    }
-                                  : { color: "var(--text-secondary)" }),
+                                ...(row.maintenance
+                                  ? { color: "var(--text-muted)", opacity: 0.5 }
+                                  : row.pseudo
+                                    ? {
+                                        fontStyle: "italic",
+                                        color: "var(--text-muted)",
+                                      }
+                                    : { color: "var(--text-secondary)" }),
                               }}
                             >
                               {row.label}
                             </span>
+                            {row.maintenance && (
+                              <span
+                                style={{
+                                  flexShrink: 0,
+                                  marginLeft: 6,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  color: "#dc2626",
+                                }}
+                              >
+                                Maintenance
+                              </span>
+                            )}
                           </>
                         ) : (
                           <span

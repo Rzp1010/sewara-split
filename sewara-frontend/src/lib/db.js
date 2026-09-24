@@ -367,12 +367,23 @@ export async function getTransactionById(id) {
   return transaction;
 }
 
+// Pesan error server terakhir (mis. tolak SN maintenance), dibaca caller via
+// getLastDbError() supaya bisa tampil persis, bukan digantikan pesan generik.
+let _dbError = null;
+export function getLastDbError() {
+  const m = _dbError;
+  _dbError = null;
+  return m;
+}
+
 export async function tambahTransactions(rows) {
   if (!rows || rows.length === 0) return true;
+  _dbError = null;
   try {
     for (const tx of rows) await api.transactions.create(tx);
   } catch (e) {
     console.error('tambahTransactions error:', e.message);
+    _dbError = e.message;
     laporError(`Gagal menyimpan transaksi: ${e.message}`);
     return false;
   }
@@ -382,10 +393,12 @@ export async function tambahTransactions(rows) {
 
 export async function updateTransactions(rows) {
   if (!rows || rows.length === 0) return true;
+  _dbError = null;
   try {
     for (const tx of rows) await api.transactions.update(tx.id, tx);
   } catch (e) {
     console.error('updateTransactions error:', e.message);
+    _dbError = e.message;
     laporError(`Gagal memperbarui transaksi: ${e.message}`);
     return false;
   }

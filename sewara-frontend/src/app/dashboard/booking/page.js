@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions } from "@/lib/db";
+import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions } from "@/lib/db";
 import { useDebounce } from "use-debounce";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
@@ -1294,7 +1294,8 @@ export default function BookingPage() {
 
         if (!(await updateTransactions([target])))
           return notify(
-            "Gagal menggabungkan item ke booking. Silakan coba lagi.",
+            getLastDbError() ||
+              "Gagal menggabungkan item ke booking. Silakan coba lagi.",
             "error",
           );
         if (promoDipilih) {
@@ -1385,7 +1386,10 @@ export default function BookingPage() {
 
       const okSimpan = await tambahTransactions([trxBaru]);
       if (!okSimpan)
-        return notify("Gagal menyimpan booking. Silakan coba lagi.", "error");
+        return notify(
+          getLastDbError() || "Gagal menyimpan booking. Silakan coba lagi.",
+          "error",
+        );
       if (promoDipilih) {
         const r = await pakaiPromo(promoDipilih.id);
         if (!r.ok) notify("Gagal menerapkan promo: " + r.error, "error");
@@ -1772,7 +1776,10 @@ export default function BookingPage() {
       };
       const invUpdate = tempInv.filter((i) => invDiubah.has(i.id));
       if (!(await updateTransactions([trxBaru])))
-        return notify("Gagal memperbarui jadwal. Silakan coba lagi.", "error");
+        return notify(
+          getLastDbError() || "Gagal memperbarui jadwal. Silakan coba lagi.",
+          "error",
+        );
       if (!(await updateInventory(invUpdate)))
         return notify(
           "Jadwal tersimpan, tapi gagal memperbarui stok. Cek inventaris!",
