@@ -44,7 +44,7 @@ export const POST = withErrorHandler(async (request) => {
   const user = await requireAuth(supabase);
 
   const body = await request.json();
-  const rows = Array.isArray(body) ? body : [body];
+  const rows = (Array.isArray(body) ? body : [body]).map(({ id, ...rest }) => rest);
   
   // Stamp user_id untuk RLS
   const stamped = await withTenant(supabase, user.id, rows);
