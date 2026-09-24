@@ -175,6 +175,11 @@ export const memberUploadLimiter = createRateLimiter(
   RATE_LIMITS.MEMBER_UPLOAD.window
 );
 
+export const pembayaranUploadLimiter = createRateLimiter(
+  RATE_LIMITS.PEMBAYARAN_UPLOAD.requests,
+  RATE_LIMITS.PEMBAYARAN_UPLOAD.window
+);
+
 export const emailResendPerEmailLimiter = createRateLimiter(
   RATE_LIMITS.EMAIL_RESEND_PER_EMAIL.requests,
   RATE_LIMITS.EMAIL_RESEND_PER_EMAIL.window

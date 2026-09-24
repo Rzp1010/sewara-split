@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Storage abstraction untuk future-proof migration
@@ -45,10 +45,36 @@ class R2StorageSSE extends StorageProvider {
     return await getSignedUrl(this.client, command, { expiresIn });
   }
 
-  async delete(key) {
+async delete(key) {
     const command = new DeleteObjectCommand({
       Bucket: this.bucket,
       Key: key,
+    });
+    return await this.client.send(command);
+  }
+
+  async get(key) {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+    const res = await this.client.send(command);
+    return Buffer.from(await res.Body.transformToByteArray());
+  }
+
+  async list(prefix, continuationToken) {
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucket,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    });
+    return await this.client.send(command);
+  }
+
+  async deleteMany(keys) {
+    const command = new DeleteObjectsCommand({
+      Bucket: this.bucket,
+      Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true },
     });
     return await this.client.send(command);
   }

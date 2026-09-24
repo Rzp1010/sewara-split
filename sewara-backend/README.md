@@ -115,6 +115,7 @@ Tambahan dari `.env.production.example`:
 | Variabel | Wajib | Keterangan |
 |---|---|---|
 | `OWNER_EMAILS` | opsional | Daftar email owner (comma-separated) |
+| `PURGE_SECRET` | untuk purge | Secret header `x-purge-secret` untuk `POST /api/pembayaran/purge` (dipanggil cron VPS) |
 | `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | untuk upload | Kredensial Cloudflare R2 (foto/dokumen member) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | opsional | Notifikasi Telegram |
 | `PORT` | ya (produksi) | Port backend, harus sama dengan target `proxy_pass` Nginx |
@@ -178,6 +179,21 @@ Format response standar: sukses `{ ok: true, data: {...} }`, error `{ ok: false,
 | DELETE | `/api/member-types/[id]` | requireAuth | Hapus tipe member |
 | GET | `/api/member/photo` | requireAuth | Generate signed URL dokumen member dari R2 |
 | POST | `/api/member/upload` | requireAuth | Upload dokumen/foto member ke R2 |
+
+### Pembayaran (Foto Bukti)
+
+| Method | Path | Auth | Fungsi |
+|---|---|---|---|
+| POST | `/api/pembayaran/upload` | requireAuth | Upload foto bukti bayar transaksi ke R2 (multipart: `file`, `transaksiId`; JPG/PNG/WebP maks 5 MB) |
+| GET | `/api/pembayaran/photo` | requireAuth | Generate signed URL bukti bayar (`?path=`) |
+| GET | `/api/pembayaran/export` | requireAuth | ZIP semua bukti bayar satu bulan (`?bulan=YYYY-MM`) |
+| POST | `/api/pembayaran/purge` | header secret | Purge bukti bayar lebih tua dari 2 bulan (dipanggil cron VPS, `x-purge-secret`) |
+
+Catatan purge: retensi bukti bayar **tidak** memakai lifecycle R2 — dilakukan lewat route purge. Set env `PURGE_SECRET` di `.env` backend produksi, lalu tambah crontab di VPS (sesuaikan port backend lokal VPS, contoh 3001):
+
+```cron
+0 3 15 * * curl -s -X POST -H "x-purge-secret: <isi PURGE_SECRET>" http://localhost:3001/api/pembayaran/purge
+```
 
 ### Promo
 

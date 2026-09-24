@@ -32,6 +32,12 @@ export const RATE_LIMITS = {
     window: '1m', // 60 seconds
   },
   
+// Pembayaran (bukti bayar) upload
+  PEMBAYARAN_UPLOAD: {
+    requests: 50,
+    window: '1m',
+  },
+
   // Email resend
   EMAIL_RESEND_PER_EMAIL: {
     requests: 3,
