@@ -2158,6 +2158,7 @@ export default function StatusPage() {
                         </p>
                       </div>
                     )}
+                    {(parseFloat(bayarJumlah) || 0) > 0 && (
                     <div className="mt-3">
                       <label className="block text-sm font-medium">
                         Bukti Bayar (opsional)
@@ -2208,6 +2209,7 @@ export default function StatusPage() {
                         )}
                       </div>
                     </div>
+                    )}
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setBayarTrx(null)}
