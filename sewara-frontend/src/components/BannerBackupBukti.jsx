@@ -37,13 +37,8 @@ export default function BannerBackupBukti() {
 
   useEffect(() => {
     let aktif = true;
-    // ?ujiBanner=1 di URL halaman = abaikan window tgl 8-15 (testing lokal).
-    // ponytail: hapus override saat fitur stabil bila mau.
-    const uji =
-      typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("ujiBanner") === "1";
     api.pembayaran
-      .reminder(uji ? { uji: 1 } : undefined)
+      .reminder()
       .then((data) => {
         if (aktif && data?.show) setReminder(data);
       })

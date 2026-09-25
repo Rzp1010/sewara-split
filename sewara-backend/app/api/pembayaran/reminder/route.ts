@@ -5,8 +5,6 @@
  * Banner peringatan backup bukti bayar. Window tgl 8..15 WIB bulan berjalan.
  * target = bulan berjalan - 2 (framing lebih ketat 1 bulan dari purge asli:
  * yang benar-benar dihapus cycle ini = bulan berjalan - 3).
- *
- * Query `uji=1` = abaikan window (testing). // ponytail: override uji untuk testing; hapus saat fitur stabil bila mau
  */
 import { withErrorHandler } from '@/lib/api/errors';
 import { requireAuth } from '@/lib/api/auth';
@@ -64,16 +62,13 @@ async function reminderHandler(request) {
   const supabase = await getServerClient();
   const user = await requireAuth(supabase, 'Anda harus login terlebih dahulu.');
 
-  const url = new URL(request.url);
-  const uji = url.searchParams.get('uji') === '1';
-
   const nowWib = new Date(Date.now() + WIB_OFFSET_MS);
   const y = nowWib.getUTCFullYear();
   const m = nowWib.getUTCMonth(); // 0-based
   const day = nowWib.getUTCDate();
 
   // Window tampilkan: tgl 8..15 WIB bulan berjalan.
-  if (!uji && (day < 8 || day > 15)) {
+  if (day < 8 || day > 15) {
     return successResponse({ show: false });
   }
 
@@ -120,30 +115,6 @@ async function reminderHandler(request) {
     .eq('key', 'bukti_backup_ack')
     .maybeSingle();
   const ack = readAckValue(setting?.value);
-
-  // Mode uji: BYPASS SEMUA — window tanggal, jumlah file, dan ack.
-  // Banner pasti tampil selama uji=1 dikirim. Bulan = terakhir yang punya
-  // bukti (fallback: bulan berjalan) supaya copy tetap masuk akal.
-  if (uji) {
-    const counts = {};
-    for (const trx of transactions) {
-      for (const r of trx.pembayaran?.riwayatBayar || []) {
-        if (r && typeof r.bukti === 'string' && r.bukti) {
-          const b = tglEntri(r).slice(0, 7);
-          if (/^\d{4}-\d{2}$/.test(b)) counts[b] = (counts[b] || 0) + 1;
-        }
-      }
-    }
-    const maxBulan = Object.keys(counts).sort().pop();
-    const t = maxBulan || monthStr(y, m);
-    const [ty, tm] = t.split('-').map(Number);
-    return successResponse({
-      show: true,
-      bulan: t,
-      purgeTanggal: `${monthStr(ty, tm - 1 + 2)}-15`,
-      jumlah: maxBulan ? counts[maxBulan] : 0,
-    });
-  }
 
   const show = ack !== bulanTampil && (jumlahTarget > 0 || jumlahSebelum > 0);
 
