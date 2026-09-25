@@ -121,6 +121,29 @@ async function reminderHandler(request) {
     .maybeSingle();
   const ack = readAckValue(setting?.value);
 
+  // Mode uji: abaikan window & bulan terancam — tampilkan bulan terakhir
+  // yang benar-benar punya bukti supaya banner bisa dites kapan pun.
+  if (uji) {
+    const counts = {};
+    for (const trx of transactions) {
+      for (const r of trx.pembayaran?.riwayatBayar || []) {
+        if (r && typeof r.bukti === 'string' && r.bukti) {
+          const b = tglEntri(r).slice(0, 7);
+          if (/^\d{4}-\d{2}$/.test(b)) counts[b] = (counts[b] || 0) + 1;
+        }
+      }
+    }
+    const maxBulan = Object.keys(counts).sort().pop();
+    const t = maxBulan || target;
+    const [ty, tm] = t.split('-').map(Number);
+    return successResponse({
+      show: ack !== t,
+      bulan: t,
+      purgeTanggal: `${monthStr(ty, tm - 1 + 2)}-15`,
+      jumlah: maxBulan ? counts[maxBulan] : 0,
+    });
+  }
+
   const show = ack !== bulanTampil && (jumlahTarget > 0 || jumlahSebelum > 0);
 
   return successResponse({ show, bulan: bulanTampil, purgeTanggal, jumlah: jumlahTampil });
