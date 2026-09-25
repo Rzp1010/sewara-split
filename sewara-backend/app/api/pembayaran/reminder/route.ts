@@ -121,8 +121,9 @@ async function reminderHandler(request) {
     .maybeSingle();
   const ack = readAckValue(setting?.value);
 
-  // Mode uji: abaikan window & bulan terancam — tampilkan bulan terakhir
-  // yang benar-benar punya bukti supaya banner bisa dites kapan pun.
+  // Mode uji: BYPASS SEMUA — window tanggal, jumlah file, dan ack.
+  // Banner pasti tampil selama uji=1 dikirim. Bulan = terakhir yang punya
+  // bukti (fallback: bulan berjalan) supaya copy tetap masuk akal.
   if (uji) {
     const counts = {};
     for (const trx of transactions) {
@@ -134,10 +135,10 @@ async function reminderHandler(request) {
       }
     }
     const maxBulan = Object.keys(counts).sort().pop();
-    const t = maxBulan || target;
+    const t = maxBulan || monthStr(y, m);
     const [ty, tm] = t.split('-').map(Number);
     return successResponse({
-      show: ack !== t,
+      show: true,
       bulan: t,
       purgeTanggal: `${monthStr(ty, tm - 1 + 2)}-15`,
       jumlah: maxBulan ? counts[maxBulan] : 0,
