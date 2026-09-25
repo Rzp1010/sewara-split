@@ -188,6 +188,8 @@ Format response standar: sukses `{ ok: true, data: {...} }`, error `{ ok: false,
 | GET | `/api/pembayaran/photo` | requireAuth | Generate signed URL bukti bayar (`?path=`) |
 | GET | `/api/pembayaran/export` | requireAuth | ZIP semua bukti bayar satu bulan (`?bulan=YYYY-MM`) |
 | POST | `/api/pembayaran/purge` | header secret | Purge bukti bayar lebih tua dari 2 bulan (dipanggil cron VPS, `x-purge-secret`) |
+| GET | `/api/pembayaran/reminder` | requireAuth | Banner warning backup bukti bayar (window tgl 8–15 WIB; `?uji=1` abaikan window) |
+| POST | `/api/pembayaran/reminder-ack` | requireAuth | Tandai banner reminder sudah di-ack (body `{ bulan: "YYYY-MM" }`) |
 
 Catatan purge: retensi bukti bayar **tidak** memakai lifecycle R2 — dilakukan lewat route purge. Set env `PURGE_SECRET` di `.env` backend produksi, lalu tambah crontab di VPS (sesuaikan port backend lokal VPS, contoh 3001):
 
