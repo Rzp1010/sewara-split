@@ -2779,277 +2779,334 @@ export default function BookingPage() {
       {typeof document !== "undefined" &&
         editModal &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
-            <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
-              <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Edit Booking {editForm.penyewa || editModal.no_invoice}
+          <div
+            onClick={() => setEditModal(null)}
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+            >
+              <div className="mb-4 flex items-center justify-between px-6 pt-6">
+                <h3 className="text-lg font-semibold">
+                  Edit Booking
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    {editForm.penyewa || editModal.no_invoice}
+                  </span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setEditModal(null)}
                   aria-label="Tutup"
-                  className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-xl font-semibold text-gray-600 transition-colors hover:bg-surface-secondary focus:outline-none"
                 >
                   &times;
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-full">
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                      Penyewa
-                    </label>
-                    <input
-                      value={editForm.penyewa}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, penyewa: e.target.value })
-                      }
-                      className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                      No. HP
-                    </label>
-                    <input
-                      value={editForm.hp_penyewa}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, hp_penyewa: e.target.value })
-                      }
-                      inputMode="numeric"
-                      className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                      Jaminan
-                    </label>
-                    <SearchableSelect
-                      options={OPSI_JAMINAN}
-                      value={editForm.jaminan_sewa}
-                      onChange={(v) =>
-                        setEditForm({ ...editForm, jaminan_sewa: v })
-                      }
-                      placeholder="Pilih jaminan..."
-                      noSearch
-                    />
-                  </div>
-                  <div className="col-span-full">
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                      Alamat
-                    </label>
-                    <textarea
-                      value={editForm.alamat_penyewa}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          alamat_penyewa: e.target.value,
-                        })
-                      }
-                      rows={1}
-                      className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 resize-y"
-                    />
-                  </div>
-                  {printilanDaftar.length > 0 && (
+
+              <div className="flex-1 overflow-y-auto px-6">
+                <div className="flex items-center gap-3 mb-3 bg-slate-50 rounded-lg p-3">
+                  <span className="font-semibold">{editModal.no_invoice}</span>
+                  <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-slate-200 text-slate-700">
+                    {editModal.status}
+                  </span>
+                </div>
+
+                {/* Identitas Penyewa */}
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                    Identitas Penyewa
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-full">
-                      <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                        Printilan
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Penyewa
                       </label>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2">
-                        {printilanDaftar.map((item) => (
-                          <label
-                            key={item}
-                            className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={printilanTerpilih.includes(item)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setPrintilanTerpilih([
-                                    ...printilanTerpilih,
-                                    item,
-                                  ]);
-                                } else {
-                                  setPrintilanTerpilih(
-                                    printilanTerpilih.filter((x) => x !== item),
-                                  );
-                                }
-                              }}
-                              className="h-4 w-4 rounded border-gray-300 accent-[#7181E0]"
-                            />
-                            {item}
-                          </label>
-                        ))}
-                      </div>
                       <input
-                        type="text"
-                        value={printilanCustom}
-                        onChange={(e) => setPrintilanCustom(e.target.value)}
-                        placeholder="Printilan lain (pisahkan dengan koma)..."
-                        className="appearance-none border-solid rounded-md mt-3 block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                        value={editForm.penyewa}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, penyewa: e.target.value })
+                        }
+                        className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
                       />
                     </div>
-                  )}
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600 text-[#7181E0]">
-                      Waktu Ambil
-                    </label>
-                    <DateTimePicker
-                      value={editForm.waktu_ambil_rencana}
-                      onChange={(v) =>
-                        ubahEditWaktu({ waktu_ambil_rencana: v })
-                      }
-                      minDate={new Date()}
-                      filterTime={filterTime}
-                      showTime
-                      placeholder="Pilih tgl & jam"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600 text-[#F04438]">
-                      Waktu Kembali
-                    </label>
-                    <DateTimePicker
-                      value={editForm.waktu_kembali_rencana}
-                      onChange={(v) =>
-                        ubahEditWaktu({ waktu_kembali_rencana: v })
-                      }
-                      minDate={editForm.waktu_ambil_rencana || new Date()}
-                      showTime
-                      placeholder="Pilih tgl & jam"
-                    />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        No. HP
+                      </label>
+                      <input
+                        value={editForm.hp_penyewa}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            hp_penyewa: e.target.value,
+                          })
+                        }
+                        inputMode="numeric"
+                        className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Jaminan
+                      </label>
+                      <SearchableSelect
+                        options={OPSI_JAMINAN}
+                        value={editForm.jaminan_sewa}
+                        onChange={(v) =>
+                          setEditForm({ ...editForm, jaminan_sewa: v })
+                        }
+                        placeholder="Pilih jaminan..."
+                        noSearch
+                      />
+                    </div>
+                    <div className="col-span-full">
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Alamat
+                      </label>
+                      <textarea
+                        value={editForm.alamat_penyewa}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            alamat_penyewa: e.target.value,
+                          })
+                        }
+                        rows={2}
+                        className="w-full resize-y rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div className="overflow-x-auto mb-2">
-                    <table className="w-full text-13">
-                      <thead>
-                        <tr>
-                          <th>Barang</th>
-                          <th>S/N</th>
-                          <th className="text-center">Qty</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {editItems.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="text-center text-gray-500 italic"
-                            >
-                              Belum ada barang.
-                            </td>
-                          </tr>
-                        )}
-                        {editItems.map((item, idx) => (
-                          <tr key={idx}>
-                            <td className="font-semibold">{item.ref.nama}</td>
-                            <td className="text-xs text-[#7181E0]">
-                              {item.ref.jenis === "satuan"
-                                ? item.sn
-                                : "Paket Bundling"}
-                            </td>
-                            <td className="text-center">{item.qty}</td>
-                            <td className="text-right">
-                              <button
-                                type="button"
-                                onClick={() => hapusEditItem(idx)}
-                                className="text-xs font-bold text-danger"
-                                style={{
-                                  background: "none",
-                                  border: 0,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Hapus
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+
+                {/* Jadwal */}
+                <div className="mt-3 bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                    Jadwal
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#7181E0] mb-1">
+                        Waktu Ambil
+                      </label>
+                      <DateTimePicker
+                        value={editForm.waktu_ambil_rencana}
+                        onChange={(v) =>
+                          ubahEditWaktu({ waktu_ambil_rencana: v })
+                        }
+                        minDate={new Date()}
+                        filterTime={filterTime}
+                        showTime
+                        placeholder="Pilih tgl & jam"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#F04438] mb-1">
+                        Waktu Kembali
+                      </label>
+                      <DateTimePicker
+                        value={editForm.waktu_kembali_rencana}
+                        onChange={(v) =>
+                          ubahEditWaktu({ waktu_kembali_rencana: v })
+                        }
+                        minDate={editForm.waktu_ambil_rencana || new Date()}
+                        showTime
+                        placeholder="Pilih tgl & jam"
+                      />
+                    </div>
                   </div>
-                  <details
-                    style={{
-                      border: "1px solid #7181E0",
-                      borderRadius: "rounded-xl",
-                      background: "#7181E0/10",
-                      padding: "p-3",
-                    }}
-                  >
-                    <summary
-                      className="text-xs font-bold"
-                      style={{
-                        color: "#7181E0",
-                        cursor: "pointer",
-                        userSelect: "none",
-                      }}
-                    >
-                      + Tambah Barang
-                    </summary>
-                    <div className="flex flex-col gap-2 mt-2">
-                      {(() => {
-                        return (
-                          <SearchableSelect
-                            options={opsiEdit}
-                            value={editSelectedId}
-                            onChange={async (v) => {
-                              setEditSelectedId(v);
-                              if (v) {
-                                await isiSnEdit(v);
-                                const qtyInp =
-                                  document.getElementById("edit_qty_input");
-                                if (qtyInp) {
-                                  const item = inv.find((i) => i.id == v);
-                                  if (item?.jenis === "satuan")
-                                    qtyInp.style.display = "none";
-                                  else {
-                                    qtyInp.style.display = "";
-                                    qtyInp.value = 1;
-                                  }
-                                }
+                </div>
+
+                {/* Printilan */}
+                {printilanDaftar.length > 0 && (
+                  <div className="mt-3 bg-slate-50 rounded-lg p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                      Printilan
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {printilanDaftar.map((item) => (
+                        <label
+                          key={item}
+                          className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={printilanTerpilih.includes(item)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPrintilanTerpilih([
+                                  ...printilanTerpilih,
+                                  item,
+                                ]);
+                              } else {
+                                setPrintilanTerpilih(
+                                  printilanTerpilih.filter((x) => x !== item),
+                                );
                               }
                             }}
-                            placeholder="-- Pilih Barang --"
+                            className="h-4 w-4 rounded border-gray-300 accent-[#7181E0]"
                           />
-                        );
-                      })()}
-                      <div
-                        id="area_edit_sn"
-                        style={{ display: showEditSn ? "" : "none" }}
-                      >
-                        <SearchableSelect
-                          options={editSnOptions}
-                          value={editSnDipilih}
-                          onChange={(v) => setEditSnDipilih(v)}
-                          placeholder="Pilih S/N..."
-                          noSearch
-                        />
-                      </div>
-                      <input
-                        type="number"
-                        id="edit_qty_input"
-                        className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
-                        style={{ display: "none" }}
-                        defaultValue={1}
-                        min={1}
-                      />
-                      <button
-                        type="button"
-                        onClick={tambahEditItem}
-                        className="px-4 py-2 rounded bg-[#579171] text-white w-full text-13"
-                      >
-                        + Tambahkan
-                      </button>
+                          {item}
+                        </label>
+                      ))}
                     </div>
-                  </details>
+                    <input
+                      type="text"
+                      value={printilanCustom}
+                      onChange={(e) => setPrintilanCustom(e.target.value)}
+                      placeholder="Printilan lain (pisahkan dengan koma)..."
+                      className="mt-3 w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
+                    />
+                  </div>
+                )}
+
+                {/* Barang */}
+                <div className="mt-3 rounded-xl border-2 border-solid border-slate-200 overflow-hidden">
+                  <p className="font-semibold mb-2 px-3 pt-3">Barang</p>
+                  <table className="table-fixed w-full border-collapse text-sm">
+                    <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Nama Barang</th>
+                        <th className="px-4 py-3 text-center">Qty</th>
+                        <th className="px-4 py-3 text-left">S/N / Komponen</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editItems.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-4 py-6 text-center text-gray-500 italic"
+                          >
+                            Belum ada barang.
+                          </td>
+                        </tr>
+                      )}
+                      {editItems.map((item, idx) => (
+                        <tr key={idx} className="bg-white even:bg-slate-50">
+                          <td className="px-4 py-3 align-middle font-semibold">
+                            {item.ref.nama}
+                          </td>
+                          <td className="px-4 py-3 align-middle text-center text-gray-600">
+                            {item.qty}x
+                          </td>
+                          <td className="px-4 py-3 align-middle text-gray-600">
+                            {item.ref.jenis === "satuan" ? (
+                              <span
+                                className="text-xs"
+                                style={{ fontFamily: "ui-monospace, monospace" }}
+                              >
+                                {item.sn}
+                              </span>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                {(item.assignedSNs || []).length === 0 ? (
+                                  <span className="text-xs">Paket Bundling</span>
+                                ) : (
+                                  (item.assignedSNs || []).map((a, ai) => (
+                                    <div key={ai}>
+                                      <span className="font-semibold">
+                                        {a.nama}:
+                                      </span>{" "}
+                                      <span
+                                        className="text-xs"
+                                        style={{
+                                          fontFamily: "ui-monospace, monospace",
+                                        }}
+                                      >
+                                        {(a.sns || []).join(", ")}
+                                      </span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 align-middle text-right">
+                            <button
+                              type="button"
+                              onClick={() => hapusEditItem(idx)}
+                              className="border-0 bg-transparent text-xs font-bold text-danger"
+                              style={{ cursor: "pointer" }}
+                            >
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+
+                {/* Tambah Barang */}
+                <details className="mt-3 rounded-xl border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-3">
+                  <summary
+                    className="text-xs font-bold"
+                    style={{
+                      color: "#7181E0",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                  >
+                    + Tambah Barang
+                  </summary>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <SearchableSelect
+                      options={opsiEdit}
+                      value={editSelectedId}
+                      onChange={async (v) => {
+                        setEditSelectedId(v);
+                        if (v) {
+                          await isiSnEdit(v);
+                          const qtyInp =
+                            document.getElementById("edit_qty_input");
+                          if (qtyInp) {
+                            const item = inv.find((i) => i.id == v);
+                            if (item?.jenis === "satuan")
+                              qtyInp.style.display = "none";
+                            else {
+                              qtyInp.style.display = "";
+                              qtyInp.value = 1;
+                            }
+                          }
+                        }
+                      }}
+                      placeholder="-- Pilih Barang --"
+                    />
+                    <div
+                      id="area_edit_sn"
+                      style={{ display: showEditSn ? "" : "none" }}
+                    >
+                      <SearchableSelect
+                        options={editSnOptions}
+                        value={editSnDipilih}
+                        onChange={(v) => setEditSnDipilih(v)}
+                        placeholder="Pilih S/N..."
+                        noSearch
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      id="edit_qty_input"
+                      className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
+                      style={{ display: "none" }}
+                      defaultValue={1}
+                      min={1}
+                    />
+                    <button
+                      type="button"
+                      onClick={tambahEditItem}
+                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] w-full"
+                    >
+                      Tambahkan
+                    </button>
+                  </div>
+                </details>
               </div>
-              <div className="border-t border-slate-200 pt-4">
-                <div className="flex items-center gap-2 flex-wrap">
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-solid border-slate-200 px-6 pb-6 pt-4">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={batalkanBooking}
@@ -3059,26 +3116,30 @@ export default function BookingPage() {
                         ? "Barang sudah diambil. Gunakan Terima Kembali di board Status Sewa."
                         : ""
                     }
-                    className={`px-4 py-2 rounded ${editModal.status === "Disewa" || loading ? "border border-[#7181E0] text-[#7181E0]" : "bg-[#F04438] text-white"}`}
+                    className={
+                      editModal.status === "Disewa" || loading
+                        ? "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 border-2 border-solid border-[#7181E0] text-[#7181E0] bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                        : "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#F04438] text-white shadow-sm hover:bg-[#d03a2f]"
+                    }
                   >
                     Batalkan
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditModal(null)}
-                    className="px-4 py-2 rounded bg-transparent"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary"
                   >
                     Tutup
                   </button>
-                  <button
-                    type="button"
-                    onClick={simpanEdit}
-                    disabled={Boolean(loading)}
-                    className="px-4 py-2 rounded bg-[#579171] text-white"
-                  >
-                    Simpan
-                  </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={simpanEdit}
+                  disabled={Boolean(loading)}
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Simpan
+                </button>
               </div>
             </div>
           </div>,
