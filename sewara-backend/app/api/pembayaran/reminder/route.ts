@@ -107,6 +107,11 @@ async function reminderHandler(request) {
   const jumlahTarget = countMonth(transactions, target);
   const jumlahSebelum = countMonth(transactions, bulanSebelumTarget);
 
+  // Bila bulan target kosong tapi bulan yang benar2 dihapus cycle ini berisi,
+  // arahkan peringatan ke bulan yang ada file-nya (yang akan hilang duluan).
+  const bulanTampil = jumlahTarget > 0 ? target : bulanSebelumTarget;
+  const jumlahTampil = jumlahTarget > 0 ? jumlahTarget : jumlahSebelum;
+
   // Ack: settings tenant key `bukti_backup_ack` (value = YYYY-MM terakhir di-ack).
   const { data: setting } = await supabase
     .from('settings')
@@ -116,9 +121,9 @@ async function reminderHandler(request) {
     .maybeSingle();
   const ack = readAckValue(setting?.value);
 
-  const show = ack !== target && (jumlahTarget > 0 || jumlahSebelum > 0);
+  const show = ack !== bulanTampil && (jumlahTarget > 0 || jumlahSebelum > 0);
 
-  return successResponse({ show, bulan: target, purgeTanggal, jumlah: jumlahTarget });
+  return successResponse({ show, bulan: bulanTampil, purgeTanggal, jumlah: jumlahTampil });
 }
 
 export const GET = withErrorHandler(reminderHandler);
