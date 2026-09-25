@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
@@ -14,6 +14,7 @@ import { successResponse, validationErrorResponse, forbiddenResponse, unauthoriz
 export const runtime = "nodejs";
 
 async function loginHandler(request) {
+  const t0 = Date.now();
   const validation = await parseAndValidate(request, loginSchema);
   if (!validation.success) return validationErrorResponse("Email dan password wajib diisi.");
   const { email, password } = validation.data;
@@ -24,8 +25,12 @@ async function loginHandler(request) {
   if (!supabaseUrl || !anonKey || !serviceKey) return internalErrorResponse("Server belum dikonfigurasi.");
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  const { data: profil } = await admin.from("profiles").select("user_id, role, is_active, owner_id, failed_login, last_failed_at, cooldown_until, locked_until, status, subscribed_until").eq("email", email).maybeSingle();
   const now = Date.now();
+  const [{ data: profil }, rateLimit] = await Promise.all([
+    admin.from("profiles").select("user_id, role, is_active, owner_id, failed_login, last_failed_at, cooldown_until, locked_until, status, subscribed_until").eq("email", email).maybeSingle(),
+    checkLoginRateLimit(admin, email, request.headers, now),
+  ]);
+  const guardMs = Date.now() - t0;
   const gagal = (detail, error, status, extra, headers) => {
     logLoginEvent(admin, { email, ownerId: profil?.owner_id, event: "login_gagal", detail, headers: headers || request.headers }).catch((e) => logError(e, {
       route: '/api/auth/login',
@@ -45,16 +50,11 @@ async function loginHandler(request) {
   };
   if (profil?.status === "menunggu") return gagal("akun menunggu persetujuan", "Akun Anda menunggu persetujuan admin.", 403);
   if (profil?.subscribed_until && new Date(profil.subscribed_until).getTime() < now) return gagal("langganan berakhir", "Langganan berakhir. Hubungi admin untuk perpanjang.", 401);
-  if (profil?.user_id) {
-    const { data: authUser, error: authUserErr } = await admin.auth.admin.getUserById(profil.user_id);
-    if (!authUserErr && authUser?.user && !authUser.user.email_confirmed_at) return gagal("email belum diverifikasi", "Email belum diverifikasi. Periksa inbox email Anda.", 403);
-  }
   if (profil && profil.is_active === false) return gagal("akun nonaktif", "Email atau password salah.", 401);
   const lockout = checkLockout(profil, now);
   if (lockout?.blocked) return gagal("akun terkunci", `Akun terkunci. Coba lagi sekitar ${lockout.jam} (${lockout.sisaMenit} menit) atau hubungi atasan.`, 423, { retryAfterMs: lockout.sisaMenit * MENIT_MS }, { "Retry-After": String(lockout.retryAfterSeconds) });
   const cooldown = checkCooldown(profil, now);
   if (cooldown?.blocked) return gagal("terlalu banyak percobaan", `Terlalu banyak percobaan. Coba lagi dalam ${cooldown.sisaMenit} menit.`, 429, { retryAfterMs: cooldown.sisaMenit * MENIT_MS }, { "Retry-After": String(cooldown.retryAfterSeconds) });
-  const rateLimit = await checkLoginRateLimit(admin, email, request.headers, now);
   if (rateLimit.blocked) return gagal(`rate limit ${rateLimit.reason}`, "Terlalu banyak percobaan dari perangkat ini. Coba lagi nanti.", 429, { retryAfterMs: rateLimit.retryAfterMs }, { "Retry-After": String(rateLimit.retryAfterSeconds) });
   const cookieStore = await cookies();
   const isSecure = process.env.NODE_ENV === "production" || request.headers.get("x-forwarded-proto") === "https";
@@ -64,17 +64,26 @@ async function loginHandler(request) {
     cookieOptions: { sameSite: "lax", path: "/", secure: isSecure, httpOnly: false },
   });
   const { data: sess, error: signErr } = await supabase.auth.signInWithPassword({ email, password });
+  console.log("[login-timing]", { guardMs, signInMs: Date.now() - t0 - guardMs, ok: !signErr });
   if (signErr || !sess?.session) {
-    logLoginEvent(admin, { email, ownerId: profil?.owner_id, event: "login_gagal", detail: profil ? "password salah" : "email tidak dikenal", headers: request.headers }).catch((e) => logError(e, {
+    const belumKonfirmasi = /Email not confirmed/i.test(signErr?.message || "");
+    logLoginEvent(admin, { email, ownerId: profil?.owner_id, event: "login_gagal", detail: belumKonfirmasi ? "email belum diverifikasi" : (profil ? "password salah" : "email tidak dikenal"), headers: request.headers }).catch((e) => logError(e, {
       route: '/api/auth/login',
       operation: 'log_login_event',
       email
     }));
+    if (belumKonfirmasi) return forbiddenResponse("Email belum diverifikasi. Periksa inbox email Anda.");
     await registerLoginFailure(admin, profil, now);
     return unauthorizedResponse("Email atau password salah.");
   }
-  await resetLockout(admin, profil?.user_id);
-  await logLoginEvent(admin, { email, ownerId: profil?.owner_id || profil?.user_id, event: "login_sukses", detail: null, headers: request.headers });
+  after(async () => {
+    try {
+      await resetLockout(admin, profil?.user_id);
+      await logLoginEvent(admin, { email, ownerId: profil?.owner_id || profil?.user_id, event: "login_sukses", detail: null, headers: request.headers });
+    } catch (e) {
+      logError(e, { route: "/api/auth/login", operation: "post_login_bookkeeping" });
+    }
+  });
   const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0]?.trim() || null;
   notifyLoginToTelegram(admin, { email, event: "login_sukses", detail: null, ip }).catch((e) => logError(e, {
     route: '/api/auth/login',
@@ -82,6 +91,7 @@ async function loginHandler(request) {
     email,
     event: 'login_sukses'
   }));
+  console.log("[login-timing]", { totalMs: Date.now() - t0 });
   return successResponse({ ok: true });
 }
 
