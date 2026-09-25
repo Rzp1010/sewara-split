@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { formatRupiah } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import ModalBuktiBayar from "@/components/ModalBuktiBayar";
+import BannerBackupBukti from "@/components/BannerBackupBukti";
 
 const BULAN_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -36,12 +38,22 @@ const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
   ),
 });
 
-export default function RiwayatPage() {
+function RiwayatPageInner() {
   const { notify } = useNotify();
+  const searchParams = useSearchParams();
   const [trx, setTrx] = useState([]);
   const [halaman, setHalaman] = useState(1);
   const perHalaman = 50;
   const [bulanEkspor, setBulanEkspor] = useState(() => bulanLokal(new Date()));
+  const [bulanEkstra, setBulanEkstra] = useState(null);
+
+  // Terima ?ekspor=YYYY-MM dari banner pengingat backup.
+  useEffect(() => {
+    const q = searchParams.get("ekspor");
+    if (!q || !/^\d{4}-\d{2}$/.test(q)) return;
+    setBulanEkspor(q);
+    setBulanEkstra(q);
+  }, [searchParams]);
 
   useEffect(() => {
     (async () => {
@@ -108,12 +120,16 @@ export default function RiwayatPage() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       out.push(bulanLokal(d));
     }
+    // Bulan dari ?ekspor= bisa di luar 12 bulan terakhir — sisipkan agar
+    // dropdown tetap bisa menampilkannya sebagai opsi terpilih.
+    if (bulanEkstra && !out.includes(bulanEkstra)) out.unshift(bulanEkstra);
     return out;
   })();
 
   return (
     <div className="min-h-full bg-gray-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <BannerBackupBukti />
+      <div className="mt-4 mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">
             Riwayat Invoice
@@ -250,5 +266,13 @@ export default function RiwayatPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function RiwayatPage() {
+  return (
+    <Suspense fallback={null}>
+      <RiwayatPageInner />
+    </Suspense>
   );
 }

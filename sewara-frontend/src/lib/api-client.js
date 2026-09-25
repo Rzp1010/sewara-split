@@ -137,6 +137,15 @@ export const api = {
     nextNumber: () => apiRequest('/api/invoice-counter', { method: 'POST' }),
   },
 
+  pembayaran: {
+    reminder: (params) => apiRequest(`/api/pembayaran/reminder${qs(params)}`),
+    reminderAck: (bulan) =>
+      apiRequest('/api/pembayaran/reminder-ack', {
+        method: 'POST',
+        body: JSON.stringify({ bulan }),
+      }),
+  },
+
   members: {
     getAll: () => apiRequest('/api/members'),
     create: (data) =>

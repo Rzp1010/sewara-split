@@ -8,6 +8,7 @@ import { formatRupiah } from "@/lib/utils";
 import { ROLE_SUPERADMIN } from "@/lib/role";
 import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import BannerBackupBukti from "@/components/BannerBackupBukti";
 
 const fmtYMD = (d) =>
   d
@@ -280,6 +281,8 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <BannerBackupBukti />
 
       {/* Rentang waktu statistik */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
