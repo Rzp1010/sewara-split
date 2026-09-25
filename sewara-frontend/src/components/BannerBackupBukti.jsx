@@ -70,8 +70,6 @@ export default function BannerBackupBukti() {
     }
   }
 
-  const jumlah = Number(reminder.jumlah) || 0;
-
   return (
     <div className="rounded-xl border-2 border-solid border-amber-300 bg-amber-50 p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -80,9 +78,9 @@ export default function BannerBackupBukti() {
             Sudah backup bukti pembayaran?
           </p>
           <p className="text-sm text-amber-900 mb-0">
-            Foto bukti pembayaran {labelBulan(reminder.bulan)} (±{jumlah} file)
-            akan terhapus otomatis pada {labelTanggal(reminder.purgeTanggal)}{" "}
-            (retensi ±2 bulan). Unduh dulu sebelum hilang.
+            Foto bukti pembayaran bulan {labelBulan(reminder.bulan)} akan
+            terhapus otomatis pada {labelTanggal(reminder.purgeTanggal)}. Unduh
+            dulu sebelum hilang.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
