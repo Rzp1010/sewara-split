@@ -20,12 +20,12 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       `connect-src 'self' https://${supabaseHost} ${apiUrl} https://cloudflareinsights.com`,
-      `img-src 'self' data: blob: https://${supabaseHost} https://${r2Domain}`,
+      `img-src 'self' data: blob: https://${supabaseHost} https://${r2Domain} http://localhost:4000 http://127.0.0.1:4000`,
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
       // React dev mode butuh eval() untuk debugging; produksi TIDAK pakai eval -> tetap tanpa unsafe-eval
       isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
-      `frame-src https://${r2Domain}`,
+      `frame-src 'self' https://${r2Domain} ${apiUrl}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

@@ -172,75 +172,38 @@ export default function MemberPage() {
 
   useEffect(() => {
     if (!modal) return;
-    let active = true;
-    setEditPreviews({});
-    form.foto_jaminan.forEach(async (row) => {
+    const next = {};
+    form.foto_jaminan.forEach((row) => {
       if (!row.path) return;
       const slot = DOCUMENT_SLOTS.find((item) => item.label === row.label);
       if (!slot) return;
-      try {
-        const response = await fetch(
-          `/api/member/photo?key=${encodeURIComponent(row.path)}`,
-        );
-        const result = await response.json();
-        if (!response.ok || !result.url)
-          throw Error(result.error || "Dokumen tidak dapat dibuka");
-        if (active)
-          setEditPreviews((current) => ({
-            ...current,
-            [slot.key]: {
-              url: result.url,
-              type: /\.pdf(?:$|[?#])/i.test(row.path) ? "pdf" : "image",
-            },
-          }));
-      } catch (error) {
-        if (active) notify(`${row.label}: ${error.message}`, "error");
-      }
+      next[slot.key] = {
+        url: `${API_BASE}/api/member/photo?key=${encodeURIComponent(row.path)}`,
+        type: /\.pdf(?:$|[?#])/i.test(row.path) ? "pdf" : "image",
+      };
     });
-    return () => {
-      active = false;
-    };
-  }, [modal, form.foto_jaminan, notify]);
+    setEditPreviews(next);
+  }, [modal, form.foto_jaminan]);
 
   useEffect(() => {
     if (!detail) return undefined;
-    let active = true;
     const documents = Array.isArray(detail.foto_jaminan)
       ? detail.foto_jaminan.filter((item) => item?.path)
       : [];
-    setDocumentPreviews({});
-    setDocumentLoading(
-      Object.fromEntries(documents.map((item, index) => [index, true])),
+    setDocumentPreviews(
+      Object.fromEntries(
+        documents.map((item, index) => [
+          index,
+          {
+            label: item.label,
+            type: /\.pdf(?:$|[?#])/i.test(item.path) ? "pdf" : "image",
+            url: `${API_BASE}/api/member/photo?key=${encodeURIComponent(item.path)}`,
+          },
+        ]),
+      ),
     );
-    documents.forEach(async (item, index) => {
-      const { label, path } = item;
-      try {
-        const response = await fetch(
-          `/api/member/photo?key=${encodeURIComponent(path)}`,
-        );
-        const result = await response.json();
-        if (!response.ok || !result.url)
-          throw Error(result.error || "Dokumen tidak dapat dibuka");
-        if (active)
-          setDocumentPreviews((current) => ({
-            ...current,
-            [index]: {
-              label,
-              type: /\.pdf(?:$|[?#])/i.test(path) ? "pdf" : "image",
-              url: result.url,
-            },
-          }));
-      } catch (error) {
-        if (active) notify(`${label}: ${error.message}`, "error");
-      } finally {
-        if (active)
-          setDocumentLoading((current) => ({ ...current, [index]: false }));
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [detail, notify]);
+    setDocumentLoading({});
+  }, [detail]);
 
   const muat = useCallback(async () => {
     setLoading(true);

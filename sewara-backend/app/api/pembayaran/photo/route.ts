@@ -1,10 +1,15 @@
 // @ts-nocheck
+/**
+ * Payment Proof Photo API Route
+ *
+ * Streaming langsung byte bukti bayar dari R2 (browser tidak pernah menerima URL R2).
+ */
 import { NextResponse } from 'next/server';
 import { storage } from '@/lib/storage';
 import { withErrorHandler } from '@/lib/api/errors';
 import { requireAuth } from '@/lib/api/auth';
 import { getServerClient } from '@/lib/api/supabase';
-import { validationErrorResponse } from '@/lib/api/response';
+import { validationErrorResponse, notFoundResponse } from '@/lib/api/response';
 
 export const runtime = 'nodejs';
 
@@ -29,9 +34,15 @@ async function getPhotoHandler(request) {
     return validationErrorResponse('Path tidak valid.');
   }
 
-  const signedUrl = await storage.getSignedURL(path, 3600);
-
-  return NextResponse.json({ ok: true, url: signedUrl });
+  let bytes;
+  try {
+    bytes = await storage.get(path);
+  } catch (e) {
+    return notFoundResponse('Bukti tidak ditemukan (mungkin sudah terhapus otomatis).');
+  }
+  const ext = path.split('.').pop()?.toLowerCase();
+  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+  return new NextResponse(bytes, { headers: { 'Content-Type': mime, 'Cache-Control': 'private, max-age=3600', 'Content-Disposition': 'inline' } });
 }
 
 export const GET = withErrorHandler(getPhotoHandler);

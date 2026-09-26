@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react";
-import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, getUrlBuktiBayar } from "@/lib/db";
+import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import {
@@ -1170,7 +1170,7 @@ export default function StatusPage() {
     setEditBayarBuktiBaru(null);
     setEditBayarBuktiLama(null);
     setEditBayarHapusBukti(false);
-    if (b.bukti) getUrlBuktiBayar(b.bukti).then(setEditBayarBuktiLama);
+    if (b.bukti) setEditBayarBuktiLama(urlBuktiBayar(b.bukti));
   };
 
   async function sinkronSetelahUbahBayar(trx, aksi, detailLog) {

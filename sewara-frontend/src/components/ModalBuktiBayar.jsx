@@ -1,22 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { getUrlBuktiBayar } from "@/lib/db";
+import { urlBuktiBayar } from "@/lib/db";
 import { formatTanggal } from "@/lib/utils";
 
-// Thumbnail 40px: ambil signed URL saat mount.
+// Thumbnail 40px: url proxy langsung dari path.
 function ThumbBukti({ path, onOpen }) {
-  const [url, setUrl] = useState(null);
-  useEffect(() => {
-    let aktif = true;
-    getUrlBuktiBayar(path).then((u) => {
-      if (aktif) setUrl(u);
-    });
-    return () => {
-      aktif = false;
-    };
-  }, [path]);
+  const url = urlBuktiBayar(path);
   if (!url) return null;
   return (
     <button

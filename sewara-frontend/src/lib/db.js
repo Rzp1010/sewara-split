@@ -461,9 +461,6 @@ export async function saveTransactionPayments(transactionId, payments) {
 // BUKTI BAYAR — upload/foto/ekspor (multipart + blob, bukan JSON)
 // ============================================================================
 
-// Signed URL berlaku 1 jam; cache module-level agar thumbnail tidak refetch.
-const _cacheBuktiUrl = new Map();
-
 /** Upload file bukti. -> path string | null */
 export async function uploadBuktiBayar(file, transaksiId) {
   if (!file) return null;
@@ -499,24 +496,9 @@ export async function uploadBuktiBayar(file, transaksiId) {
   }
 }
 
-/** URL signed bukti (cache 1 jam). -> url string | null */
-export async function getUrlBuktiBayar(path) {
-  if (!path) return null;
-  const cached = _cacheBuktiUrl.get(path);
-  if (cached && cached.exp > Date.now()) return cached.url;
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/pembayaran/photo?path=${encodeURIComponent(path)}`,
-      { credentials: 'include' },
-    );
-    const data = await res.json();
-    if (!res.ok || !data.ok || !data.url) throw new Error(data.message || 'Gagal memuat foto');
-    _cacheBuktiUrl.set(path, { url: data.url, exp: Date.now() + 55 * 60 * 1000 });
-    return data.url;
-  } catch (e) {
-    console.error('getUrlBuktiBayar error:', e.message);
-    return null;
-  }
+/** URL proxy bukti bayar (stream via backend, auth cookie). */
+export function urlBuktiBayar(path) {
+  return path ? `${API_BASE}/api/pembayaran/photo?path=${encodeURIComponent(path)}` : null;
 }
 
 /** Ekspor bukti bulan YYYY-MM. -> { ok, message } ; trigger download saat ok. */
