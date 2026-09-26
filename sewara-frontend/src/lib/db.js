@@ -467,21 +467,35 @@ const _cacheBuktiUrl = new Map();
 /** Upload file bukti. -> path string | null */
 export async function uploadBuktiBayar(file, transaksiId) {
   if (!file) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 90_000);
   try {
+    let berkas = file;
+    if (file.size > 1_500_000 && typeof window !== 'undefined') {
+      try {
+        const imageCompression = (await import('browser-image-compression')).default;
+        berkas = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: file.type });
+      } catch {
+        berkas = file; // kompresi gagal -> pakai file asli
+      }
+    }
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', berkas);
     fd.append('transaksiId', String(transaksiId));
     const res = await fetch(`${API_BASE}/api/pembayaran/upload`, {
       method: 'POST',
       credentials: 'include',
       body: fd,
+      signal: ctl.signal,
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.message || 'Upload gagal');
     return data.path || null;
   } catch (e) {
-    console.error('uploadBuktiBayar error:', e.message);
+    console.error('uploadBuktiBayar error:', e.name === 'AbortError' ? 'upload timeout 90s' : e.message);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
