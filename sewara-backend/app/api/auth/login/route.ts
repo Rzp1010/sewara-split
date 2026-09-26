@@ -14,7 +14,6 @@ import { successResponse, validationErrorResponse, forbiddenResponse, unauthoriz
 export const runtime = "nodejs";
 
 async function loginHandler(request) {
-  const t0 = Date.now();
   const validation = await parseAndValidate(request, loginSchema);
   if (!validation.success) return validationErrorResponse("Email dan password wajib diisi.");
   const { email, password } = validation.data;
@@ -30,7 +29,6 @@ async function loginHandler(request) {
     admin.from("profiles").select("user_id, role, is_active, owner_id, failed_login, last_failed_at, cooldown_until, locked_until, status, subscribed_until").eq("email", email).maybeSingle(),
     checkLoginRateLimit(admin, email, request.headers, now),
   ]);
-  const guardMs = Date.now() - t0;
   const gagal = (detail, error, status, extra, headers) => {
     logLoginEvent(admin, { email, ownerId: profil?.owner_id, event: "login_gagal", detail, headers: headers || request.headers }).catch((e) => logError(e, {
       route: '/api/auth/login',
@@ -64,7 +62,6 @@ async function loginHandler(request) {
     cookieOptions: { sameSite: "lax", path: "/", secure: isSecure, httpOnly: false },
   });
   const { data: sess, error: signErr } = await supabase.auth.signInWithPassword({ email, password });
-  console.log("[login-timing]", { guardMs, signInMs: Date.now() - t0 - guardMs, ok: !signErr });
   if (signErr || !sess?.session) {
     const belumKonfirmasi = /Email not confirmed/i.test(signErr?.message || "");
     logLoginEvent(admin, { email, ownerId: profil?.owner_id, event: "login_gagal", detail: belumKonfirmasi ? "email belum diverifikasi" : (profil ? "password salah" : "email tidak dikenal"), headers: request.headers }).catch((e) => logError(e, {
@@ -91,7 +88,6 @@ async function loginHandler(request) {
     email,
     event: 'login_sukses'
   }));
-  console.log("[login-timing]", { totalMs: Date.now() - t0 });
   return successResponse({ ok: true });
 }
 
