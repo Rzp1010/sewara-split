@@ -391,7 +391,7 @@ export default function LaporanPage() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-        <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+        <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
           <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-4 py-3 text-left">Invoice</th>
@@ -489,7 +489,7 @@ export default function LaporanPage() {
           </div>
 
           <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-            <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+            <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
               <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="w-12 px-4 py-3 text-left">#</th>

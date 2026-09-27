@@ -141,8 +141,8 @@ export default function PelangganPage() {
     window.location.href = `/dashboard/member?${params.toString()}`;
   }
   return (
-    <div className="min-h-full p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="min-h-full">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Data Pelanggan</h2>
           <p className="text-sm text-gray-500">
@@ -167,19 +167,19 @@ export default function PelangganPage() {
         </div>
       </div>
       <div className="overflow-hidden rounded-xl bg-white shadow-lg">
-        <div className="flex items-center justify-between gap-4 bg-slate-100 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-4">
           <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
             Daftar Pelanggan ({filtered.length})
           </span>
           <input
-            className="w-full max-w-md appearance-none rounded-lg border border-solid border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+            className="w-full appearance-none rounded-lg border border-solid border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 sm:max-w-md"
             placeholder="Cari nama, HP, atau alamat..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+          <table className="w-full min-w-[560px] border-collapse whitespace-nowrap text-sm">
             <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-4 py-3 text-left">Nama</th>

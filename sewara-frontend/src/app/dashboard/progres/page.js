@@ -94,7 +94,7 @@ export default function ProgresPage() {
 
   return (
     <div className="w-full mx-auto" style={{ maxWidth: 768 }}>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <h2 className="text-[26px] font-bold tracking-[-0.01em] leading-[1.2]">📈 Progres</h2>
         <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-soft)] px-[10px] py-[3px] text-xs font-bold leading-[1.4] text-[var(--color-primary-soft-text)]">
           {done.length}/{all.length}

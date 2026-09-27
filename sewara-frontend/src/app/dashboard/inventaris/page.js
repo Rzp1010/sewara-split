@@ -755,7 +755,7 @@ export default function InventarisPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-full bg-gray-100">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Daftar Katalog Produk</h2>
         <div className="flex items-center gap-3">
@@ -893,7 +893,7 @@ export default function InventarisPage() {
                     </div>
                     <div
                       id="area_satuan"
-                      className="grid grid-cols-2 gap-4 rounded-lg border-2 border-solid border-slate-200 bg-slate-50 p-4"
+                      className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-slate-200 bg-slate-50 p-4 sm:grid-cols-2"
                     >
                       <div>
                         <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#7181E0]">
@@ -996,7 +996,7 @@ export default function InventarisPage() {
                       >
                         Fleksibel: tersedia pilihan 6 Jam, 12 Jam, dan 24 Jam.
                       </p>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                         <div>
                           <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary">
                             Tarif 6 Jam
@@ -1136,7 +1136,7 @@ export default function InventarisPage() {
 
       <div className="overflow-x-auto">
         <table
-          className="w-full table-fixed border-collapse text-left text-sm text-text-primary"
+          className="w-full min-w-[720px] border-collapse text-left text-sm text-text-primary"
           style={{ whiteSpace: "nowrap" }}
         >
           <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -1514,8 +1514,8 @@ export default function InventarisPage() {
                     </button>
                   </div>
                   <div className="flex-1 overflow-y-auto px-6 pb-6">
-                    <div className="rounded-xl border-2 border-solid border-slate-200 overflow-hidden mb-4">
-                      <table className="w-full table-fixed border-collapse text-sm">
+                    <div className="rounded-xl border-2 border-solid border-slate-200 overflow-x-auto mb-4">
+                      <table className="w-full min-w-[640px] border-collapse text-sm">
                         <thead className="bg-slate-100">
                           <tr>
                             <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-600 text-left">
@@ -1795,7 +1795,7 @@ export default function InventarisPage() {
                       <p className="mb-3 text-xs font-semibold text-indigo-900">
                         Ringkasan Kondisi
                       </p>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div className="text-center">
                           <p className="mb-1 text-xs text-indigo-700">Baik</p>
                           <p className="text-lg font-bold text-green-600">
@@ -1876,7 +1876,7 @@ export default function InventarisPage() {
                     className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-60 font-bold mt-2"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4 rounded-lg border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-4">
+                <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-4 sm:grid-cols-2">
                   <div
                     className="text-sm font-bold"
                     style={{ gridColumn: "1 / -1" }}

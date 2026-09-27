@@ -45,10 +45,10 @@ export default function LogPage() {
   }, [muat]);
 
   return (
-    <div className="log-page">
-      <h2 className="log-page-title mb-6">Log Aktivitas</h2>
+    <div>
+      <h2 className="mb-6 text-2xl font-bold tracking-tight">Log Aktivitas</h2>
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-        <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+        <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
           <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-4 py-3 text-left">Waktu</th>

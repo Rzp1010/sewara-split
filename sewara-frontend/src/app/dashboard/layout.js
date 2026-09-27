@@ -552,7 +552,7 @@ function SidebarContent({ children }) {
               <span className="text-xs opacity-80">▾</span>
             </button>
             {accountOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded border border-gray-200 bg-white text-gray-900 shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded border border-gray-200 bg-white text-gray-900 shadow-lg overflow-hidden">
                 <div className="flex items-center gap-3 p-4 border-b border-gray-200">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7181E0] text-lg font-bold text-white">
                     {userUsername || userNama || userEmail
@@ -700,7 +700,7 @@ function SidebarContent({ children }) {
 
       {/* MAIN CONTENT */}
       <main
-        className={`mt-16 min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-auto bg-gray-100 px-7 py-7 transition-[margin-left] ${
+        className={`mt-16 min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-auto bg-gray-100 px-4 py-6 sm:px-6 lg:px-7 lg:py-7 transition-[margin-left] ${
           isFullscreen
             ? "ml-0"
             : hoverGrup || aktifGrup

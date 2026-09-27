@@ -525,7 +525,7 @@ export default function KalenderPage() {
       <div
         className={
           modeView === "bulan" && selectedDate
-            ? "grid gap-5 grid-cols-2"
+            ? "grid gap-5 grid-cols-1 lg:grid-cols-2"
             : "grid gap-5"
         }
       >

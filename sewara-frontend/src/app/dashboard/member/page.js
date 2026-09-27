@@ -392,9 +392,9 @@ export default function MemberPage() {
 
   return (
     <>
-      <div className="min-h-full p-6">
+      <div className="min-h-full">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Member</h2>
             <p className="text-slate-600">
@@ -435,7 +435,7 @@ export default function MemberPage() {
             />
           </div>
           <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-            <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+            <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
               <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-4 py-3 text-left">Nama</th>
@@ -539,7 +539,7 @@ export default function MemberPage() {
                       </button>
                     </div>
                     <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-                      <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+                      <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
                         <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                           <tr>
                             <th className="px-4 py-3 text-left">Nama</th>
@@ -862,7 +862,7 @@ export default function MemberPage() {
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 pb-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-700">
                         Nama

@@ -269,7 +269,7 @@ export default function ManajemenPage() {
 
   return (
     <div className="min-h-full bg-surface px-4 py-6 text-text-primary sm:px-6 lg:px-8">
-      <div className="mb-6 flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">Manajemen</h2>
           <p className="text-sm text-text-muted mb-0">
@@ -330,7 +330,7 @@ export default function ManajemenPage() {
                   </span>
                 </div>
                 <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-                  <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+<table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
                     <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                       <tr>
                         <th className="px-4 py-3 text-left">Nama</th>
@@ -399,7 +399,7 @@ export default function ManajemenPage() {
               </button>
             </div>
             <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-              <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+<table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
                 <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                   <tr>
                     <th className="px-4 py-3 text-left">Owner</th>
@@ -523,7 +523,7 @@ export default function ManajemenPage() {
             </span>
           </div>
           <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-            <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+            <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
               <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-4 py-3 text-left">Waktu</th>
@@ -916,7 +916,7 @@ export default function ManajemenPage() {
                   <br />
                   Pilih durasi langganan (bulan):
                 </p>
-                <div className="grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {DURASI_OPT.map((d) => (
                     <button
                       type="button"

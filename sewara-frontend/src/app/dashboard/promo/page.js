@@ -139,7 +139,7 @@ export default function PromoPage() {
   // Versi LAMA: fitur tidak tersedia — info alert, tanpa fetch data.
   if (!memberPromo) {
     return (
-      <div className="w-full max-w-7xl mx-auto p-6">
+      <div className="w-full max-w-7xl mx-auto">
         <h2 className="mb-6 text-2xl font-bold tracking-tight leading-tight">
           Kode Promo
         </h2>
@@ -156,7 +156,7 @@ export default function PromoPage() {
   // Role lain / belum login.
   if (userRole !== ROLE_OWNER && userRole !== ROLE_CS) {
     return (
-      <div className="w-full max-w-7xl mx-auto p-6 text-center">
+      <div className="w-full max-w-7xl mx-auto text-center">
         <div className="rounded-lg border border-solid border-red-200 bg-red-50 p-4 text-sm text-[#F04438]">
           Anda tidak berhak mengakses.
         </div>
@@ -203,7 +203,7 @@ export default function PromoPage() {
           </button>
         </div>
         <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-          <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+          <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
             <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-4 py-3 text-left">Kode</th>
@@ -360,7 +360,7 @@ export default function PromoPage() {
                       Potongan harga, 0–100%.
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-slate-700 mb-2">
                         Berlaku dari

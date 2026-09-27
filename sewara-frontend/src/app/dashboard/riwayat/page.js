@@ -138,7 +138,7 @@ function RiwayatPageInner() {
             Daftar transaksi yang sudah selesai.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border-2 border-solid border-slate-200 bg-white p-3 shadow-lg">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-solid border-slate-200 bg-white p-3 shadow-lg">
           <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
             Ekspor Bukti Bayar
           </span>
@@ -163,7 +163,7 @@ function RiwayatPageInner() {
         </div>
       </div>
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-        <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+        <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
           <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-4 py-3 text-left">Invoice / Penyewa</th>

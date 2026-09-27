@@ -131,8 +131,8 @@ export default function LoginLogPage() {
     <div className="page">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h2 className="page-title">Log Login</h2>
-          <p className="page-sub mb-0">
+          <h2 className="text-2xl font-bold tracking-tight">Log Login</h2>
+          <p className="mb-0 text-sm text-gray-500">
             Riwayat login, logout, dan percobaan gagal di bisnis Anda.
           </p>
         </div>
@@ -316,7 +316,7 @@ export default function LoginLogPage() {
           </span>
         </div>
         <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
-          <table className="w-full table-fixed border-collapse whitespace-nowrap text-sm">
+          <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
             <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-4 py-3 text-left">Waktu</th>

@@ -1920,7 +1920,7 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <h2 className="text-2xl font-bold mb-6">Buat Booking Baru</h2>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div ref={refKolomKiri} className="lg:col-span-3">
@@ -1928,7 +1928,7 @@ export default function BookingPage() {
             <h3 className="text-base font-semibold mb-4 text-[#7181E0]">
               Identitas Penyewa
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                   Penyewa
@@ -2039,7 +2039,7 @@ export default function BookingPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                   Jaminan
@@ -2070,7 +2070,7 @@ export default function BookingPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                   Waktu Ambil
@@ -2138,7 +2138,7 @@ export default function BookingPage() {
               </div>
             </div>
             {showCustom && (
-              <div className="grid grid-cols-2 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 mt-4">
                 <div className="col-span-full">
                   <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                     Waktu Kembali (Manual)
@@ -2196,7 +2196,7 @@ export default function BookingPage() {
             </div>
 
             <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="w-full border-collapse table-fixed">
+              <table className="w-full min-w-[640px] border-collapse">
                 <colgroup>
                   <col style={{ width: "30%" }} />
                   <col style={{ width: "20%" }} />
@@ -2418,7 +2418,7 @@ export default function BookingPage() {
                         </button>
                       )}
                     </div>
-                    <div className="flex items-end gap-2 mt-3">
+                    <div className="flex items-end gap-2 mt-3 flex-wrap">
                       <div className="flex-1 min-w-0">
                         <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                           Discount Custom
@@ -2534,7 +2534,7 @@ export default function BookingPage() {
             <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
               Uang Muka / DP (Opsional)
             </label>
-            <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
                   Jumlah DP
@@ -2817,7 +2817,7 @@ export default function BookingPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
                     Identitas Penyewa
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="col-span-full">
                       <label className="block text-xs font-semibold text-slate-600 mb-1">
                         Penyewa
@@ -2884,7 +2884,7 @@ export default function BookingPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
                     Jadwal
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-[#7181E0] mb-1">
                         Waktu Ambil
@@ -2961,9 +2961,9 @@ export default function BookingPage() {
                 )}
 
                 {/* Barang */}
-                <div className="mt-3 rounded-xl border-2 border-solid border-slate-200 overflow-hidden">
+                <div className="mt-3 rounded-xl border-2 border-solid border-slate-200 overflow-x-auto">
                   <p className="font-semibold mb-2 px-3 pt-3">Barang</p>
-                  <table className="table-fixed w-full border-collapse text-sm">
+                  <table className="w-full min-w-[640px] border-collapse text-sm">
                     <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                       <tr>
                         <th className="px-4 py-3 text-left">Nama Barang</th>

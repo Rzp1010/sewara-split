@@ -60,7 +60,7 @@ export default function TodoPage() {
 
       return (
     <div className="max-w-2xl">
-       <div className="mb-6 flex items-center justify-between">
+       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
          <h2 className="text-[26px] font-bold tracking-[-0.01em] leading-[1.2]">✅ To Do</h2>
          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-xs font-bold leading-[1.4] whitespace-nowrap" style={{ background: "var(--color-primary-soft)", color: "var(--color-primary-soft-text)" }}>
           {done}/{items.length} selesai
