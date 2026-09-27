@@ -19,7 +19,7 @@ async function buatServerClient() {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        httpOnly: false,
+        httpOnly: true,
       },
     },
   );

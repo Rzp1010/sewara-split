@@ -15,7 +15,7 @@ async function buatServerClient() {
         getAll: () => cookieStore.getAll(),
         setAll: () => {},
       },
-      cookieOptions: { sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production", httpOnly: false },
+      cookieOptions: { sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production", httpOnly: true },
     }
   );
 }

@@ -30,7 +30,7 @@ export async function getServerClient() {
   return createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
+{
       cookies: {
         get(name) {
           return cookieStore.get(name)?.value;
@@ -51,6 +51,13 @@ export async function getServerClient() {
             // This is expected behavior, ignore silently
           }
         },
+      },
+      // httpOnly=true: split architecture, sesi hanya dibaca server-side via cookies().
+      cookieOptions: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
       },
     }
   );
