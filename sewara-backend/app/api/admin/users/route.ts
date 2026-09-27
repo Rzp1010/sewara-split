@@ -12,6 +12,7 @@ import { withErrorHandler } from "@/lib/api/errors";
 import { getServerClient } from "@/lib/api/supabase";
 import {
   parseAndValidate,
+  validateRequest,
   createUserSchema,
   deleteUserByEmailSchema,
   adminPatchSchema,
@@ -78,13 +79,8 @@ async function listUsersHandler(request) {
 }
 
 async function usersHandler(request) {
-  const bodyResult = await parseAndValidate(request, createUserSchema);
-  if (!bodyResult.success) {
-    return validationErrorResponse("Input tidak valid.", bodyResult.errors);
-  }
-  const { email, password, nama_lengkap, username, nama_invoice, role } =
-    bodyResult.data;
-
+  // Cek autentikasi + role DULU baru validasi body (sebelumnya 400 bocor ke
+  // user tak berhak sebelum 403).
   const supabase = await getServerClient();
   const {
     data: { user },
@@ -93,6 +89,16 @@ async function usersHandler(request) {
   if (authErr || !user) {
     return unauthorizedResponse("Tidak terautentikasi.");
   }
+
+  // Body dibaca mentah dulu (tanpa validasi) HANYA untuk gerbang role target di
+  // bawah; validasi penuh zod dilakukan setelah caller terbukti berhak.
+  let bodyRaw;
+  try {
+    bodyRaw = await request.json();
+  } catch {
+    bodyRaw = {};
+  }
+  const bodyRole = bodyRaw?.role;
 
   // Rate limit per user terautentikasi (bukan IP — di lokal semua request "unknown",
   // di kantor satu IP dipakai banyak staf; bucket per user lebih akurat).
@@ -129,16 +135,25 @@ async function usersHandler(request) {
     return forbiddenResponse("Akun Anda dinonaktifkan.");
   }
   if (callerRole === "superadmin") {
-    if (role !== "owner") {
+    if (bodyRole !== "owner") {
       return forbiddenResponse("Superadmin hanya bisa membuat akun Owner.");
     }
   } else if (callerRole === "owner") {
-    if (role === "owner") {
+    if (bodyRole === "owner") {
       return forbiddenResponse("Owner tidak bisa membuat owner lain.");
     }
   } else {
     return forbiddenResponse("Akun Anda tidak berhak menambah user.");
   }
+
+  // Caller terbukti berhak -> baru validasi penuh (error 400 tidak lagi bocor
+  // ke user tak berhak).
+  const bodyResult = validateRequest(createUserSchema, bodyRaw);
+  if (!bodyResult.success) {
+    return validationErrorResponse("Input tidak valid.", bodyResult.errors);
+  }
+  const { email, password, nama_lengkap, username, nama_invoice, role } =
+    bodyResult.data;
 
   const targetOwnerId = callerRole === "owner" ? user.id : null;
 

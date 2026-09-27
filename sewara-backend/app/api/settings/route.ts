@@ -2,10 +2,14 @@
 import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
 import { getTenantId } from '@/lib/api/tenant';
-import { successResponse } from '@/lib/api/response';
+import { successResponse, forbiddenResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
 
 export const runtime = 'nodejs';
+
+// Pertahanan lapis-2 di route (RLS settings_own_or_owner sudah menolak di DB, tapi
+// tanpa ini staf dapat 500 samar; dengan ini -> 403 jelas + tidak bergantung policy).
+const KEY_SENSITIF = ['telegram_login_notif', 'webhook_sheets'];
 
 /**
  * GET /api/settings
@@ -43,6 +47,11 @@ export const POST = withErrorHandler(async (request) => {
 
   const body = await request.json();
   const rows = Array.isArray(body) ? body : [body];
+
+  // staf (tenantId = owner) dilarang tulis key sensitif -> 403 eksplisit, bukan 500 RLS
+  if (rows.some((r) => KEY_SENSITIF.includes(r?.key)) && tenantId !== user.id) {
+    throw forbiddenResponse('Hanya owner yang boleh mengubah pengaturan sensitif ini.');
+  }
 
   const stamped = rows.map((row) => ({
     ...row,
