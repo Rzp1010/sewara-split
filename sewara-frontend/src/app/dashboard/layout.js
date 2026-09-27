@@ -667,7 +667,13 @@ function SidebarContent({ children }) {
           onMouseLeave={() => {
             if (!isMobile) setHoverGrup(null);
           }}
-          className={`fixed left-16 top-16 z-30 h-[calc(100vh-4rem)] w-64 overflow-y-auto bg-white p-4 shadow-lg ${(hoverGrup || aktifGrup) === g.id ? "block" : "hidden"}`}
+          className={`fixed left-16 top-16 z-30 h-[calc(100vh-4rem)] w-64 overflow-y-auto bg-white p-4 shadow-lg ${
+            (isMobile
+              ? navOpen && aktifGrup === g.id
+              : (hoverGrup || aktifGrup) === g.id)
+              ? "block"
+              : "hidden"
+          }`}
         >
           <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
             {g.label}
@@ -681,7 +687,7 @@ function SidebarContent({ children }) {
                 <Link
                   key={it.href}
                   href={it.href}
-                  onClick={() => setNavOpen(false)}
+                  onClick={() => (isMobile ? tutupNavigasi() : setNavOpen(false))}
                   className={`flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${pathname === it.href ? "bg-[#7181E0] text-white" : "text-gray-900 hover:bg-gray-100"}`}
                   style={{ textDecoration: "none" }}
                 >
