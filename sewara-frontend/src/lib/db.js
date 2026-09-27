@@ -623,7 +623,7 @@ export async function getPelangganSuggestions() {
   try {
     const [members, transactions] = await Promise.all([
       getMembers(),
-      getTransactionsCari('', false).catch(() => []),
+      getTransactionsLaporan().catch(() => []),
     ]);
 
     const memberSuggestions = (members || []).map((m) => ({
