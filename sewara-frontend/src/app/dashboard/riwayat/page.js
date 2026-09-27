@@ -58,7 +58,7 @@ function RiwayatPageInner() {
   useEffect(() => {
     (async () => {
       const t = await getTransactionsRingkas();
-      setTrx([...t].reverse());
+      setTrx(t);
       setHalaman(1);
     })();
   }, []);
@@ -67,7 +67,7 @@ function RiwayatPageInner() {
     const handler = () => {
       (async () => {
         const t = await getTransactionsRingkas();
-        setTrx([...t].reverse());
+        setTrx(t);
         setHalaman(1);
       })();
     };
