@@ -16,6 +16,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import PasswordInput from "@/components/PasswordInput";
+import JamPicker from "@/components/JamPicker";
 
 /* ===== Konstanta UI ===== */
 
@@ -896,25 +897,17 @@ export default function PengaturanPage() {
           {f.jam_mode === "buka_tutup" && (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <Field label="Jam Buka">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                <JamPicker
+                  label="Pilih Jam Buka"
                   value={f.jam_buka}
-                  onChange={ubahAngka("jam_buka", 23)}
-                  className={INPUT_CLS}
-                  placeholder="6"
+                  onChange={(v) => setNilai("jam_buka", String(v))}
                 />
               </Field>
               <Field label="Jam Tutup">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                <JamPicker
+                  label="Pilih Jam Tutup"
                   value={f.jam_tutup}
-                  onChange={ubahAngka("jam_tutup", 23)}
-                  className={INPUT_CLS}
-                  placeholder="22"
+                  onChange={(v) => setNilai("jam_tutup", String(v))}
                 />
               </Field>
             </div>

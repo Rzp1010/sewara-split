@@ -1084,6 +1084,11 @@ export default function BookingPage() {
     const kembaliISO = kembaliWaktu ? new Date(kembaliWaktu).toISOString() : "";
     if (!ambilISO || !kembaliISO)
       return notify("Isi waktu ambil & kembali!", "error");
+    if (lewatJamTutup(kembaliWaktu))
+      notify(
+        `Waktu kembali lewat jam tutup (${parseInt(getSetting("jam_tutup", "22"), 10) || 22}.00). Booking tetap tersimpan.`,
+        "warning",
+      );
 
     setLoading("Menyimpan booking...");
     try {
@@ -1445,6 +1450,14 @@ export default function BookingPage() {
     return h >= buka && h <= tutup;
   };
 
+  // ponytail: bandingkan jam-kasar; window lintas tengah malam (tutup<buka) belum didukung, sama seperti filterTime.
+  function lewatJamTutup(date) {
+    if (!date) return false;
+    if (getSetting("jam_mode", "buka_tutup") !== "buka_tutup") return false;
+    const tutup = parseInt(getSetting("jam_tutup", "22"), 10) || 22;
+    return new Date(date).getHours() > tutup;
+  }
+
   function tambahEditItem() {
     if (!editSelectedId) return notify("Pilih barang dulu!", "error");
     const refBarang = inv.find((i) => i.id == editSelectedId);
@@ -1610,6 +1623,11 @@ export default function BookingPage() {
     const kembali = editForm.waktu_kembali_rencana?.toISOString() || "";
     const dur = hitungDurasi(ambil, kembali);
     if (dur.error) return notify(dur.error, "error");
+    if (lewatJamTutup(editForm.waktu_kembali_rencana))
+      notify(
+        `Waktu kembali lewat jam tutup (${parseInt(getSetting("jam_tutup", "22"), 10) || 22}.00). Perubahan tetap tersimpan.`,
+        "warning",
+      );
 
     setLoading("Menyimpan perubahan jadwal...");
     try {
