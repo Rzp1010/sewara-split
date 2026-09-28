@@ -45,10 +45,12 @@ export const POST = withErrorHandler(async (request) => {
   const body = await request.json();
   const { id, ...cleanBody } = body; // Strip id dari frontend
   
-  // Generate id: max+1 (workaround sequence rusak).
-  // WAJIB via service role: query lewat session client terfilter RLS per tenant,
-  // sehingga tenant baru dapat max lokal ~0 -> nextId 1 -> duplicate inventory_pkey.
-  // ponytail: race dua POST bersamaan tetap mungkin tabrakan; upgrade path = sequence DB asli.
+  // Generate id: epoch-ms global (domain id inventory memang timestamp ms dari
+  // era pre-split; max+1 numeric kecil nabrak baris tenant lain — lihat riwayat
+  // bug duplicate inventory_pkey). Urut DESC = max global, service role = tanpa
+  // filter RLS tenant.
+  // ponytail: tabrakan dua POST dalam millidetik yang sama masih mungkin;
+  // upgrade path = sequence DB asli / generateUuid.
   const admin = getServiceRoleClient();
   const { data: maxRow } = await admin
     .from('inventory')
@@ -56,7 +58,8 @@ export const POST = withErrorHandler(async (request) => {
     .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
-  const nextId = (maxRow?.id || 0) + 1;
+  const nowMs = Date.now();
+  const nextId = Math.max(nowMs, (Number(maxRow?.id) || 0) + 1);
   
   const [row] = await withTenant(supabase, user.id, [{ ...cleanBody, id: nextId }]);
 
