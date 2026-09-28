@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getServerClient } from '@/lib/api/supabase';
+import { getServerClient, getServiceRoleClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
 import { getTenantId, withTenant } from '@/lib/api/tenant';
 import { successResponse } from '@/lib/api/response';
@@ -45,8 +45,12 @@ export const POST = withErrorHandler(async (request) => {
   const body = await request.json();
   const { id, ...cleanBody } = body; // Strip id dari frontend
   
-  // Generate id: max+1 (workaround sequence rusak)
-  const { data: maxRow } = await supabase
+  // Generate id: max+1 (workaround sequence rusak).
+  // WAJIB via service role: query lewat session client terfilter RLS per tenant,
+  // sehingga tenant baru dapat max lokal ~0 -> nextId 1 -> duplicate inventory_pkey.
+  // ponytail: race dua POST bersamaan tetap mungkin tabrakan; upgrade path = sequence DB asli.
+  const admin = getServiceRoleClient();
+  const { data: maxRow } = await admin
     .from('inventory')
     .select('id')
     .order('id', { ascending: false })
