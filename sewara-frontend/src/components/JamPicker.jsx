@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-
-// Lebar panel (px) = w-80. Dipakai untuk clamp posisi fixed.
-// ponytail: hardcoded biar clamp sinkron dengan Tailwind w-80;
-// upgrade path = ukur offsetWidth panel setelah render.
-const PANEL_W = 320;
-const PANEL_H = 300;
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 
 function p2(n) {
   return String(n).padStart(2, "0");
@@ -19,7 +13,7 @@ export default function JamPicker({
   className = "",
 }) {
   const [open, setOpen] = useState(false);
-  const [anchor, setAnchor] = useState({ top: 0, left: 0, w: PANEL_W });
+  const [arah, setArah] = useState("bawah");
   const ref = useRef(null);
   const panelRef = useRef(null);
 
@@ -33,31 +27,36 @@ export default function JamPicker({
     function onKey(e) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onResize() {
+      setOpen(false);
+    }
+    function onScroll() {
+      setOpen(false);
+    }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
-  // Buka: hitung posisi fixed + lebar clamp (hanya saat klik, bukan first paint).
-  function buka() {
-    if (ref.current) {
-      const r = ref.current.getBoundingClientRect();
-      const w = Math.min(PANEL_W, window.innerWidth - 16);
-      const arah = window.innerHeight - r.bottom > PANEL_H ? "bawah" : "atas";
-      const top = arah === "bawah" ? r.bottom + 4 : Math.max(4, r.top - PANEL_H - 4);
-      const left = Math.max(4, Math.min(r.left, window.innerWidth - w - 8));
-      setAnchor({ top, left, w });
-    }
-    setOpen(true);
-  }
-
-  function pilih(h) {
-    onChange(h);
-    setOpen(false);
-  }
+  // Ukur tinggi panel aktual setelah render → tentukan arah, hindari tumpang tindih.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = panelRef.current;
+    const tr = ref.current;
+    if (!el || !tr) return;
+    const r = tr.getBoundingClientRect();
+    const ph = el.offsetHeight;
+    const ruangBawah = window.innerHeight - r.bottom;
+    const ruangAtas = r.top;
+    setArah(ruangBawah < ph + 8 && ruangAtas > ruangBawah ? "atas" : "bawah");
+  }, [open]);
 
   const aktif = value != null && value !== "" ? Number(value) : null;
   const teks = aktif != null ? `${p2(aktif)}:00` : "";
@@ -66,7 +65,7 @@ export default function JamPicker({
     <div ref={ref} className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => (open ? setOpen(false) : buka())}
+        onClick={() => setOpen((o) => !o)}
         aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -81,14 +80,9 @@ export default function JamPicker({
       {open && (
         <div
           ref={panelRef}
-          style={{
-            position: "fixed",
-            top: anchor.top,
-            left: anchor.left,
-            width: anchor.w,
-            zIndex: 50,
-          }}
-          className="rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+          className={`absolute left-0 z-50 w-full min-w-[13rem] max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white p-3 shadow-xl ${
+            arah === "bawah" ? "top-full mt-1" : "bottom-full mb-1"
+          }`}
         >
           <div className="mb-2 text-sm font-medium text-gray-900">
             Pilih Jam
@@ -100,7 +94,10 @@ export default function JamPicker({
                 <button
                   key={h}
                   type="button"
-                  onClick={() => pilih(h)}
+                  onClick={() => {
+                    onChange(h);
+                    setOpen(false);
+                  }}
                   aria-pressed={dipilih}
                   className={[
                     "rounded border px-2 py-1.5 text-center text-xs font-medium transition",
