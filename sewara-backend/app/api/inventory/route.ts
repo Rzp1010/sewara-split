@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getServerClient, getServiceRoleClient } from '@/lib/api/supabase';
+import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
 import { getTenantId, withTenant } from '@/lib/api/tenant';
 import { successResponse } from '@/lib/api/response';
@@ -44,24 +44,10 @@ export const POST = withErrorHandler(async (request) => {
 
   const body = await request.json();
   const { id, ...cleanBody } = body; // Strip id dari frontend
-  
-  // Generate id: epoch-ms global (domain id inventory memang timestamp ms dari
-  // era pre-split; max+1 numeric kecil nabrak baris tenant lain — lihat riwayat
-  // bug duplicate inventory_pkey). Urut DESC = max global, service role = tanpa
-  // filter RLS tenant.
-  // ponytail: tabrakan dua POST dalam millidetik yang sama masih mungkin;
-  // upgrade path = sequence DB asli / generateUuid.
-  const admin = getServiceRoleClient();
-  const { data: maxRow } = await admin
-    .from('inventory')
-    .select('id')
-    .order('id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const nowMs = Date.now();
-  const nextId = Math.max(nowMs, (Number(maxRow?.id) || 0) + 1);
-  
-  const [row] = await withTenant(supabase, user.id, [{ ...cleanBody, id: nextId }]);
+
+  // id dari DEFAULT sequence DB (inventory_id_seq, migration 20260928) — atomik,
+  // tidak ada lagi tebak max+1 (race duplicate inventory_pkey).
+  const [row] = await withTenant(supabase, user.id, [cleanBody]);
 
   const { data, error } = await supabase
     .from('inventory')
