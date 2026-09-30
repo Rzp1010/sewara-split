@@ -57,19 +57,6 @@ export default function InvoiceView({ data, onClose }) {
     const padLama = isi.style.padding;
     if (tombol) tombol.style.display = "none";
     isi.style.padding = "24px";
-    // PDF selalu 1 salinan portrait: selama capture, sembunyikan salinan ke-2
-    // dan netralkan scale preview mode ganda (dipulihkan di finally).
-    const wrap = ganda ? isi.querySelector(".cetak-dupanya") : null;
-    const belah = wrap ? [...wrap.children] : [];
-    if (wrap) {
-      wrap.style.display = "block";
-      belah.forEach((b, i) => (b.style.display = i === 0 ? "block" : "none"));
-      const dalam = belah[0]?.firstElementChild;
-      if (dalam) {
-        dalam.style.width = "100%";
-        dalam.style.transform = "none";
-      }
-    }
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
@@ -93,15 +80,6 @@ export default function InvoiceView({ data, onClose }) {
     } finally {
       isi.style.padding = padLama;
       if (tombol) tombol.style.display = styleLama;
-      if (wrap) {
-        wrap.style.display = "";
-        belah.forEach((b) => (b.style.display = ""));
-        const dalam = belah[0]?.firstElementChild;
-        if (dalam) {
-          dalam.style.width = "";
-          dalam.style.transform = "";
-        }
-      }
     }
   }
 
@@ -369,18 +347,21 @@ export default function InvoiceView({ data, onClose }) {
           className="min-h-0 flex-1 overflow-y-auto p-10 md:p-14"
         >
           {ganda ? (
-            <div className="cetak-dupanya flex h-full items-start">
-              <div className="basis-1/2 overflow-hidden">
-                <div className="w-[161%] origin-top-left scale-[0.62]">
-                  {salinan}
+            <>
+              <div className="cetak-dupanya hidden">
+                <div className="cetak-belah overflow-hidden">
+                  <div className="w-[161%] origin-top-left scale-[0.62]">
+                    {salinan}
+                  </div>
+                </div>
+                <div className="cetak-belah overflow-hidden">
+                  <div className="w-[161%] origin-top-left scale-[0.62]">
+                    {salinan}
+                  </div>
                 </div>
               </div>
-              <div className="basis-1/2 overflow-hidden border-l border-dashed border-gray-400">
-                <div className="w-[161%] origin-top-left scale-[0.62]">
-                  {salinan}
-                </div>
-              </div>
-            </div>
+              <div className="cetak-solo">{salinan}</div>
+            </>
           ) : (
             salinan
           )}
