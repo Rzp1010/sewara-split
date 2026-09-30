@@ -42,7 +42,7 @@ export const DEFAULT_LAYOUT = {
     "diserahkan_oleh",
   ],
   kanan: ["penyewa", "hp", "alamat", "jaminan", "status_bayar"],
-  tengah: ["footer_catatan"],
+  tengah: ["aksesoris", "footer_catatan"],
   bawah: ["ttd"],
 };
 
