@@ -838,7 +838,7 @@ export default function PengaturanPage() {
                     Susunan custom aktif
                   </p>
                   <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
-                    {["atas", "kiri", "kanan", "bawah"]
+                    {["atas", "kiri", "kanan", "tengah", "bawah"]
                       .map((z) =>
                         (f.invoice_layout[z] || []).length > 0
                           ? `${z[0].toUpperCase()}${z.slice(1)}: ${f.invoice_layout[z].length} field`
