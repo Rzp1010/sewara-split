@@ -333,22 +333,18 @@ export default function InvoiceView({ data, onClose }) {
               <div className="blok-ttd mt-8 flex justify-between gap-12">
                 <div className="w-[45%]">
                   <p className="m-0">Penyewa,</p>
-                  <div className="h-[18mm]" />
-                  <div className="border-t border-solid border-[#333] pt-1">
-                    <p className="m-0 break-words">{data.penyewa || "-"}</p>
-                  </div>
+                  <div className="h-[18mm] border-b border-[#333]" />
+                  <p className="m-0 mt-1 break-words">{data.penyewa || "-"}</p>
                 </div>
                 <div className="w-[45%]">
                   <p className="m-0">Yang Melayani,</p>
-                  <div className="h-[18mm]" />
-                  <div className="border-t border-solid border-[#333] pt-1">
-                    <p className="m-0 break-words">
-                      {namaAksi("serahkan") ||
-                        namaAksi("booking") ||
-                        data.dilayani_oleh ||
-                        "-"}
-                    </p>
-                  </div>
+                  <div className="h-[18mm] border-b border-[#333]" />
+                  <p className="m-0 mt-1 break-words">
+                    {namaAksi("serahkan") ||
+                      namaAksi("booking") ||
+                      data.dilayani_oleh ||
+                      "-"}
+                  </p>
                 </div>
               </div>
             )}
