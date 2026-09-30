@@ -109,6 +109,12 @@
     animation: none !important;
     transform: none !important;
   }
+  /* blok tanda tangan + ringkasan jangan terpotong antar halaman */
+  #cetak_invoice .blok-ttd,
+  #cetak_invoice .blok-summary {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
 
 /* ============================================================
