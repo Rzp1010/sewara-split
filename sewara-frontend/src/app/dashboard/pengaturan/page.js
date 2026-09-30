@@ -41,7 +41,13 @@ const TABS = [
 ];
 
 const KEYS_TAB = {
-  invoice: ["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer"],
+  invoice: [
+    "invoice_prefix",
+    "invoice_digit",
+    "invoice_mulai",
+    "invoice_footer",
+    "invoice_ganda",
+  ],
   profil: [],
   pengembangan: [],
   info: [],
@@ -378,6 +384,7 @@ export default function PengaturanPage() {
         invoice_digit: String(getSetting("invoice_digit", "6") || "6"),
         invoice_mulai: String(getSetting("invoice_mulai", "1") || "1"),
         invoice_footer: getSetting("invoice_footer", "") || "",
+        invoice_ganda: getSetting("invoice_ganda", false) === true,
         jam_mode: getSetting("jam_mode", "buka_tutup") || "buka_tutup",
         jam_buka: String(getSetting("jam_buka", "6") ?? "6"),
         jam_tutup: String(getSetting("jam_tutup", "22") ?? "22"),
@@ -495,13 +502,14 @@ export default function PengaturanPage() {
         /* Samakan perilaku SettingsModal: reset counter biar nomor berikutnya mulai dari nilai baru */
         setSetting("invoice_counter", String((parseInt(mulai, 10) || 1) - 1));
         setSetting("invoice_footer", f.invoice_footer);
+        setSetting("invoice_ganda", f.invoice_ganda === true);
         setForm((p) => ({
           ...p,
           invoice_prefix: prefix,
           invoice_digit: digit,
           invoice_mulai: mulai,
         }));
-        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer"], "Invoice");
+        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda"], "Invoice");
       } else if (tab === "operasional") {
         setSetting("jam_mode", f.jam_mode || "buka_tutup");
         setSetting("jam_buka", f.jam_buka === "" ? 6 : Number(f.jam_buka));
@@ -755,6 +763,20 @@ export default function PengaturanPage() {
               rows={3}
               className={INPUT_CLS}
               placeholder="Terima kasih. Harap kembalikan barang lengkap sesuai Nomor Seri..."
+            />
+          </Field>
+
+          <Field
+            label="Cetak 2 salinan dalam 1 halaman A4 landscape"
+            hint="Dua invoice identik berdampingan (kiri-kanan) untuk dipotong menjadi salinan pelanggan & arsip. Hanya berlaku untuk tombol Cetak."
+          >
+            <Seg
+              value={f.invoice_ganda}
+              onChange={(v) => setNilai("invoice_ganda", v)}
+              options={[
+                { value: false, label: "Nonaktif" },
+                { value: true, label: "Aktif" },
+              ]}
             />
           </Field>
 

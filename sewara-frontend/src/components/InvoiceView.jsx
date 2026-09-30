@@ -37,6 +37,7 @@ function BarisTotal({ label, value }) {
 
 export default function InvoiceView({ data, onClose }) {
   const footer = getSetting("invoice_footer", "") || FOOTER_DEFAULT;
+  const ganda = getSetting("invoice_ganda", false) === true;
   const pay = hitungPembayaran(data);
   const namaAksi = (aksi) =>
     data.riwayatDilayani?.find((r) => r.aksi === aksi)?.nama || "";
@@ -56,6 +57,19 @@ export default function InvoiceView({ data, onClose }) {
     const padLama = isi.style.padding;
     if (tombol) tombol.style.display = "none";
     isi.style.padding = "24px";
+    // PDF selalu 1 salinan portrait: selama capture, sembunyikan salinan ke-2
+    // dan netralkan scale preview mode ganda (dipulihkan di finally).
+    const wrap = ganda ? isi.querySelector(".cetak-dupanya") : null;
+    const belah = wrap ? [...wrap.children] : [];
+    if (wrap) {
+      wrap.style.display = "block";
+      belah.forEach((b, i) => (b.style.display = i === 0 ? "block" : "none"));
+      const dalam = belah[0]?.firstElementChild;
+      if (dalam) {
+        dalam.style.width = "100%";
+        dalam.style.transform = "none";
+      }
+    }
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
@@ -79,24 +93,37 @@ export default function InvoiceView({ data, onClose }) {
     } finally {
       isi.style.padding = padLama;
       if (tombol) tombol.style.display = styleLama;
+      if (wrap) {
+        wrap.style.display = "";
+        belah.forEach((b) => (b.style.display = ""));
+        const dalam = belah[0]?.firstElementChild;
+        if (dalam) {
+          dalam.style.width = "";
+          dalam.style.transform = "";
+        }
+      }
     }
   }
 
-  const konten = (
-    <div
-      id="cetak_invoice"
-      onClick={() => onClose?.()}
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-    >
-      <div
-        id="invoice_kartu"
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white p-6 shadow-xl animate-scaleIn"
-      >
-        <div
-          id="invoice_isi"
-          className="min-h-0 flex-1 overflow-y-auto p-10 md:p-14"
-        >
+  // Cetak: mode ganda per-tenant pasang @page landscape sesaat + tandai #cetak_invoice.
+  function cetak() {
+    const gandaAktif = getSetting("invoice_ganda", false) === true;
+    let st;
+    if (gandaAktif) {
+      st = document.createElement("style");
+      st.textContent = "@page { size: A4 landscape; margin: 0; }";
+      document.head.appendChild(st);
+      document.getElementById("cetak_invoice")?.classList.add("cetak-ganda");
+    }
+    window.print();
+    if (st) {
+      st.remove();
+      document.getElementById("cetak_invoice")?.classList.remove("cetak-ganda");
+    }
+  }
+
+  const salinan = (
+    <>
           {/* Blueprint: .invoice-box — font dasar 14px, warna #333 */}
           <div className="text-sm text-[#333]">
             {/* Blueprint: h1 — tengah, uppercase, letter-spacing 2px */}
@@ -323,11 +350,45 @@ export default function InvoiceView({ data, onClose }) {
               </table>
             </div>
           </div>
+      </>
+  );
+
+  const konten = (
+    <div
+      id="cetak_invoice"
+      onClick={() => onClose?.()}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div
+        id="invoice_kartu"
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white p-6 shadow-xl animate-scaleIn"
+      >
+        <div
+          id="invoice_isi"
+          className="min-h-0 flex-1 overflow-y-auto p-10 md:p-14"
+        >
+          {ganda ? (
+            <div className="cetak-dupanya flex h-full items-start">
+              <div className="basis-1/2 overflow-hidden">
+                <div className="w-[161%] origin-top-left scale-[0.62]">
+                  {salinan}
+                </div>
+              </div>
+              <div className="basis-1/2 overflow-hidden border-l border-dashed border-gray-400">
+                <div className="w-[161%] origin-top-left scale-[0.62]">
+                  {salinan}
+                </div>
+              </div>
+            </div>
+          ) : (
+            salinan
+          )}
         </div>
 
         <div className="no-print flex shrink-0 items-center justify-center gap-2 border-t border-solid border-gray-200 p-4">
           <button
-            onClick={() => window.print()}
+            onClick={cetak}
             className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
           >
             Cetak

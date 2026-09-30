@@ -47,6 +47,50 @@
     overflow: visible !important;
     max-height: none !important;
   }
+
+  /* cetak 2 salinan A4 landscape (invoice_ganda) */
+  #cetak_invoice.cetak-ganda {
+    width: 100% !important;
+  }
+  #cetak_invoice.cetak-ganda #invoice_isi {
+    overflow: hidden !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+  #cetak_invoice.cetak-ganda #invoice_kartu {
+    max-height: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    width: 297mm;
+    height: 210mm;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya > * {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    overflow: hidden !important;
+    padding: 8mm !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya > *:last-child {
+    border-left: 1px dashed #9ca3af !important;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya > * > div {
+    width: 100% !important;
+    transform: none !important;
+  }
+  .animate-scaleIn {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* ============================================================
