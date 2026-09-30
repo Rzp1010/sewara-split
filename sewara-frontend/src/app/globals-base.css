@@ -82,8 +82,12 @@
     background: #fff;
   }
   #cetak_invoice.cetak-ganda .cetak-dupanya .cetak-belah > div {
-    width: 100% !important;
-    transform: none !important;
+    /* render selebar A4 penuh lalu perkecil 0.63x: 210mm*0,63 = 132mm =
+       lebar bersih setengah landscape (297/2 - padding 8mm). Tinggi aman
+       (297mm*0,63 = 187mm < 210mm). */
+    width: 210mm !important;
+    transform: scale(0.63) !important;
+    transform-origin: top left;
   }
   /* tanda potong: dua segmen dashed pendek di tengah tepi atas & bawah */
   #cetak_invoice.cetak-ganda .cetak-dupanya::before,
