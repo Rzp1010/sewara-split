@@ -91,7 +91,7 @@ function BadgeStatus({ status }) {
 
 export function TabelItem({ data }) {
   return (
-    <table className="my-4 w-full border-collapse">
+    <table className="mt-4 mb-1 w-full border-collapse">
       <thead>
         <tr>
           <th className="bg-[#e6ecf5] p-2 text-left text-[#333]">Item Sewa</th>
