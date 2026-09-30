@@ -63,29 +63,43 @@
     width: 100% !important;
     padding: 0 !important;
   }
+  #cetak_invoice.cetak-ganda .cetak-solo {
+    display: none !important;
+  }
   #cetak_invoice.cetak-ganda .cetak-dupanya {
     display: flex !important;
-    flex-direction: row !important;
-    align-items: stretch !important;
+    position: relative;
+    align-items: stretch;
     gap: 0 !important;
     width: 297mm;
     height: 210mm;
   }
-  #cetak_invoice.cetak-ganda .cetak-dupanya > * {
-    flex: 0 0 50% !important;
-    width: 50% !important;
-    max-width: 50% !important;
-    overflow: hidden !important;
-    padding: 8mm !important;
-    box-sizing: border-box !important;
-    background: #fff !important;
+  #cetak_invoice.cetak-ganda .cetak-dupanya .cetak-belah {
+    flex: 0 0 50%;
+    overflow: hidden;
+    padding: 8mm;
+    box-sizing: border-box;
+    background: #fff;
   }
-  #cetak_invoice.cetak-ganda .cetak-dupanya > *:last-child {
-    border-left: 1px dashed #9ca3af !important;
-  }
-  #cetak_invoice.cetak-ganda .cetak-dupanya > * > div {
+  #cetak_invoice.cetak-ganda .cetak-dupanya .cetak-belah > div {
     width: 100% !important;
     transform: none !important;
+  }
+  /* tanda potong: dua segmen dashed pendek di tengah tepi atas & bawah */
+  #cetak_invoice.cetak-ganda .cetak-dupanya::before,
+  #cetak_invoice.cetak-ganda .cetak-dupanya::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 0;
+    border-left: 1px dashed #9ca3af;
+    height: 15mm;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya::before {
+    top: 0;
+  }
+  #cetak_invoice.cetak-ganda .cetak-dupanya::after {
+    bottom: 0;
   }
   .animate-scaleIn {
     animation: none !important;
