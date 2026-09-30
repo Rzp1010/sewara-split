@@ -190,10 +190,10 @@ export default function DateTimePicker({
 
   const nav = (n) => setView(new Date(tahun, bulan + n, 1));
 
-  // Slot waktu 24 jam interval 5 menit (00:00-23:55) = 288 slot
+  // Slot waktu 24 jam interval 30 menit (00:00-23:30) = 48 slot
   const slot = [];
   for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 5) {
+    for (let m = 0; m < 60; m += 30) {
       const dis = !draft || slotDisabled(h, m);
       const aktif =
         Boolean(draft) && draft.getHours() === h && draft.getMinutes() === m;
