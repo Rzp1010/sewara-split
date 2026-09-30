@@ -42,7 +42,8 @@ export const DEFAULT_LAYOUT = {
     "diserahkan_oleh",
   ],
   kanan: ["penyewa", "hp", "alamat", "jaminan", "status_bayar"],
-  bawah: ["ttd", "footer_catatan"],
+  tengah: ["footer_catatan"],
+  bawah: ["ttd"],
 };
 
 /* ===== Helper baris (dipindah dari InvoiceView agar dipakai bersama) ===== */

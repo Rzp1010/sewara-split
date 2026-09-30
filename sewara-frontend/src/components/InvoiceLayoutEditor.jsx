@@ -53,6 +53,7 @@ function klonLayout(l) {
     atas: [...(l?.atas || [])],
     kiri: [...(l?.kiri || [])],
     kanan: [...(l?.kanan || [])],
+    tengah: [...(l?.tengah || [])],
     bawah: [...(l?.bawah || [])],
   };
 }
@@ -145,6 +146,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
     ...draft.atas,
     ...draft.kiri,
     ...draft.kanan,
+    ...draft.tengah,
     ...draft.bawah,
   ]);
   const tersedia = FIELD_DEFS.filter((f) => !terpakai.has(f.key));
@@ -233,6 +235,37 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
                   onHapus={(i) => hapus("kanan", i)}
                   onGeser={(i, d) => geser("kanan", i, d)}
                 />
+              </div>
+
+              {/* Kartu terkunci: Daftar Alat — selalu tampil, tidak bisa diedit */}
+              <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
+                <p className="m-0 text-sm font-semibold text-gray-500">
+                  Daftar Alat
+                </p>
+                <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                  Bagian ini selalu tampil
+                </p>
+              </div>
+
+              {/* Zona Tengah (editable, di samping Total) + Total (terkunci) */}
+              <div className="grid grid-cols-2 gap-4">
+                <ZonaCard
+                  label="Ringkasan Kiri"
+                  sub="catatan/teks di samping total"
+                  daftar={draft.tengah}
+                  tersedia={tersedia}
+                  onTambah={(k) => tambah("tengah", k)}
+                  onHapus={(i) => hapus("tengah", i)}
+                  onGeser={(i, d) => geser("tengah", i, d)}
+                />
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
+                  <p className="m-0 text-sm font-semibold text-gray-500">
+                    Total
+                  </p>
+                  <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                    Bagian ini selalu tampil
+                  </p>
+                </div>
               </div>
 
               <ZonaCard

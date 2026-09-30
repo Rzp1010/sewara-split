@@ -122,6 +122,7 @@ function CustomBody({ data, layout, footer, namaAksi, pay }) {
   const atas = layout.atas || [];
   const kiri = layout.kiri || [];
   const kanan = layout.kanan || [];
+  const tengah = layout.tengah || [];
   const bawah = layout.bawah || [];
 
   return (
@@ -153,7 +154,16 @@ function CustomBody({ data, layout, footer, namaAksi, pay }) {
 
       <TabelItem data={data} />
 
-      <div className="blok-summary mt-5 flex justify-end">
+      <div
+        className={`blok-summary mt-5 flex items-start gap-6 ${
+          tengah.length > 0 ? "justify-between" : "justify-end"
+        }`}
+      >
+        {tengah.length > 0 && (
+          <div className="w-1/2 leading-[1.4]">
+            <ZonaStack daftar={tengah} data={data} ctx={ctx} />
+          </div>
+        )}
         <TabelTotal data={data} pay={pay} className="w-[45%]" />
       </div>
 
