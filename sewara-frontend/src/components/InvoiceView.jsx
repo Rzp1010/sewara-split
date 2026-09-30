@@ -256,7 +256,7 @@ export default function InvoiceView({ data, onClose }) {
               return (
                 <div className="mt-4 pt-3">
                   <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[#666]">
-                    Printilan
+                    Aksesoris
                   </p>
                   <ul className="list-none pl-0 text-sm leading-[1.6] text-[#333]">
                     {items.map((item, i) => (
