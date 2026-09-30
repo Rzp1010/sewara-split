@@ -92,10 +92,12 @@ function LegacyBody({ data, footer, namaAksi, pay }) {
       </div>
 
       <TabelItem data={data} />
-      <BlokAksesoris data={data} />
 
       <div className="blok-summary mt-2 flex items-start justify-between gap-6">
-        <div className="w-1/2 text-sm leading-[1.5] text-[#666]">{footer}</div>
+        <div className="w-1/2 text-sm leading-[1.5] text-[#666]">
+          <BlokAksesoris data={data} />
+          {footer}
+        </div>
         <TabelTotal data={data} pay={pay} className="w-[45%]" />
       </div>
 
