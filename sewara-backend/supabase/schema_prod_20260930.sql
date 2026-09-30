@@ -387,6 +387,143 @@ CREATE TABLE public.transactions (
       printilan jsonb DEFAULT '[]'::jsonb
 );
 
+-- ===== indexes (68) =====
+CREATE INDEX idx_activity_logs_user_id ON public.activity_logs USING btree (user_id);
+
+CREATE INDEX idx_logs_waktu ON public.activity_logs USING btree (waktu);
+
+CREATE INDEX idx_auth_verification_resends_ip ON public.auth_verification_resends USING btree (ip);
+
+CREATE INDEX idx_inventory_nama ON public.inventory USING btree (nama);
+
+CREATE INDEX idx_inventory_user_id ON public.inventory USING btree (user_id);
+
+CREATE UNIQUE INDEX uq_inventory_id_user_id ON public.inventory USING btree (id, user_id);
+
+CREATE INDEX idx_inventory_units_available ON public.inventory_units USING btree (inventory_id, serial_number) WHERE (status = 'available'::text);
+
+CREATE INDEX idx_inventory_units_inventory_id ON public.inventory_units USING btree (inventory_id);
+
+CREATE INDEX idx_inventory_units_status ON public.inventory_units USING btree (status);
+
+CREATE INDEX idx_inventory_units_user_id ON public.inventory_units USING btree (user_id);
+
+CREATE INDEX idx_login_logs_email_event_created ON public.login_logs USING btree (email, event, created_at DESC);
+
+CREATE INDEX idx_login_logs_ip_event_created ON public.login_logs USING btree (ip, event, created_at DESC);
+
+CREATE INDEX idx_login_logs_owner_created ON public.login_logs USING btree (owner_id, created_at DESC);
+
+CREATE INDEX idx_member_templates_user_id ON public.member_types USING btree (user_id);
+
+CREATE UNIQUE INDEX uq_member_types_id_user_id ON public.member_types USING btree (id, user_id);
+
+CREATE INDEX idx_members_email ON public.members USING btree (email) WHERE (email IS NOT NULL);
+
+CREATE INDEX idx_members_hp ON public.members USING btree (hp) WHERE (hp IS NOT NULL);
+
+CREATE INDEX idx_members_user_id ON public.members USING btree (user_id);
+
+CREATE UNIQUE INDEX uq_members_id_user_id ON public.members USING btree (id, user_id);
+
+CREATE INDEX idx_permissions_active ON public.permissions USING btree (is_active) WHERE (is_active = true);
+
+CREATE INDEX idx_permissions_category ON public.permissions USING btree (category);
+
+CREATE INDEX idx_permissions_code ON public.permissions USING btree (code);
+
+CREATE INDEX idx_promo_codes_user_id ON public.promo_codes USING btree (user_id);
+
+CREATE INDEX idx_role_permissions_permission ON public.role_permissions USING btree (permission_id);
+
+CREATE INDEX idx_role_permissions_role ON public.role_permissions USING btree (role);
+
+CREATE INDEX idx_settings_user_id ON public.settings USING btree (user_id);
+
+CREATE INDEX idx_feature_overrides_owner ON public.sewara_feature_overrides USING btree (owner_id);
+
+CREATE INDEX idx_feature_overrides_valid ON public.sewara_feature_overrides USING btree (valid_from, valid_until);
+
+CREATE INDEX idx_payment_methods_default ON public.sewara_payment_methods USING btree (is_default) WHERE (is_default = true);
+
+CREATE INDEX idx_payment_methods_owner ON public.sewara_payment_methods USING btree (owner_id);
+
+CREATE INDEX idx_plan_features_code ON public.sewara_plan_features USING btree (feature_code);
+
+CREATE INDEX idx_plan_features_plan ON public.sewara_plan_features USING btree (plan_id);
+
+CREATE INDEX idx_sewara_plans_active ON public.sewara_plans USING btree (is_active) WHERE (is_active = true);
+
+CREATE INDEX idx_sewara_plans_slug ON public.sewara_plans USING btree (slug);
+
+CREATE INDEX idx_sub_events_created ON public.sewara_subscription_events USING btree (created_at DESC);
+
+CREATE INDEX idx_sub_events_processed ON public.sewara_subscription_events USING btree (processed);
+
+CREATE INDEX idx_sub_events_subscription ON public.sewara_subscription_events USING btree (subscription_id);
+
+CREATE INDEX idx_sub_events_type ON public.sewara_subscription_events USING btree (event_type);
+
+CREATE INDEX idx_sub_payments_created ON public.sewara_subscription_payments USING btree (created_at DESC);
+
+CREATE INDEX idx_sub_payments_external ON public.sewara_subscription_payments USING btree (external_payment_id);
+
+CREATE INDEX idx_sub_payments_status ON public.sewara_subscription_payments USING btree (status);
+
+CREATE INDEX idx_sub_payments_subscription ON public.sewara_subscription_payments USING btree (subscription_id);
+
+CREATE INDEX idx_subscriptions_owner ON public.sewara_subscriptions USING btree (owner_id);
+
+CREATE INDEX idx_subscriptions_period_end ON public.sewara_subscriptions USING btree (current_period_end);
+
+CREATE INDEX idx_subscriptions_plan ON public.sewara_subscriptions USING btree (plan_id);
+
+CREATE INDEX idx_subscriptions_status ON public.sewara_subscriptions USING btree (status);
+
+CREATE INDEX idx_usage_counters_feature ON public.sewara_usage_counters USING btree (feature_code);
+
+CREATE INDEX idx_usage_counters_owner ON public.sewara_usage_counters USING btree (owner_id);
+
+CREATE INDEX idx_usage_counters_period ON public.sewara_usage_counters USING btree (period_start, period_end);
+
+CREATE INDEX idx_staff_permissions_permission ON public.staff_permissions USING btree (permission_id);
+
+CREATE INDEX idx_staff_permissions_staff ON public.staff_permissions USING btree (staff_user_id, owner_id);
+
+CREATE INDEX idx_transaction_items_inventory_id ON public.transaction_items USING btree (inventory_id) WHERE (inventory_id IS NOT NULL);
+
+CREATE INDEX idx_transaction_items_sn ON public.transaction_items USING btree (transaction_id, serial_number) WHERE (serial_number IS NOT NULL);
+
+CREATE INDEX idx_transaction_items_transaction_id ON public.transaction_items USING btree (transaction_id);
+
+CREATE INDEX idx_transaction_items_user_id ON public.transaction_items USING btree (user_id);
+
+CREATE INDEX idx_transaction_payments_date ON public.transaction_payments USING btree (payment_date DESC);
+
+CREATE INDEX idx_transaction_payments_method ON public.transaction_payments USING btree (payment_method);
+
+CREATE INDEX idx_transaction_payments_transaction_id ON public.transaction_payments USING btree (transaction_id);
+
+CREATE INDEX idx_transaction_payments_user_id ON public.transaction_payments USING btree (user_id);
+
+CREATE INDEX idx_transactions_dilayani_oleh ON public.transactions USING btree (dilayani_oleh);
+
+CREATE INDEX idx_transactions_member_id ON public.transactions USING btree (member_id) WHERE (member_id IS NOT NULL);
+
+CREATE INDEX idx_transactions_no_invoice ON public.transactions USING btree (no_invoice) WHERE (no_invoice IS NOT NULL);
+
+CREATE INDEX idx_transactions_status ON public.transactions USING btree (status);
+
+CREATE INDEX idx_transactions_user_created ON public.transactions USING btree (user_id, created_at DESC);
+
+CREATE INDEX idx_transactions_user_id ON public.transactions USING btree (user_id);
+
+CREATE INDEX idx_transactions_user_status ON public.transactions USING btree (user_id, status);
+
+CREATE INDEX idx_transactions_user_status_created ON public.transactions USING btree (user_id, status, created_at DESC);
+
+CREATE UNIQUE INDEX uq_transactions_id_user_id ON public.transactions USING btree (id, user_id);
+
 -- ===== constraints (80) =====
 ALTER TABLE public.activity_logs ADD CONSTRAINT activity_logs_pkey PRIMARY KEY (id);
 
@@ -547,135 +684,6 @@ ALTER TABLE public.transactions ADD CONSTRAINT fk_transactions_member FOREIGN KE
 ALTER TABLE public.transactions ADD CONSTRAINT fk_transactions_member_tenant FOREIGN KEY (member_id, user_id) REFERENCES members(id, user_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 ALTER TABLE public.transactions ADD CONSTRAINT transactions_member_id_fkey FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE SET NULL;
-
--- ===== indexes (64) =====
-CREATE INDEX idx_activity_logs_user_id ON public.activity_logs USING btree (user_id);
-
-CREATE INDEX idx_logs_waktu ON public.activity_logs USING btree (waktu);
-
-CREATE INDEX idx_auth_verification_resends_ip ON public.auth_verification_resends USING btree (ip);
-
-CREATE INDEX idx_inventory_nama ON public.inventory USING btree (nama);
-
-CREATE INDEX idx_inventory_user_id ON public.inventory USING btree (user_id);
-
-CREATE INDEX idx_inventory_units_available ON public.inventory_units USING btree (inventory_id, serial_number) WHERE (status = 'available'::text);
-
-CREATE INDEX idx_inventory_units_inventory_id ON public.inventory_units USING btree (inventory_id);
-
-CREATE INDEX idx_inventory_units_status ON public.inventory_units USING btree (status);
-
-CREATE INDEX idx_inventory_units_user_id ON public.inventory_units USING btree (user_id);
-
-CREATE INDEX idx_login_logs_email_event_created ON public.login_logs USING btree (email, event, created_at DESC);
-
-CREATE INDEX idx_login_logs_ip_event_created ON public.login_logs USING btree (ip, event, created_at DESC);
-
-CREATE INDEX idx_login_logs_owner_created ON public.login_logs USING btree (owner_id, created_at DESC);
-
-CREATE INDEX idx_member_templates_user_id ON public.member_types USING btree (user_id);
-
-CREATE INDEX idx_members_email ON public.members USING btree (email) WHERE (email IS NOT NULL);
-
-CREATE INDEX idx_members_hp ON public.members USING btree (hp) WHERE (hp IS NOT NULL);
-
-CREATE INDEX idx_members_user_id ON public.members USING btree (user_id);
-
-CREATE INDEX idx_permissions_active ON public.permissions USING btree (is_active) WHERE (is_active = true);
-
-CREATE INDEX idx_permissions_category ON public.permissions USING btree (category);
-
-CREATE INDEX idx_permissions_code ON public.permissions USING btree (code);
-
-CREATE INDEX idx_promo_codes_user_id ON public.promo_codes USING btree (user_id);
-
-CREATE INDEX idx_role_permissions_permission ON public.role_permissions USING btree (permission_id);
-
-CREATE INDEX idx_role_permissions_role ON public.role_permissions USING btree (role);
-
-CREATE INDEX idx_settings_user_id ON public.settings USING btree (user_id);
-
-CREATE INDEX idx_feature_overrides_owner ON public.sewara_feature_overrides USING btree (owner_id);
-
-CREATE INDEX idx_feature_overrides_valid ON public.sewara_feature_overrides USING btree (valid_from, valid_until);
-
-CREATE INDEX idx_payment_methods_default ON public.sewara_payment_methods USING btree (is_default) WHERE (is_default = true);
-
-CREATE INDEX idx_payment_methods_owner ON public.sewara_payment_methods USING btree (owner_id);
-
-CREATE INDEX idx_plan_features_code ON public.sewara_plan_features USING btree (feature_code);
-
-CREATE INDEX idx_plan_features_plan ON public.sewara_plan_features USING btree (plan_id);
-
-CREATE INDEX idx_sewara_plans_active ON public.sewara_plans USING btree (is_active) WHERE (is_active = true);
-
-CREATE INDEX idx_sewara_plans_slug ON public.sewara_plans USING btree (slug);
-
-CREATE INDEX idx_sub_events_created ON public.sewara_subscription_events USING btree (created_at DESC);
-
-CREATE INDEX idx_sub_events_processed ON public.sewara_subscription_events USING btree (processed);
-
-CREATE INDEX idx_sub_events_subscription ON public.sewara_subscription_events USING btree (subscription_id);
-
-CREATE INDEX idx_sub_events_type ON public.sewara_subscription_events USING btree (event_type);
-
-CREATE INDEX idx_sub_payments_created ON public.sewara_subscription_payments USING btree (created_at DESC);
-
-CREATE INDEX idx_sub_payments_external ON public.sewara_subscription_payments USING btree (external_payment_id);
-
-CREATE INDEX idx_sub_payments_status ON public.sewara_subscription_payments USING btree (status);
-
-CREATE INDEX idx_sub_payments_subscription ON public.sewara_subscription_payments USING btree (subscription_id);
-
-CREATE INDEX idx_subscriptions_owner ON public.sewara_subscriptions USING btree (owner_id);
-
-CREATE INDEX idx_subscriptions_period_end ON public.sewara_subscriptions USING btree (current_period_end);
-
-CREATE INDEX idx_subscriptions_plan ON public.sewara_subscriptions USING btree (plan_id);
-
-CREATE INDEX idx_subscriptions_status ON public.sewara_subscriptions USING btree (status);
-
-CREATE INDEX idx_usage_counters_feature ON public.sewara_usage_counters USING btree (feature_code);
-
-CREATE INDEX idx_usage_counters_owner ON public.sewara_usage_counters USING btree (owner_id);
-
-CREATE INDEX idx_usage_counters_period ON public.sewara_usage_counters USING btree (period_start, period_end);
-
-CREATE INDEX idx_staff_permissions_permission ON public.staff_permissions USING btree (permission_id);
-
-CREATE INDEX idx_staff_permissions_staff ON public.staff_permissions USING btree (staff_user_id, owner_id);
-
-CREATE INDEX idx_transaction_items_inventory_id ON public.transaction_items USING btree (inventory_id) WHERE (inventory_id IS NOT NULL);
-
-CREATE INDEX idx_transaction_items_sn ON public.transaction_items USING btree (transaction_id, serial_number) WHERE (serial_number IS NOT NULL);
-
-CREATE INDEX idx_transaction_items_transaction_id ON public.transaction_items USING btree (transaction_id);
-
-CREATE INDEX idx_transaction_items_user_id ON public.transaction_items USING btree (user_id);
-
-CREATE INDEX idx_transaction_payments_date ON public.transaction_payments USING btree (payment_date DESC);
-
-CREATE INDEX idx_transaction_payments_method ON public.transaction_payments USING btree (payment_method);
-
-CREATE INDEX idx_transaction_payments_transaction_id ON public.transaction_payments USING btree (transaction_id);
-
-CREATE INDEX idx_transaction_payments_user_id ON public.transaction_payments USING btree (user_id);
-
-CREATE INDEX idx_transactions_dilayani_oleh ON public.transactions USING btree (dilayani_oleh);
-
-CREATE INDEX idx_transactions_member_id ON public.transactions USING btree (member_id) WHERE (member_id IS NOT NULL);
-
-CREATE INDEX idx_transactions_no_invoice ON public.transactions USING btree (no_invoice) WHERE (no_invoice IS NOT NULL);
-
-CREATE INDEX idx_transactions_status ON public.transactions USING btree (status);
-
-CREATE INDEX idx_transactions_user_created ON public.transactions USING btree (user_id, created_at DESC);
-
-CREATE INDEX idx_transactions_user_id ON public.transactions USING btree (user_id);
-
-CREATE INDEX idx_transactions_user_status ON public.transactions USING btree (user_id, status);
-
-CREATE INDEX idx_transactions_user_status_created ON public.transactions USING btree (user_id, status, created_at DESC);
 
 -- ===== views (0) =====
 -- ===== replica identity (non-default) (0) =====
