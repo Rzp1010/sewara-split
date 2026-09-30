@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import InvoiceBody from "@/components/InvoiceBody";
 import {
   FIELD_DEFS,
@@ -105,7 +106,9 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
   const namaAksi = (aksi) =>
     CONTOH_STATIS.riwayatDilayani?.find((r) => r.aksi === aksi)?.nama || "";
 
-  return (
+  // Portal ke body: ancestor settings punya transform/animasi yang bikin
+  // position:fixed terkunci ke area kartu (modal cuma nutup sebagian halaman).
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
       onClick={onClose}
@@ -250,6 +253,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
