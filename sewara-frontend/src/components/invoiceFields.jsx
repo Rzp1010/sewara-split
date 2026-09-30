@@ -193,11 +193,11 @@ export function BlokAksesoris({ data }) {
   if (items.length === 0 && customList.length === 0) return null;
 
   return (
-    <div className="mt-4 pt-3">
-      <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[#666]">
+    <div className="mb-2">
+      <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-[#666]">
         Aksesoris
       </p>
-      <ul className="list-none pl-0 text-sm leading-[1.6] text-[#333]">
+      <ul className="m-0 list-none p-0 text-sm leading-[1.4] text-[#333]">
         {items.map((item, i) => (
           <li key={i}>
             {mode === "semua" ? (item.checked ? "✓" : "✗") : "•"} {item.nama}
