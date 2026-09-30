@@ -155,7 +155,7 @@ function CustomBody({ data, layout, footer, namaAksi, pay }) {
       <TabelItem data={data} />
 
       <div
-        className={`blok-summary mt-5 flex items-start gap-6 ${
+        className={`blok-summary mt-2 flex items-start gap-6 ${
           tengah.length > 0 ? "justify-between" : "justify-end"
         }`}
       >
