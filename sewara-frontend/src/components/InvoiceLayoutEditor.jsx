@@ -293,7 +293,16 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
                 Pratinjau
               </p>
               <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
-                <div className="origin-top scale-[0.8] rounded-lg bg-white p-6 shadow-sm">
+                {/* Lebar = A4 sungguhan (794px @96dpi) lalu zoom seragam,
+                    supaya proporsi preview identik dengan hasil cetak/PDF. */}
+                <div
+                  className="mx-auto rounded-lg bg-white shadow-sm"
+                  style={{
+                    width: 794,
+                    padding: 48,
+                    zoom: 0.72,
+                  }}
+                >
                   <InvoiceBody
                     data={CONTOH_STATIS}
                     layout={draft}
