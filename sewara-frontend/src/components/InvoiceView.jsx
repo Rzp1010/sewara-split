@@ -38,6 +38,7 @@ function BarisTotal({ label, value }) {
 export default function InvoiceView({ data, onClose }) {
   const footer = getSetting("invoice_footer", "") || FOOTER_DEFAULT;
   const ganda = getSetting("invoice_ganda", false) === true;
+  const ttd = getSetting("invoice_ttd", false) === true;
   const pay = hitungPembayaran(data);
   const namaAksi = (aksi) =>
     data.riwayatDilayani?.find((r) => r.aksi === aksi)?.nama || "";
@@ -279,7 +280,7 @@ export default function InvoiceView({ data, onClose }) {
             })()}
 
             {/* Blueprint: .summary-container — flex space-between, atas 20px */}
-            <div className="mt-5 flex items-start justify-between gap-6">
+            <div className="blok-summary mt-5 flex items-start justify-between gap-6">
               {/* Blueprint: .note — 50%, 14px, #666, line-height 1.5 */}
               <div className="w-1/2 text-sm leading-[1.5] text-[#666]">
                 {footer}
@@ -327,6 +328,30 @@ export default function InvoiceView({ data, onClose }) {
                 </tbody>
               </table>
             </div>
+
+            {ttd && (
+              <div className="blok-ttd mt-8 flex justify-between gap-12">
+                <div className="w-[45%]">
+                  <p className="m-0">Penyewa,</p>
+                  <div className="h-[18mm]" />
+                  <div className="border-t border-solid border-[#333] pt-1">
+                    <p className="m-0 break-words">{data.penyewa || "-"}</p>
+                  </div>
+                </div>
+                <div className="w-[45%]">
+                  <p className="m-0">Yang Melayani,</p>
+                  <div className="h-[18mm]" />
+                  <div className="border-t border-solid border-[#333] pt-1">
+                    <p className="m-0 break-words">
+                      {namaAksi("serahkan") ||
+                        namaAksi("booking") ||
+                        data.dilayani_oleh ||
+                        "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
       </>
   );

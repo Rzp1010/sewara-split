@@ -47,6 +47,7 @@ const KEYS_TAB = {
     "invoice_mulai",
     "invoice_footer",
     "invoice_ganda",
+    "invoice_ttd",
   ],
   profil: [],
   pengembangan: [],
@@ -385,6 +386,7 @@ export default function PengaturanPage() {
         invoice_mulai: String(getSetting("invoice_mulai", "1") || "1"),
         invoice_footer: getSetting("invoice_footer", "") || "",
         invoice_ganda: getSetting("invoice_ganda", false) === true,
+        invoice_ttd: getSetting("invoice_ttd", false) === true,
         jam_mode: getSetting("jam_mode", "buka_tutup") || "buka_tutup",
         jam_buka: String(getSetting("jam_buka", "6") ?? "6"),
         jam_tutup: String(getSetting("jam_tutup", "22") ?? "22"),
@@ -503,13 +505,14 @@ export default function PengaturanPage() {
         setSetting("invoice_counter", String((parseInt(mulai, 10) || 1) - 1));
         setSetting("invoice_footer", f.invoice_footer);
         setSetting("invoice_ganda", f.invoice_ganda === true);
+        setSetting("invoice_ttd", f.invoice_ttd === true);
         setForm((p) => ({
           ...p,
           invoice_prefix: prefix,
           invoice_digit: digit,
           invoice_mulai: mulai,
         }));
-        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda"], "Invoice");
+        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda", "invoice_ttd"], "Invoice");
       } else if (tab === "operasional") {
         setSetting("jam_mode", f.jam_mode || "buka_tutup");
         setSetting("jam_buka", f.jam_buka === "" ? 6 : Number(f.jam_buka));
@@ -773,6 +776,20 @@ export default function PengaturanPage() {
             <Seg
               value={f.invoice_ganda}
               onChange={(v) => setNilai("invoice_ganda", v)}
+              options={[
+                { value: false, label: "Nonaktif" },
+                { value: true, label: "Aktif" },
+              ]}
+            />
+          </Field>
+
+          <Field
+            label="Kolom Tanda Tangan"
+            hint="Menampilkan kolom tanda tangan Penyewa dan Yang Melayani di bagian bawah invoice."
+          >
+            <Seg
+              value={f.invoice_ttd}
+              onChange={(v) => setNilai("invoice_ttd", v)}
               options={[
                 { value: false, label: "Nonaktif" },
                 { value: true, label: "Aktif" },
