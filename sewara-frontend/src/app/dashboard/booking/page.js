@@ -2104,7 +2104,8 @@ export default function BookingPage() {
                     onClick={() => {
                       const now = new Date();
                       const m = now.getMinutes();
-                      const rounded = Math.ceil(m / 5) * 5;
+                      // snap 30 menit: 00-14 -> :00, 15-44 -> :30, 45-59 -> jam berikutnya
+                      const rounded = Math.round(m / 30) * 30;
                       now.setMinutes(rounded, 0, 0);
                       if (
                         getSetting("jam_mode", "buka_tutup") === "buka_tutup"

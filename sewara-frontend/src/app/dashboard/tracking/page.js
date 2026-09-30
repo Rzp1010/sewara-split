@@ -632,7 +632,8 @@ export default function TrackingPage() {
   };
   const isiSekarangAmbil = () => {
     const now = new Date();
-    now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+    // snap 30 menit: 00-14 -> :00, 15-44 -> :30, 45-59 -> jam berikutnya
+    now.setMinutes(Math.round(now.getMinutes() / 30) * 30, 0, 0);
     if (getSetting("jam_mode", "buka_tutup") === "buka_tutup") {
       const buka = parseInt(getSetting("jam_buka", "6"), 10) || 6;
       const tutup = parseInt(getSetting("jam_tutup", "22"), 10) || 22;
