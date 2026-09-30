@@ -17,6 +17,8 @@ import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import PasswordInput from "@/components/PasswordInput";
 import JamPicker from "@/components/JamPicker";
+import InvoiceLayoutEditor from "@/components/InvoiceLayoutEditor";
+import { DEFAULT_LAYOUT } from "@/components/invoiceFields";
 
 /* ===== Konstanta UI ===== */
 
@@ -48,6 +50,7 @@ const KEYS_TAB = {
     "invoice_footer",
     "invoice_ganda",
     "invoice_ttd",
+    "invoice_layout",
   ],
   profil: [],
   pengembangan: [],
@@ -339,6 +342,7 @@ export default function PengaturanPage() {
   const [init, setInit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [printilanBaru, setPrintilanBaru] = useState("");
+  const [editorLayoutOpen, setEditorLayoutOpen] = useState(false);
 
   /* Profil (owner) */
   const [userEmail, setUserEmail] = useState("");
@@ -387,6 +391,7 @@ export default function PengaturanPage() {
         invoice_footer: getSetting("invoice_footer", "") || "",
         invoice_ganda: getSetting("invoice_ganda", false) === true,
         invoice_ttd: getSetting("invoice_ttd", false) === true,
+        invoice_layout: getSetting("invoice_layout", null) || null,
         jam_mode: getSetting("jam_mode", "buka_tutup") || "buka_tutup",
         jam_buka: String(getSetting("jam_buka", "6") ?? "6"),
         jam_tutup: String(getSetting("jam_tutup", "22") ?? "22"),
@@ -506,13 +511,14 @@ export default function PengaturanPage() {
         setSetting("invoice_footer", f.invoice_footer);
         setSetting("invoice_ganda", f.invoice_ganda === true);
         setSetting("invoice_ttd", f.invoice_ttd === true);
+        setSetting("invoice_layout", f.invoice_layout || { mode: "default" });
         setForm((p) => ({
           ...p,
           invoice_prefix: prefix,
           invoice_digit: digit,
           invoice_mulai: mulai,
         }));
-        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda", "invoice_ttd"], "Invoice");
+        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda", "invoice_ttd", "invoice_layout"], "Invoice");
       } else if (tab === "operasional") {
         setSetting("jam_mode", f.jam_mode || "buka_tutup");
         setSetting("jam_buka", f.jam_buka === "" ? 6 : Number(f.jam_buka));
@@ -797,10 +803,75 @@ export default function PengaturanPage() {
             />
           </Field>
 
+          <Field
+            label="Tata Letak Invoice"
+            hint="Default memakai susunan bawaan. Custom membebaskan Anda menata bagian atas, kiri, kanan, dan bawah invoice."
+          >
+            <Seg
+              value={f.invoice_layout?.mode || "default"}
+              onChange={(v) => {
+                if (v === "custom") {
+                  const ada = f.invoice_layout?.mode === "custom";
+                  setNilai(
+                    "invoice_layout",
+                    ada ? f.invoice_layout : { ...DEFAULT_LAYOUT },
+                  );
+                } else {
+                  setNilai("invoice_layout", {
+                    ...(f.invoice_layout || {}),
+                    mode: "default",
+                  });
+                }
+              }}
+              options={[
+                { value: "default", label: "Default" },
+                { value: "custom", label: "Custom" },
+              ]}
+            />
+          </Field>
+
+          {f.invoice_layout?.mode === "custom" && (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="m-0 text-sm font-semibold text-gray-800">
+                    Susunan custom aktif
+                  </p>
+                  <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
+                    {["atas", "kiri", "kanan", "bawah"]
+                      .map((z) =>
+                        (f.invoice_layout[z] || []).length > 0
+                          ? `${z[0].toUpperCase()}${z.slice(1)}: ${f.invoice_layout[z].length} field`
+                          : null,
+                      )
+                      .filter(Boolean)
+                      .join(" · ") || "Belum ada field."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditorLayoutOpen(true)}
+                  className="shrink-0 rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc]"
+                >
+                  Atur Layout
+                </button>
+              </div>
+            </div>
+          )}
+
           <BarisSimpan
             dirty={dirtyTab(KEYS_TAB.invoice)}
             saving={saving}
             onSimpan={simpanSeksi}
+          />
+
+          <InvoiceLayoutEditor
+            open={editorLayoutOpen}
+            onClose={() => setEditorLayoutOpen(false)}
+            value={f.invoice_layout}
+            onApply={(layout) =>
+              setNilai("invoice_layout", { ...layout, mode: "custom" })
+            }
           />
         </KartuSeksi>
       )}
