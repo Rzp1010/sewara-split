@@ -1104,7 +1104,7 @@ export default function PengaturanPage() {
 
           <div className="border-t border-gray-100 pt-5">
             <Field
-              label="Daftar Printilan"
+              label="Daftar Aksesoris"
               hint="Item yang muncul sebagai pilihan checklist saat membuat booking."
             >
               <div className="mb-3 flex flex-wrap gap-2">
@@ -1122,7 +1122,7 @@ export default function PengaturanPage() {
                         setNilai("printilan_daftar", arr);
                       }}
                       className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
-                      title="Hapus printilan ini"
+                      title="Hapus aksesoris ini"
                     >
                       &times;
                     </button>
@@ -1130,7 +1130,7 @@ export default function PengaturanPage() {
                 ))}
                 {!(f.printilan_daftar || []).length && (
                   <span className="text-xs text-gray-400">
-                    Belum ada printilan.
+                    Belum ada aksesoris.
                   </span>
                 )}
               </div>
@@ -1139,7 +1139,7 @@ export default function PengaturanPage() {
                   type="text"
                   value={printilanBaru}
                   onChange={(e) => setPrintilanBaru(e.target.value)}
-                  placeholder="Nama printilan..."
+                  placeholder="Nama aksesoris..."
                   className={INPUT_CLS}
                   onKeyDown={(e) => {
                     if (e.key !== "Enter") return;
@@ -1159,7 +1159,7 @@ export default function PengaturanPage() {
             </Field>
 
             <div className="mt-4">
-              <Field label="Tampilan Printilan di Invoice">
+              <Field label="Tampilan Aksesoris di Invoice">
                 <Seg
                   value={f.printilan_invoice_mode}
                   onChange={(v) => setNilai("printilan_invoice_mode", v)}
@@ -1170,8 +1170,8 @@ export default function PengaturanPage() {
                 />
                 <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
                   {f.printilan_invoice_mode === "semua"
-                    ? "Invoice menampilkan semua daftar printilan, tandai mana yang dicentang (✓/✗)."
-                    : "Invoice hanya menampilkan printilan yang dicentang admin saat booking."}
+                    ? "Invoice menampilkan semua daftar aksesoris, tandai mana yang dicentang (✓/✗)."
+                    : "Invoice hanya menampilkan aksesoris yang dicentang admin saat booking."}
                 </p>
               </Field>
             </div>

@@ -2520,7 +2520,7 @@ export default function BookingPage() {
           {printilanDaftar.length > 0 && (
             <div className="mt-6 mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
               <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
-                Printilan
+                Aksesoris
               </label>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {printilanDaftar.map((item) => (
@@ -2551,7 +2551,7 @@ export default function BookingPage() {
                   type="text"
                   value={printilanCustom}
                   onChange={(e) => setPrintilanCustom(e.target.value)}
-                  placeholder="Printilan lain (pisahkan dengan koma)..."
+                      placeholder="Aksesoris lain (pisahkan dengan koma)..."
                   className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                 />
               </div>
@@ -2951,11 +2951,11 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                {/* Printilan */}
+                {/* Aksesoris */}
                 {printilanDaftar.length > 0 && (
                   <div className="mt-3 bg-slate-50 rounded-lg p-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
-                      Printilan
+                      Aksesoris
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
                       {printilanDaftar.map((item) => (
@@ -2988,7 +2988,7 @@ export default function BookingPage() {
                       type="text"
                       value={printilanCustom}
                       onChange={(e) => setPrintilanCustom(e.target.value)}
-                      placeholder="Printilan lain (pisahkan dengan koma)..."
+                  placeholder="Aksesoris lain (pisahkan dengan koma)..."
                       className="mt-3 w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
                     />
                   </div>
