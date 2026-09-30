@@ -1,10 +1,14 @@
 -- DDL produksi sewara (project obhvrzholszhjnpvmnna) — direkonstruksi dari pg_catalog via Management API
--- Tanggal: 2026-09-30. Skema: public saja. TANPA data, TANPA grants, TANPA extensions
--- (proyek Supabase baru sudah punya extension bawaan: pgcrypto, uuid-osr dll via auth/storage).
+-- Tanggal: 2026-09-30. Skema: public saja. TANPA data, TANPA grants.
+-- Extensions non-default di-emit lebih dulu (pg_net dkk); default Supabase
+-- (pgcrypto/uuid-ossp/pg_stat_statements/vault/plpgsql) sudah ada di project baru.
 -- File ini = seed DB dev/staging. BUKAN migration untuk produksi.
 -- Diakui: urutan best-effort; kalau error "function does not exist" di policies, pindahkan
 -- bagian 'functions' lebih awal (sudah diurus di generator).
 
+
+-- ===== extensions (1) =====
+CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- ===== enums (9) =====
 CREATE TYPE public.enum_jenis_inventory AS ENUM ('satuan', 'bundling');
@@ -1755,7 +1759,7 @@ COMMENT ON COLUMN public.role_permissions.is_default IS 'Permission default yang
 COMMENT ON COLUMN public.staff_permissions.is_granted IS 'true = grant permission, false = revoke permission (override default dari role)';
 
 -- ===== sequence sync (6) =====
-SELECT setval('public.activity_logs_id_seq', 1790173239929, true);
+SELECT setval('public.activity_logs_id_seq', 1790173239930, true);
 
 SELECT setval('public.admin_logs_id_seq', 168, true);
 
@@ -1763,6 +1767,6 @@ SELECT setval('public.inventory_id_seq', 1790674561116, true);
 
 SELECT setval('public.inventory_units_id_seq', 528, true);
 
-SELECT setval('public.transaction_items_id_seq', 564, true);
+SELECT setval('public.transaction_items_id_seq', 566, true);
 
 SELECT setval('public.transaction_payments_id_seq', 371, true);
