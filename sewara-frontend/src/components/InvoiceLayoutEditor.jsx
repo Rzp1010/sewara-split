@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import InvoiceBody from "@/components/InvoiceBody";
+import { API_BASE } from "@/lib/api-client";
+import { uploadInvoiceHeader } from "@/lib/db";
 import {
   FIELD_DEFS,
   FIELD_LABELS,
@@ -133,11 +135,17 @@ function ZonaCard({
   );
 }
 
-export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
-  const [draft, setDraft] = useState(() => klonLayout(value) );
+export default function InvoiceLayoutEditor({ open, onClose, value, header, onApply }) {
+  const [draft, setDraft] = useState(() => klonLayout(value));
+  const [draftHeader, setDraftHeader] = useState(header || "");
+  const [sedangUpload, setSedangUpload] = useState(false);
+  const fileRef = useRef(null);
 
   useEffect(() => {
-    if (open) setDraft(klonLayout(value));
+    if (open) {
+      setDraft(klonLayout(value));
+      setDraftHeader(header || "");
+    }
   }, [open]);
 
   if (!open) return null;
@@ -176,6 +184,21 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
   const namaAksi = (aksi) =>
     CONTOH_STATIS.riwayatDilayani?.find((r) => r.aksi === aksi)?.nama || "";
 
+  const pilihGambar = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || sedangUpload) return;
+    setSedangUpload(true);
+    try {
+      const hasil = await uploadInvoiceHeader(file);
+      if (hasil.ok) setDraftHeader(hasil.path);
+    } finally {
+      setSedangUpload(false);
+    }
+  };
+
+  const hapusGambar = () => setDraftHeader("");
+
   // Portal ke body: ancestor settings punya transform/animasi yang bikin
   // position:fixed terkunci ke area kartu (modal cuma nutup sebagian halaman).
   return createPortal(
@@ -205,6 +228,63 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[5fr_6fr]">
             {/* Editor — susunan kartu mencerminkan kertas invoice */}
             <div className="flex flex-col gap-4">
+              {/* Header Invoice (hanya berlaku di mode custom) */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="m-0 text-sm font-semibold text-gray-800">
+                  Header Invoice
+                </p>
+                <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                  Menggantikan tulisan INVOICE (hanya mode custom).
+                </p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={pilihGambar}
+                  className="hidden"
+                />
+                {draftHeader ? (
+                  <div className="mt-2 space-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${API_BASE}/api/invoice/header?v=${encodeURIComponent(draftHeader)}`}
+                      alt="Header invoice"
+                      className="w-full rounded-md border border-gray-200 bg-white object-contain p-1"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={sedangUpload}
+                        onClick={() => fileRef.current?.click()}
+                        className="flex-1 rounded-md border-0 bg-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {sedangUpload ? "Mengunggah..." : "Ganti"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={hapusGambar}
+                        className="flex-1 rounded-md border-0 bg-[#F04438] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#d03a2f]"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={sedangUpload}
+                    onClick={() => fileRef.current?.click()}
+                    className="mt-2 w-full rounded-md border-0 bg-[#7181E0] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {sedangUpload ? "Mengunggah..." : "Pilih gambar"}
+                  </button>
+                )}
+                <p className="m-0 mt-1.5 text-[11px] leading-relaxed text-gray-400">
+                  Gambar melebar (rasio 4:1–8:1), lebar ideal 1600px, maks 5MB.
+                  JPG/PNG/WebP.
+                </p>
+              </div>
+
               <ZonaCard
                 label="Atas"
                 sub="Full lebar, di atas"
@@ -306,6 +386,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
                   <InvoiceBody
                     data={CONTOH_STATIS}
                     layout={draft}
+                    header={draftHeader}
                     footer={
                       "Terima kasih. Harap kembalikan barang lengkap sesuai Nomor Seri tertera untuk mengambil jaminan."
                     }
@@ -329,7 +410,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, onApply }) {
           <button
             type="button"
             onClick={() => {
-              onApply(draft);
+              onApply(draft, draftHeader);
               onClose();
             }}
             className="rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc]"

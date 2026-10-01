@@ -13,9 +13,8 @@ import {
   FOOTER_DEFAULT,
 } from "@/components/invoiceFields";
 
-/* Header invoice: gambar tenant kalau dipasang, kalau tidak tulisan "Invoice" lama. */
-function HeaderInvoice() {
-  const header = getSetting("invoice_header", "");
+/* Header custom: gambar tenant kalau dipasang, kalau tidak tulisan "Invoice" lama. */
+function HeaderInvoice({ header }) {
   if (header) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -39,7 +38,9 @@ function LegacyBody({ data, footer, namaAksi, pay }) {
   const ttd = getSetting("invoice_ttd", false) === true;
   return (
     <div className="text-sm text-[#333]">
-      <HeaderInvoice />
+      <h1 className="m-0 mb-6 text-center text-2xl font-bold uppercase tracking-[2px] text-[#333]">
+        Invoice
+      </h1>
 
       <div className="mb-5 flex justify-between leading-[1.4]">
         <div className="w-[48%]">
@@ -138,17 +139,19 @@ function ZonaStack({ daftar, data, ctx }) {
   );
 }
 
-function CustomBody({ data, layout, footer, namaAksi, pay }) {
+function CustomBody({ data, layout, footer, namaAksi, pay, header }) {
   const ctx = { pay, namaAksi, footer };
   const atas = layout.atas || [];
   const kiri = layout.kiri || [];
   const kanan = layout.kanan || [];
   const tengah = layout.tengah || [];
   const bawah = layout.bawah || [];
+  const headerNilai =
+    header !== undefined ? header : getSetting("invoice_header", "");
 
   return (
     <div className="text-sm text-[#333]">
-      <HeaderInvoice />
+      <HeaderInvoice header={headerNilai} />
 
       {atas.length > 0 && (
         <div className="mb-5 leading-[1.4]">
@@ -195,7 +198,7 @@ function CustomBody({ data, layout, footer, namaAksi, pay }) {
   );
 }
 
-export default function InvoiceBody({ data, layout, footer, namaAksi, pay }) {
+export default function InvoiceBody({ data, layout, footer, namaAksi, pay, header }) {
   const cetak = layout && layout.mode === "custom";
   if (!cetak) {
     return (
@@ -214,6 +217,7 @@ export default function InvoiceBody({ data, layout, footer, namaAksi, pay }) {
       footer={footer || FOOTER_DEFAULT}
       namaAksi={namaAksi}
       pay={pay}
+      header={header}
     />
   );
 }

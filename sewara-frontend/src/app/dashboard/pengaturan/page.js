@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   getSetting,
   getSettingTenant,
@@ -8,7 +8,6 @@ import {
   setSettingTenant,
   updateUser,
   hapusSemuaData,
-  uploadInvoiceHeader,
   hapusInvoiceHeader,
 } from "@/lib/db";
 import { api, API_BASE } from "@/lib/api-client";
@@ -346,8 +345,6 @@ export default function PengaturanPage() {
   const [saving, setSaving] = useState(false);
   const [printilanBaru, setPrintilanBaru] = useState("");
   const [editorLayoutOpen, setEditorLayoutOpen] = useState(false);
-  const [sedangUpload, setSedangUpload] = useState(false);
-  const headerInputRef = useRef(null);
 
   /* Profil (owner) */
   const [userEmail, setUserEmail] = useState("");
@@ -655,32 +652,6 @@ export default function PengaturanPage() {
     window.dispatchEvent(new CustomEvent("settingChanged"));
   };
 
-  const pilihHeader = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || sedangUpload) return;
-    setSedangUpload(true);
-    try {
-      const hasil = await uploadInvoiceHeader(file);
-      if (!hasil.ok) return notify(hasil.error, "error");
-      setNilai("invoice_header", hasil.path);
-      notify("Header tersimpan. Jangan lupa Simpan Perubahan.");
-    } finally {
-      setSedangUpload(false);
-    }
-  };
-
-  const hapusHeader = async () => {
-    const ok = await confirmChoice("Hapus gambar header invoice? Tulisan INVOICE akan tampil kembali.", [
-      { label: "Ya, Hapus", value: "ya", bg: "block" },
-    ]);
-    if (ok !== "ya") return;
-    const hasil = await hapusInvoiceHeader(form?.invoice_header);
-    if (!hasil.ok) return notify(hasil.error || "Gagal menghapus header.", "error");
-    setNilai("invoice_header", "");
-    notify("Header dihapus.");
-  };
-
   if (!form) {
     return <LoadingOverlay />;
   }
@@ -837,55 +808,6 @@ export default function PengaturanPage() {
           </Field>
 
           <Field
-            label="Header Invoice (gambar)"
-            hint="Gambar melebar (rasio 4:1–8:1), lebar ideal 1600px, maks 5MB. JPG/PNG/WebP. Mengganti tulisan INVOICE."
-          >
-            <input
-              ref={headerInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={pilihHeader}
-              className="hidden"
-            />
-            {f.invoice_header ? (
-              <div className="space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`${API_BASE}/api/invoice/header?v=${encodeURIComponent(f.invoice_header)}`}
-                  alt="Header invoice"
-                  className="w-full rounded-lg border border-gray-200 bg-white object-contain p-2"
-                />
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="button"
-                    disabled={sedangUpload}
-                    onClick={() => headerInputRef.current?.click()}
-                    className="flex-1 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {sedangUpload ? "Mengunggah..." : "Ganti gambar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={hapusHeader}
-                    className="flex-1 rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f]"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={sedangUpload}
-                onClick={() => headerInputRef.current?.click()}
-                className="w-full rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-              >
-                {sedangUpload ? "Mengunggah..." : "Pilih gambar"}
-              </button>
-            )}
-          </Field>
-
-          <Field
             label="Tata Letak Invoice"
             hint="Default memakai susunan bawaan. Custom membebaskan Anda menata bagian atas, kiri, kanan, dan bawah invoice."
           >
@@ -951,9 +873,13 @@ export default function PengaturanPage() {
             open={editorLayoutOpen}
             onClose={() => setEditorLayoutOpen(false)}
             value={f.invoice_layout}
-            onApply={(layout) =>
-              setNilai("invoice_layout", { ...layout, mode: "custom" })
-            }
+            header={form?.invoice_header || ""}
+            onApply={(layout, headerBaru) => {
+              const headerLama = form?.invoice_header || "";
+              if (headerLama && !headerBaru) hapusInvoiceHeader(headerLama);
+              setNilai("invoice_layout", { ...layout, mode: "custom" });
+              setNilai("invoice_header", headerBaru || "");
+            }}
           />
         </KartuSeksi>
       )}
