@@ -2316,7 +2316,7 @@ export default function BookingPage() {
                       <td className="font-semibold py-3 px-2 border-r border-slate-200 truncate">
                         {c.ref.nama}
                       </td>
-                      <td className="text-xs py-3 px-2 border-r border-slate-200 truncate text-[#7181E0]">
+                      <td className="text-xs py-3 px-2 border-r border-slate-200 text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
                         {c.ref.jenis === "satuan" ? (
                           <>
                             <div className="truncate">{c.sn}</div>
@@ -2338,6 +2338,32 @@ export default function BookingPage() {
                                 );
                               })}
                           </>
+                        ) : (c.assignedSNs || []).length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            {c.assignedSNs.map((a, ai) => (
+                              <div key={ai} className="text-[11px] leading-tight">
+                                <span className="font-semibold">{a.nama}:</span>{" "}
+                                <span
+                                  style={{
+                                    fontFamily: "ui-monospace, monospace",
+                                  }}
+                                >
+                                  {(a.sns || []).join(", ")}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (c.ref.komponen || []).length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            {(c.ref.komponen || []).map((k, ki) => (
+                              <div
+                                key={ki}
+                                className="text-[11px] leading-tight text-gray-600"
+                              >
+                                {k.qty}x {k.nama}
+                              </div>
+                            ))}
+                          </div>
                         ) : (
                           "Paket Bundling"
                         )}
