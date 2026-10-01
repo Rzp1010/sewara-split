@@ -302,10 +302,14 @@ export default function BookingPage() {
         if (!aktif) return;
         setPrintilanDaftar(Array.isArray(daftar) ? daftar : []);
         setPrintilanMode(mode || "dicentang");
-        const dj =
+        const dasar =
           Array.isArray(daftarJaminanTenant) && daftarJaminanTenant.length
             ? daftarJaminanTenant
             : DEFAULT_JAMINAN;
+        // "Tanpa Jaminan" selalu tersedia, walau tenant menyesuaikan daftar.
+        const dj = dasar.includes(TANPA_JAMINAN)
+          ? dasar
+          : [...dasar, TANPA_JAMINAN];
         setDaftarJaminan(dj);
         setJaminanTerpilih([
           dj.includes("E-KTP") ? "E-KTP" : dj[0],
