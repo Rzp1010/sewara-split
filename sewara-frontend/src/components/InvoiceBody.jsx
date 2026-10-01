@@ -21,7 +21,7 @@ function HeaderInvoice({ header }) {
       <img
         src={`${API_BASE}/api/invoice/header`}
         alt="Header"
-        className="mb-6 block w-full max-h-[24mm] object-contain"
+        className="mb-6 block w-full h-auto"
       />
     );
   }
