@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { getStok, getInventory, updateInventory, hapusInventory, getTransactionsAktif } from "@/lib/db";
+import { getStok, getInventory, updateInventory, hapusInventory, getTransactionsAktif, getLastDbError } from "@/lib/db";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 
@@ -56,6 +56,9 @@ export default function InventarisPage() {
     snBaru: "",
   });
   const [showTambah, setShowTambah] = useState(false);
+  const [editKomponen, setEditKomponen] = useState([]);
+  const [editKompPilih, setEditKompPilih] = useState("");
+  const [editKompQty, setEditKompQty] = useState(1);
   const [tabTambah, setTabTambah] = useState("manual");
   const [showExport, setShowExport] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -426,11 +429,42 @@ export default function InventarisPage() {
       tag: item.tag || "",
       snBaru: "",
     });
+    setEditKomponen(
+      item.jenis === "bundling"
+        ? JSON.parse(JSON.stringify(item.komponen || []))
+        : [],
+    );
+    setEditKompPilih("");
+    setEditKompQty(1);
   }
 
   function tutupEdit() {
     setEditId(null);
     setEditItem(null);
+    setEditKomponen([]);
+    setEditKompPilih("");
+    setEditKompQty(1);
+  }
+
+  function tambahKomponenEdit() {
+    const idBarang = editKompPilih;
+    const qty = parseInt(editKompQty, 10);
+    if (!idBarang || !(qty >= 1)) return;
+    const dbItem = inv.find((i) => i.id == idBarang);
+    if (!dbItem) return;
+    setEditKomponen((prev) => {
+      const ada = prev.find((k) => String(k.idBarang) === String(dbItem.id));
+      if (ada) {
+        return prev.map((k) =>
+          String(k.idBarang) === String(dbItem.id)
+            ? { ...k, qty: (parseInt(k.qty, 10) || 0) + qty }
+            : k,
+        );
+      }
+      return [...prev, { idBarang: dbItem.id, nama: dbItem.nama, qty }];
+    });
+    setEditKompPilih("");
+    setEditKompQty(1);
   }
 
   async function simpanEdit(e) {
@@ -463,8 +497,24 @@ export default function InventarisPage() {
         item.sns = [...(item.sns || []), ...snsBaru];
       }
     }
-    if (!(await updateInventory([item])))
-      return notify("Gagal menyimpan perubahan. Silakan coba lagi.", "error");
+    if (item.jenis === "bundling") {
+      if (editKomponen.length < 1)
+        return notify("Paket harus punya minimal 1 komponen.", "error");
+      if (editKomponen.some((k) => !(parseInt(k.qty, 10) >= 1)))
+        return notify("Jumlah tiap komponen minimal 1.", "error");
+      item.komponen = editKomponen.map((k) => ({
+        idBarang: k.idBarang,
+        nama: k.nama,
+        qty: parseInt(k.qty, 10),
+      }));
+    }
+    if (!(await updateInventory([item]))) {
+      // updateInventory laporError -> event dataError; NotificationProvider sudah
+      // menampilkan pesan server (mis. PAKET_IN_USE) persis. Jangan timpa dgn generik.
+      const pesanServer = getLastDbError();
+      if (pesanServer) return notify(pesanServer, "error");
+      return;
+    }
     tutupEdit();
     muat();
     notify("Perubahan disimpan!");
@@ -1986,6 +2036,93 @@ export default function InventarisPage() {
                       className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
                       placeholder="S/N Tambahan..."
                     />
+                  </div>
+                )}
+                {editItem.jenis === "bundling" && (
+                  <div className="rounded-lg border-2 border-solid border-[#F89774] bg-[#F89774]/10 p-4">
+                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#F89774]">
+                      Komponen Paket
+                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <select
+                        value={editKompPilih}
+                        onChange={(e) => setEditKompPilih(e.target.value)}
+                        className="w-full flex-1 min-w-0 rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      >
+                        <option value="">-- Pilih komponen --</option>
+                        {inv
+                          .filter((i) => i.jenis === "satuan")
+                          .map((i) => (
+                            <option key={i.id} value={i.id}>
+                              {i.nama}
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        type="number"
+                        min="1"
+                        value={editKompQty}
+                        onChange={(e) => setEditKompQty(e.target.value)}
+                        className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        style={{ width: 80 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={tambahKomponenEdit}
+                        className="rounded-lg border-0 bg-[#F89774] hover:bg-[#e67d5a] px-4 py-2 text-sm font-semibold text-white transition-colors"
+                      >
+                        Tambah
+                      </button>
+                    </div>
+                    <ul className="flex flex-col gap-1 rounded-md border border-solid border-slate-200 bg-white p-2 text-sm">
+                      {editKomponen.length === 0 && (
+                        <li className="text-gray-500 italic">
+                          Belum ada alat.
+                        </li>
+                      )}
+                      {editKomponen.map((k, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-center justify-between gap-3 rounded-md border border-solid border-slate-200 bg-slate-50 px-2 py-1"
+                        >
+                          <span className="truncate">{k.nama}</span>
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="1"
+                              value={k.qty}
+                              onChange={(e) =>
+                                setEditKomponen((prev) =>
+                                  prev.map((x, i) =>
+                                    i === idx
+                                      ? { ...x, qty: e.target.value }
+                                      : x,
+                                  ),
+                                )
+                              }
+                              className="rounded-md border border-solid border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:border-[#7181E0]"
+                              style={{ width: 64 }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditKomponen((prev) =>
+                                  prev.filter((_, i) => i !== idx),
+                                )
+                              }
+                              className="text-red-600 font-bold"
+                              aria-label="Hapus komponen"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-gray-500 mt-2 mb-0">
+                      Perubahan isi paket hanya berlaku untuk booking baru.
+                      Booking lama menyimpan salinan isinya sendiri.
+                    </p>
                   </div>
                 )}
                 <div className="flex items-center gap-3 mt-4">
