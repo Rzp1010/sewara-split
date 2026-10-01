@@ -231,7 +231,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               {/* Header Invoice (hanya berlaku di mode custom) */}
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <p className="m-0 text-sm font-semibold text-gray-800">
-                  Header Invoice
+                  A · Header Invoice
                 </p>
                 <p className="m-0 mt-0.5 text-[11px] text-gray-400">
                   Menggantikan tulisan INVOICE (hanya mode custom).
@@ -286,7 +286,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               </div>
 
               <ZonaCard
-                label="Atas"
+                label="B · Atas"
                 sub="Full lebar, di atas"
                 daftar={draft.atas}
                 tersedia={tersedia}
@@ -298,7 +298,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               {/* Kiri & Kanan berdampingan (mencerminkan dua kolom kertas) */}
               <div className="grid grid-cols-2 gap-4">
                 <ZonaCard
-                  label="Kiri"
+                  label="C · Kiri"
                   sub="Kolom kiri"
                   daftar={draft.kiri}
                   tersedia={tersedia}
@@ -307,7 +307,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
                   onGeser={(i, d) => geser("kiri", i, d)}
                 />
                 <ZonaCard
-                  label="Kanan"
+                  label="D · Kanan"
                   sub="Kolom kanan"
                   daftar={draft.kanan}
                   tersedia={tersedia}
@@ -320,7 +320,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               {/* Kartu terkunci: Daftar Alat — selalu tampil, tidak bisa diedit */}
               <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
                 <p className="m-0 text-sm font-semibold text-gray-500">
-                  Daftar Alat
+                  E · Daftar Alat
                 </p>
                 <p className="m-0 mt-0.5 text-[11px] text-gray-400">
                   Bagian ini selalu tampil
@@ -330,7 +330,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               {/* Zona Tengah (editable, di samping Total) + Total (terkunci) */}
               <div className="grid grid-cols-2 gap-4">
                 <ZonaCard
-                  label="Ringkasan Kiri"
+                  label="F · Ringkasan Kiri"
                   sub="catatan/teks di samping total"
                   daftar={draft.tengah}
                   tersedia={tersedia}
@@ -340,7 +340,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
                 />
                 <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
                   <p className="m-0 text-sm font-semibold text-gray-500">
-                    Total
+                    G · Total
                   </p>
                   <p className="m-0 mt-0.5 text-[11px] text-gray-400">
                     Bagian ini selalu tampil
@@ -349,7 +349,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               </div>
 
               <ZonaCard
-                label="Bawah"
+                label="H · Bawah"
                 sub="Full lebar, di bawah"
                 daftar={draft.bawah}
                 tersedia={tersedia}
