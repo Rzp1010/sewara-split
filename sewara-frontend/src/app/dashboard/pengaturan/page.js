@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getSetting,
   getSettingTenant,
@@ -8,6 +8,8 @@ import {
   setSettingTenant,
   updateUser,
   hapusSemuaData,
+  uploadInvoiceHeader,
+  hapusInvoiceHeader,
 } from "@/lib/db";
 import { api, API_BASE } from "@/lib/api-client";
 import { ROLE_SUPERADMIN, ROLE_OWNER } from "@/lib/role";
@@ -51,6 +53,7 @@ const KEYS_TAB = {
     "invoice_ganda",
     "invoice_ttd",
     "invoice_layout",
+    "invoice_header",
   ],
   profil: [],
   pengembangan: [],
@@ -343,6 +346,8 @@ export default function PengaturanPage() {
   const [saving, setSaving] = useState(false);
   const [printilanBaru, setPrintilanBaru] = useState("");
   const [editorLayoutOpen, setEditorLayoutOpen] = useState(false);
+  const [sedangUpload, setSedangUpload] = useState(false);
+  const headerInputRef = useRef(null);
 
   /* Profil (owner) */
   const [userEmail, setUserEmail] = useState("");
@@ -392,6 +397,7 @@ export default function PengaturanPage() {
         invoice_ganda: getSetting("invoice_ganda", false) === true,
         invoice_ttd: getSetting("invoice_ttd", false) === true,
         invoice_layout: getSetting("invoice_layout", null) || null,
+        invoice_header: getSetting("invoice_header", "") || "",
         jam_mode: getSetting("jam_mode", "buka_tutup") || "buka_tutup",
         jam_buka: String(getSetting("jam_buka", "6") ?? "6"),
         jam_tutup: String(getSetting("jam_tutup", "22") ?? "22"),
@@ -512,13 +518,14 @@ export default function PengaturanPage() {
         setSetting("invoice_ganda", f.invoice_ganda === true);
         setSetting("invoice_ttd", f.invoice_ttd === true);
         setSetting("invoice_layout", f.invoice_layout || { mode: "default" });
+        setSetting("invoice_header", f.invoice_header || "");
         setForm((p) => ({
           ...p,
           invoice_prefix: prefix,
           invoice_digit: digit,
           invoice_mulai: mulai,
         }));
-        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda", "invoice_ttd", "invoice_layout"], "Invoice");
+        selesaiSimpan(["invoice_prefix", "invoice_digit", "invoice_mulai", "invoice_footer", "invoice_ganda", "invoice_ttd", "invoice_layout", "invoice_header"], "Invoice");
       } else if (tab === "operasional") {
         setSetting("jam_mode", f.jam_mode || "buka_tutup");
         setSetting("jam_buka", f.jam_buka === "" ? 6 : Number(f.jam_buka));
@@ -646,6 +653,32 @@ export default function PengaturanPage() {
   const ubahTema = (v) => {
     setTheme(v);
     window.dispatchEvent(new CustomEvent("settingChanged"));
+  };
+
+  const pilihHeader = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || sedangUpload) return;
+    setSedangUpload(true);
+    try {
+      const hasil = await uploadInvoiceHeader(file);
+      if (!hasil.ok) return notify(hasil.error, "error");
+      setNilai("invoice_header", hasil.path);
+      notify("Header tersimpan. Jangan lupa Simpan Perubahan.");
+    } finally {
+      setSedangUpload(false);
+    }
+  };
+
+  const hapusHeader = async () => {
+    const ok = await confirmChoice("Hapus gambar header invoice? Tulisan INVOICE akan tampil kembali.", [
+      { label: "Ya, Hapus", value: "ya", bg: "block" },
+    ]);
+    if (ok !== "ya") return;
+    const hasil = await hapusInvoiceHeader(form?.invoice_header);
+    if (!hasil.ok) return notify(hasil.error || "Gagal menghapus header.", "error");
+    setNilai("invoice_header", "");
+    notify("Header dihapus.");
   };
 
   if (!form) {
@@ -801,6 +834,55 @@ export default function PengaturanPage() {
                 { value: true, label: "Aktif" },
               ]}
             />
+          </Field>
+
+          <Field
+            label="Header Invoice (gambar)"
+            hint="Gambar melebar (rasio 4:1–8:1), lebar ideal 1600px, maks 5MB. JPG/PNG/WebP. Mengganti tulisan INVOICE."
+          >
+            <input
+              ref={headerInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={pilihHeader}
+              className="hidden"
+            />
+            {f.invoice_header ? (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${API_BASE}/api/invoice/header?v=${encodeURIComponent(f.invoice_header)}`}
+                  alt="Header invoice"
+                  className="w-full rounded-lg border border-gray-200 bg-white object-contain p-2"
+                />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    disabled={sedangUpload}
+                    onClick={() => headerInputRef.current?.click()}
+                    className="flex-1 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {sedangUpload ? "Mengunggah..." : "Ganti gambar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={hapusHeader}
+                    className="flex-1 rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f]"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={sedangUpload}
+                onClick={() => headerInputRef.current?.click()}
+                className="w-full rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {sedangUpload ? "Mengunggah..." : "Pilih gambar"}
+              </button>
+            )}
           </Field>
 
           <Field

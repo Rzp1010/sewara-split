@@ -501,6 +501,60 @@ export function urlBuktiBayar(path) {
   return path ? `${API_BASE}/api/pembayaran/photo?path=${encodeURIComponent(path)}` : null;
 }
 
+// ============================================================================
+// HEADER INVOICE — upload/hapus gambar header (multipart, ganti tulisan INVOICE)
+// ============================================================================
+
+const TIPE_HEADER = ['image/png', 'image/jpeg', 'image/webp'];
+const MAKS_HEADER = 5_000_000;
+
+/** Upload gambar header invoice. -> { ok, path } | { ok:false, error } */
+export async function uploadInvoiceHeader(file) {
+  if (!file) return { ok: false, error: 'Pilih gambar dulu.' };
+  if (!TIPE_HEADER.includes(file.type))
+    return { ok: false, error: 'Format harus PNG, JPG, atau WebP.' };
+  if (file.size > MAKS_HEADER)
+    return { ok: false, error: 'Ukuran gambar maksimal 5MB.' };
+
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 90_000);
+  try {
+    let berkas = file;
+    if (file.size > 1_500_000 && typeof window !== 'undefined') {
+      try {
+        const imageCompression = (await import('browser-image-compression')).default;
+        berkas = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: true, fileType: file.type });
+      } catch {
+        berkas = file; // kompresi gagal -> pakai file asli
+      }
+    }
+    const fd = new FormData();
+    fd.append('file', berkas);
+    const data = await api.invoice.headerUpload(fd);
+    const path = data?.path;
+    if (!path) throw new Error('Upload gagal: path tidak diterima.');
+    return { ok: true, path };
+  } catch (e) {
+    console.error('uploadInvoiceHeader error:', e.name === 'AbortError' ? 'upload timeout 90s' : e.message);
+    return { ok: false, error: e.name === 'AbortError' ? 'Upload timeout (>90 detik).' : (e.message || 'Upload gagal.') };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Hapus gambar header invoice. -> { ok } (404 dianggap sukses) */
+export async function hapusInvoiceHeader(path) {
+  if (!path) return { ok: true };
+  try {
+    await api.invoice.headerDelete(path);
+    return { ok: true };
+  } catch (e) {
+    if (e.status === 404) return { ok: true };
+    console.error('hapusInvoiceHeader error:', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
 /** Ekspor bukti bulan YYYY-MM. -> { ok, message } ; trigger download saat ok. */
 export async function eksporBuktiBayar(bulan) {
   try {

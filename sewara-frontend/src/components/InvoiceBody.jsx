@@ -1,6 +1,7 @@
 "use client";
 
 import { getSetting } from "@/lib/db";
+import { API_BASE } from "@/lib/api-client";
 import { formatTanggal } from "@/lib/utils";
 import {
   BarisInfo,
@@ -12,15 +13,33 @@ import {
   FOOTER_DEFAULT,
 } from "@/components/invoiceFields";
 
+/* Header invoice: gambar tenant kalau dipasang, kalau tidak tulisan "Invoice" lama. */
+function HeaderInvoice() {
+  const header = getSetting("invoice_header", "");
+  if (header) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`${API_BASE}/api/invoice/header`}
+        alt="Header"
+        className="mb-6 block w-full max-h-[24mm] object-contain"
+      />
+    );
+  }
+  return (
+    <h1 className="m-0 mb-6 text-center text-2xl font-bold uppercase tracking-[2px] text-[#333]">
+      Invoice
+    </h1>
+  );
+}
+
 /* ===== Markup LEGACY (mode default) — persis perilaku sebelum custom layout ===== */
 
 function LegacyBody({ data, footer, namaAksi, pay }) {
   const ttd = getSetting("invoice_ttd", false) === true;
   return (
     <div className="text-sm text-[#333]">
-      <h1 className="m-0 mb-6 text-center text-2xl font-bold uppercase tracking-[2px] text-[#333]">
-        Invoice
-      </h1>
+      <HeaderInvoice />
 
       <div className="mb-5 flex justify-between leading-[1.4]">
         <div className="w-[48%]">
@@ -129,9 +148,7 @@ function CustomBody({ data, layout, footer, namaAksi, pay }) {
 
   return (
     <div className="text-sm text-[#333]">
-      <h1 className="m-0 mb-6 text-center text-2xl font-bold uppercase tracking-[2px] text-[#333]">
-        Invoice
-      </h1>
+      <HeaderInvoice />
 
       {atas.length > 0 && (
         <div className="mb-5 leading-[1.4]">

@@ -7,11 +7,14 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:400
  * @returns {Promise<any>} isi response.data
  */
 export async function apiRequest(endpoint, options = {}) {
+  // FormData: jangan set Content-Type — browser yang pasang boundary multipart.
+  const isForm =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: 'include', // kirim cookie sesi ke backend
     headers: {
-      'Content-Type': 'application/json',
+      ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
   });
@@ -135,6 +138,11 @@ export const api = {
 
   invoice: {
     nextNumber: () => apiRequest('/api/invoice-counter', { method: 'POST' }),
+    headerGet: () => `${API_BASE}/api/invoice/header`,
+    headerUpload: (fd) =>
+      apiRequest('/api/invoice/header', { method: 'POST', body: fd }),
+    headerDelete: (path) =>
+      apiRequest(`/api/invoice/header${qs({ path })}`, { method: 'DELETE' }),
   },
 
   pembayaran: {
