@@ -15,6 +15,7 @@ import {
 import { api } from "@/lib/api-client";
 import { useNotify } from "@/components/NotificationProvider";
 import { Button } from "@/components/ui";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // Inisial avatar dari S/N: potongan paling kiri (max 4 char), fallback karakter pertama.
 function inisialSN(sn) {
@@ -59,6 +60,7 @@ export default function InventarisPage() {
   const [editKomponen, setEditKomponen] = useState([]);
   const [editKompPilih, setEditKompPilih] = useState("");
   const [editKompQty, setEditKompQty] = useState(1);
+  const [kompPilihCreate, setKompPilihCreate] = useState("");
   const [tabTambah, setTabTambah] = useState("manual");
   const [showExport, setShowExport] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -195,7 +197,6 @@ export default function InventarisPage() {
     const bundling = document.getElementById("area_bundling");
     if (satuan) satuan.style.display = v === "satuan" ? "" : "none";
     if (bundling) bundling.style.display = v === "bundling" ? "" : "none";
-    if (v === "bundling") updateDropdownKomponen();
   }
 
   function toggleTipeSewa(e) {
@@ -231,38 +232,18 @@ export default function InventarisPage() {
     }
   }
 
-  async function updateDropdownKomponen() {
-    const select = document.getElementById("komp_pilih");
-    select.textContent = "";
-    const allInv = await getInventory();
-    const listSatuan = allInv.filter((i) => i.jenis === "satuan");
-    if (listSatuan.length === 0) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "(Inventaris Satuan Kosong)";
-      select.appendChild(opt);
-    } else {
-      listSatuan.forEach((i) => {
-        const opt = document.createElement("option");
-        opt.value = String(i.id);
-        opt.textContent = `${i.nama} (Tersedia: ${(i.sns || []).length})`;
-        select.appendChild(opt);
-      });
-    }
-  }
-
   async function tambahKomponenTemp() {
-    const idBarang = document.getElementById("komp_pilih").value;
+    const idBarang = kompPilihCreate;
     const qty = parseInt(document.getElementById("komp_qty").value);
     if (!idBarang || qty < 1) return;
-    const allInv = await getInventory();
-    const dbItem = allInv.find((i) => i.id == idBarang);
+    const dbItem = inv.find((i) => String(i.id) === String(idBarang));
     if (!dbItem) return;
     tempKomponenRef.current.push({
       idBarang: dbItem.id,
       nama: dbItem.nama,
       qty,
     });
+    setKompPilihCreate("");
     renderListKomponenTemp();
   }
 
@@ -1000,10 +981,20 @@ export default function InventarisPage() {
                         Komponen Paket
                       </label>
                       <div className="flex items-center gap-2 mb-2">
-                        <select
-                          id="komp_pilih"
-                          className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 flex-1 min-w-0"
-                        />
+                        <div className="flex-1 min-w-0">
+                          <SearchableSelect
+                            options={inv
+                              .filter((i) => i.jenis === "satuan")
+                              .map((i) => ({
+                                value: String(i.id),
+                                label: i.nama,
+                                tag: i.tag,
+                              }))}
+                            value={kompPilihCreate}
+                            onChange={setKompPilihCreate}
+                            placeholder="-- Pilih komponen --"
+                          />
+                        </div>
                         <input
                           type="number"
                           id="komp_qty"
@@ -2044,20 +2035,20 @@ export default function InventarisPage() {
                       Komponen Paket
                     </label>
                     <div className="flex items-center gap-2 mb-2">
-                      <select
-                        value={editKompPilih}
-                        onChange={(e) => setEditKompPilih(e.target.value)}
-                        className="w-full flex-1 min-w-0 rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
-                      >
-                        <option value="">-- Pilih komponen --</option>
-                        {inv
-                          .filter((i) => i.jenis === "satuan")
-                          .map((i) => (
-                            <option key={i.id} value={i.id}>
-                              {i.nama}
-                            </option>
-                          ))}
-                      </select>
+                      <div className="flex-1 min-w-0">
+                        <SearchableSelect
+                          options={inv
+                            .filter((i) => i.jenis === "satuan")
+                            .map((i) => ({
+                              value: String(i.id),
+                              label: i.nama,
+                              tag: i.tag,
+                            }))}
+                          value={editKompPilih}
+                          onChange={setEditKompPilih}
+                          placeholder="-- Pilih komponen --"
+                        />
+                      </div>
                       <input
                         type="number"
                         min="1"
