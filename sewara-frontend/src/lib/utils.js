@@ -29,6 +29,28 @@ export function formatTanggal(iso) {
   });
 }
 
+// Jaminan: DB simpan array string, tapi tahan format lama (string tunggal / JSON string).
+export function parseJaminan(nilai) {
+  if (Array.isArray(nilai)) return nilai.map((x) => String(x)).filter(Boolean);
+  if (typeof nilai !== "string") return [];
+  const s = nilai.trim();
+  if (!s) return [];
+  if (s.startsWith("[")) {
+    try {
+      const arr = JSON.parse(s);
+      return Array.isArray(arr) ? arr.map((x) => String(x)).filter(Boolean) : [s];
+    } catch {
+      return [s];
+    }
+  }
+  return [s];
+}
+
+export function formatJaminan(nilai) {
+  const arr = parseJaminan(nilai);
+  return arr.length ? arr.join(", ") : "-";
+}
+
 export function hitungDurasi(ambil, kembali) {
   if (!ambil || !kembali) return { error: "Pilih tanggal!" };
   const diff = new Date(kembali) - new Date(ambil);

@@ -1,4 +1,4 @@
-import { formatRupiah, formatTanggal } from "@/lib/utils";
+import { formatRupiah, formatTanggal, formatJaminan } from "@/lib/utils";
 
 export const FOOTER_DEFAULT =
   "Terima kasih. Harap kembalikan barang lengkap sesuai Nomor Seri tertera untuk mengambil jaminan.";
@@ -275,7 +275,7 @@ function nilaiInfo(fkey, data, ctx) {
     case "alamat":
       return { label: "Alamat", value: data.alamat_penyewa || "-" };
     case "jaminan":
-      return { label: "Jaminan", value: data.jaminan_sewa || "-" };
+      return { label: "Jaminan", value: formatJaminan(data.jaminan_sewa) };
     default:
       return null;
   }

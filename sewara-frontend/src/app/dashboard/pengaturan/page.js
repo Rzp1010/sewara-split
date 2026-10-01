@@ -74,6 +74,7 @@ const KEYS_TAB = {
     "dp_hangus_aturan",
     "printilan_daftar",
     "printilan_invoice_mode",
+    "daftar_jaminan",
   ],
   tampilan: [
     "board_mode",
@@ -344,6 +345,7 @@ export default function PengaturanPage() {
   const [init, setInit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [printilanBaru, setPrintilanBaru] = useState("");
+  const [jaminanBaru, setJaminanBaru] = useState("");
   const [editorLayoutOpen, setEditorLayoutOpen] = useState(false);
 
   /* Profil (owner) */
@@ -377,13 +379,14 @@ export default function PengaturanPage() {
       setKini(Date.now());
 
       /* Setting diskon dibaca tenant (sama seperti halaman member/booking) */
-      const [diskStack, diskMaks, promoMin, printilanDaftar, printilanMode] =
+      const [diskStack, diskMaks, promoMin, printilanDaftar, printilanMode, daftarJaminanTenant] =
         await Promise.all([
           getSettingTenant("diskon_stack", "terbesar"),
           getSettingTenant("diskon_maks_persen", 50),
           getSettingTenant("promo_min_transaksi", 0),
           getSettingTenant("printilan_daftar", []),
           getSettingTenant("printilan_invoice_mode", "dicentang"),
+          getSettingTenant("daftar_jaminan", []),
         ]);
 
       const f = {
@@ -425,6 +428,7 @@ export default function PengaturanPage() {
         diskon_maks_persen: String(diskMaks ?? 50),
         promo_min_transaksi: String(promoMin ?? 0),
         printilan_daftar: Array.isArray(printilanDaftar) ? printilanDaftar : [],
+        daftar_jaminan: Array.isArray(daftarJaminanTenant) ? daftarJaminanTenant : [],
         printilan_invoice_mode: printilanMode || "dicentang",
         /* Telegram — config milik superadmin (pola halaman Log Login) */
         tg_aktif: false,
@@ -476,6 +480,17 @@ export default function PengaturanPage() {
       return { ...f, printilan_daftar: [...arr, val] };
     });
     setPrintilanBaru("");
+  };
+
+  const tambahJaminan = () => {
+    const val = jaminanBaru.trim();
+    if (!val) return;
+    setForm((f) => {
+      const arr = f.daftar_jaminan || [];
+      if (arr.includes(val)) return f;
+      return { ...f, daftar_jaminan: [...arr, val] };
+    });
+    setJaminanBaru("");
   };
 
   const dirtyTab = (keys) =>
@@ -546,6 +561,7 @@ export default function PengaturanPage() {
         setSetting("dp_hangus_aturan", f.dp_hangus_aturan || "");
         // Printilan: daftar disimpan sebagai array (setSettingTenant), mode sebagai string (setSetting)
         await setSettingTenant("printilan_daftar", f.printilan_daftar || []);
+        await setSettingTenant("daftar_jaminan", f.daftar_jaminan || []);
         setSetting("printilan_invoice_mode", f.printilan_invoice_mode || "dicentang");
         selesaiSimpan(KEYS_TAB.operasional, "Operasional");
       } else if (tab === "tampilan") {
@@ -1275,6 +1291,61 @@ export default function PengaturanPage() {
                   type="button"
                   onClick={tambahPrintilan}
                   disabled={!printilanBaru.trim()}
+                  className={BTN_SEKUNDER}
+                >
+                  Tambah
+                </button>
+              </div>
+            </Field>
+
+            <Field
+              label="Daftar Jenis Jaminan"
+              hint="Pilihan jaminan di form booking. Sertakan opsi eksklusif seperti “Tanpa Jaminan” bila perlu. Booking memakai default jika daftar ini kosong."
+            >
+              <div className="mb-3 flex flex-wrap gap-2">
+                {(f.daftar_jaminan || []).map((item, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const arr = [...(f.daftar_jaminan || [])];
+                        arr.splice(i, 1);
+                        setNilai("daftar_jaminan", arr);
+                      }}
+                      className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
+                      title="Hapus jaminan ini"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+                {!(f.daftar_jaminan || []).length && (
+                  <span className="text-xs text-gray-400">
+                    Belum ada jenis jaminan.
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={jaminanBaru}
+                  onChange={(e) => setJaminanBaru(e.target.value)}
+                  placeholder="Nama jaminan..."
+                  className={INPUT_CLS}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    tambahJaminan();
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={tambahJaminan}
+                  disabled={!jaminanBaru.trim()}
                   className={BTN_SEKUNDER}
                 >
                   Tambah

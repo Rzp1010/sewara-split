@@ -14,6 +14,7 @@ import {
   catatanUnit,
   opsiKondisi,
   snsDirujukLainnya,
+  formatJaminan,
 } from "@/lib/utils";
 import { useNotify } from "@/components/NotificationProvider";
 import BuktiDropzone from "@/components/BuktiDropzone";
@@ -1726,7 +1727,7 @@ export default function StatusPage() {
                             Alamat: {t.alamat_penyewa || "-"}
                           </p>
                           <p className="text-13 text-gray-600 mb-0">
-                            Jaminan: {t.jaminan_sewa || "-"}
+                            Jaminan: {formatJaminan(t.jaminan_sewa)}
                           </p>
                         </div>
                         <div className="bg-slate-50 rounded-lg p-3">

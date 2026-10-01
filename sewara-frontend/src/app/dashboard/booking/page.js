@@ -15,6 +15,7 @@ import {
   hitungPembayaran,
   kondisiUnit,
   catatanUnit,
+  parseJaminan,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import { useNotify } from "@/components/NotificationProvider";
@@ -33,11 +34,21 @@ import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import BatalBookingModal from "@/components/BatalBookingModal";
 
-const OPSI_JAMINAN = [
-  { value: "E-KTP", label: "E-KTP" },
-  { value: "SIM", label: "SIM" },
-  { value: "Tanpa Jaminan", label: "Tanpa Jaminan" },
-];
+const DEFAULT_JAMINAN = ["E-KTP", "SIM", "Tanpa Jaminan"];
+const TANPA_JAMINAN = "Tanpa Jaminan";
+
+/* Aturan eksklusif "Tanpa Jaminan": pilih ini -> kosongkan & disable lain;
+   pilih lain -> lepas "Tanpa Jaminan". */
+function toggleJaminan(terpilih, opsi) {
+  const arr = Array.isArray(terpilih) ? terpilih : [];
+  if (opsi === TANPA_JAMINAN) {
+    return arr.includes(TANPA_JAMINAN) ? [] : [TANPA_JAMINAN];
+  }
+  const tanpa = arr.filter((x) => x !== TANPA_JAMINAN);
+  return tanpa.includes(opsi)
+    ? tanpa.filter((x) => x !== opsi)
+    : [...tanpa, opsi];
+}
 
 function bangunIndeks(trx, inv) {
   const rujuk = new Map();
@@ -188,7 +199,7 @@ export default function BookingPage() {
     penyewa: "",
     hp_penyewa: "",
     alamat_penyewa: "",
-    jaminan_sewa: "",
+    jaminan_sewa: [],
     waktu_ambil_rencana: null,
     waktu_kembali_rencana: null,
   });
@@ -206,7 +217,8 @@ export default function BookingPage() {
   const [hasilCariJadwal, setHasilCariJadwal] = useState([]);
   const [loading, setLoading] = useState("");
   const [isIndexing, setIsIndexing] = useState(false);
-  const [jaminanDipilih, setJaminanDipilih] = useState("E-KTP");
+  const [jaminanTerpilih, setJaminanTerpilih] = useState(["E-KTP"]);
+  const [daftarJaminan, setDaftarJaminan] = useState(DEFAULT_JAMINAN);
   const [snOptions, setSnOptions] = useState([]);
   const [snDipilih, setSnDipilih] = useState("");
   const [editSnOptions, setEditSnOptions] = useState([]);
@@ -282,13 +294,22 @@ export default function BookingPage() {
     let aktif = true;
     (async () => {
       try {
-        const [daftar, mode] = await Promise.all([
+        const [daftar, mode, daftarJaminanTenant] = await Promise.all([
           getSettingTenant("printilan_daftar", []),
           getSettingTenant("printilan_invoice_mode", "dicentang"),
+          getSettingTenant("daftar_jaminan", DEFAULT_JAMINAN),
         ]);
         if (!aktif) return;
         setPrintilanDaftar(Array.isArray(daftar) ? daftar : []);
         setPrintilanMode(mode || "dicentang");
+        const dj =
+          Array.isArray(daftarJaminanTenant) && daftarJaminanTenant.length
+            ? daftarJaminanTenant
+            : DEFAULT_JAMINAN;
+        setDaftarJaminan(dj);
+        setJaminanTerpilih([
+          dj.includes("E-KTP") ? "E-KTP" : dj[0],
+        ]);
       } catch { /* ignore - printilan optional */ }
     })();
     return () => { aktif = false; };
@@ -1064,8 +1085,9 @@ export default function BookingPage() {
     const pyw = namaPenyewa;
     const hp = hp_penyewa;
     const alamat = alamat_penyewa;
-    const jaminan = jaminanDipilih;
+    const jaminan = jaminanTerpilih;
     if (!pyw || !hp) return notify("Lengkapi Identitas!", "error");
+    if (!jaminan.length) return notify("Pilih minimal 1 jaminan.", "error");
     if (kalkulasi.error) return notify(kalkulasi.error, "error");
     const c = JSON.parse(JSON.stringify(cartRef.current));
     if (c.length === 0) return notify("Keranjang kosong!", "error");
@@ -1110,7 +1132,11 @@ export default function BookingPage() {
             if (t.penyewa !== pyw) return false;
             if ((t.hp_penyewa || "") !== hp) return false;
             if ((t.alamat_penyewa || "") !== alamat) return false;
-            if ((t.jaminan_sewa || "") !== jaminan) return false;
+            if ((t.jaminan_sewa || "") !== jaminan) {
+              const a = parseJaminan(t.jaminan_sewa).slice().sort().join("|");
+              const b = parseJaminan(jaminan).slice().sort().join("|");
+              if (a !== b) return false;
+            }
             if ((t.waktu_ambil_rencana || "") !== ambilISO) return false;
             if ((t.waktu_kembali_rencana || "") !== kembaliISO) return false;
             return true;
@@ -1595,7 +1621,7 @@ export default function BookingPage() {
       penyewa: t.penyewa,
       hp_penyewa: t.hp_penyewa,
       alamat_penyewa: t.alamat_penyewa || "",
-      jaminan_sewa: t.jaminan_sewa || "E-KTP",
+      jaminan_sewa: parseJaminan(t.jaminan_sewa),
       waktu_ambil_rencana: t.waktu_ambil_rencana
         ? new Date(t.waktu_ambil_rencana)
         : null,
@@ -2058,16 +2084,23 @@ export default function BookingPage() {
                   Jaminan
                 </label>
                 <div className="flex gap-2 flex-wrap">
-                  {OPSI_JAMINAN.map((o) => (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => setJaminanDipilih(o.value)}
-                      className={`${jaminanDipilih === o.value ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
+                  {daftarJaminan.map((o) => {
+                    const aktif = jaminanTerpilih.includes(o);
+                    const nonaktif =
+                      o !== TANPA_JAMINAN && jaminanTerpilih.includes(TANPA_JAMINAN);
+                    return (
+                      <button
+                        key={o}
+                        type="button"
+                        disabled={nonaktif}
+                        onClick={() => setJaminanTerpilih((p) => toggleJaminan(p, o))}
+                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+                      >
+                        {aktif ? "✓ " : ""}
+                        {o}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div>
@@ -2885,15 +2918,32 @@ export default function BookingPage() {
                       <label className="block text-xs font-semibold text-slate-600 mb-1">
                         Jaminan
                       </label>
-                      <SearchableSelect
-                        options={OPSI_JAMINAN}
-                        value={editForm.jaminan_sewa}
-                        onChange={(v) =>
-                          setEditForm({ ...editForm, jaminan_sewa: v })
-                        }
-                        placeholder="Pilih jaminan..."
-                        noSearch
-                      />
+                      <div className="flex flex-wrap gap-2">
+                        {daftarJaminan.map((o) => {
+                          const arr = editForm.jaminan_sewa || [];
+                          const aktif = arr.includes(o);
+                          const nonaktif =
+                            o !== TANPA_JAMINAN &&
+                            arr.includes(TANPA_JAMINAN);
+                          return (
+                            <button
+                              key={o}
+                              type="button"
+                              disabled={nonaktif}
+                              onClick={() =>
+                                setEditForm({
+                                  ...editForm,
+                                  jaminan_sewa: toggleJaminan(arr, o),
+                                })
+                              }
+                              className={`${aktif ? "rounded-lg px-3 py-1.5 text-xs font-medium bg-[#7181E0] text-white border-0" : "rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-200 text-slate-700 border-0 hover:bg-gray-300"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+                            >
+                              {aktif ? "✓ " : ""}
+                              {o}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="col-span-full">
                       <label className="block text-xs font-semibold text-slate-600 mb-1">

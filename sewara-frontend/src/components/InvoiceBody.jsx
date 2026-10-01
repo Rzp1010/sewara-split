@@ -2,7 +2,7 @@
 
 import { getSetting } from "@/lib/db";
 import { API_BASE } from "@/lib/api-client";
-import { formatTanggal } from "@/lib/utils";
+import { formatTanggal, formatJaminan } from "@/lib/utils";
 import {
   BarisInfo,
   TabelItem,
@@ -88,7 +88,7 @@ function LegacyBody({ data, footer, namaAksi, pay }) {
                 <td className="w-[5%] py-0.5 align-top">{"\u00A0"}</td>
                 <td className="py-0.5 align-top">{"\u00A0"}</td>
               </tr>
-              <BarisInfo label="Jaminan" value={data.jaminan_sewa || "-"} />
+              <BarisInfo label="Jaminan" value={formatJaminan(data.jaminan_sewa)} />
               <tr>
                 <td className="w-[35%] py-0.5 align-top">{"\u00A0"}</td>
                 <td className="w-[5%] py-0.5 align-top">{"\u00A0"}</td>

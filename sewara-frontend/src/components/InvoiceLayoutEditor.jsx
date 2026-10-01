@@ -23,7 +23,7 @@ const CONTOH_STATIS = {
   penyewa: "Budi Santoso",
   hp_penyewa: "081234567890",
   alamat_penyewa: "Jl. Merdeka No. 12, Bandung",
-  jaminan_sewa: "E-KTP 1234",
+  jaminan_sewa: ["E-KTP", "SIM"],
   dilayani_oleh: "Rizki",
   total_akhir: 150000,
   diskon: { biayaAsli: 150000 },
