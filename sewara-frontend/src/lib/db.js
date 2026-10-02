@@ -728,6 +728,22 @@ export async function cekBlacklist(nama, hp) {
   }
 }
 
+/** Upload satu foto jaminan ke entri blacklist yang SUDAH ada. -> {ok} */
+export async function uploadBlacklistFoto(entryId, file, index, label) {
+  try {
+    const fd = new FormData();
+    fd.append('entryId', String(entryId));
+    fd.append('file', file);
+    fd.append('index', String(index));
+    if (label) fd.append('label', label);
+    await api.blacklist.upload(fd);
+    return { ok: true };
+  } catch (e) {
+    console.error('uploadBlacklistFoto error:', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
 /** Saran pelanggan: member + riwayat transaksi. */
 export async function getPelangganSuggestions() {
   try {

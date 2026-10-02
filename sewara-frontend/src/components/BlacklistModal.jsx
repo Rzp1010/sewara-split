@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { tambahBlacklist } from "@/lib/db";
+import { tambahBlacklist, uploadBlacklistFoto } from "@/lib/db";
 import { useNotify } from "@/components/NotificationProvider";
+import BlacklistFotoSlot, { FOTO_SLOTS } from "@/components/BlacklistFotoSlot";
 
-const EMPTY = { nama: "", hp: "", alamat: "", alasan: "", fotoJaminan: [] };
+const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
+const SLOT_KOSONG = Array(5).fill(null);
 
 /**
- * Modal Blacklist penyewa.
+ * Modal Blacklist penyewa (dibuat dari riwayat / pelanggan / detail member).
  * prefill: {nama, hp, alamat, transaksiId?, memberId?, fotoJaminan?}
  * onDone(): dipanggil setelah sukses (caller refresh).
  */
 export default function BlacklistModal({ open, onClose, prefill, onDone }) {
   const { notify } = useNotify();
   const [form, setForm] = useState(EMPTY);
+  const [slots, setSlots] = useState(SLOT_KOSONG);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -24,10 +27,16 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
       nama: prefill?.nama || "",
       hp: prefill?.hp || "",
       alamat: prefill?.alamat || "",
-      fotoJaminan: Array.isArray(prefill?.fotoJaminan)
-        ? prefill.fotoJaminan.filter((f) => f?.path)
-        : [],
     });
+    // Snapshot foto member -> readonly, ikut terkirim saat POST create.
+    const awal = Array(5).fill(null);
+    (Array.isArray(prefill?.fotoJaminan) ? prefill.fotoJaminan : [])
+      .filter((f) => f?.path)
+      .slice(0, 5)
+      .forEach((f, i) => {
+        awal[i] = { label: f.label || FOTO_SLOTS[i], path: f.path, snapshot: true };
+      });
+    setSlots(awal);
   }, [open]);
 
   async function simpan() {
@@ -36,22 +45,38 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
     if (!form.alasan.trim()) return notify("Alasan wajib diisi.", "error");
     setSaving(true);
     try {
+      const snapshot = slots
+        .filter((s) => s?.path)
+        .map((s) => ({ label: s.label, path: s.path }));
       const r = await tambahBlacklist({
         nama: form.nama.trim(),
-        hp: form.hp || "",
+        hp: form.hp.trim(),
         alamat: form.alamat || "",
         alasan: form.alasan.trim(),
         transaksiId: prefill?.transaksiId,
         memberId: prefill?.memberId,
-        fotoJaminan: form.fotoJaminan,
+        fotoJaminan: snapshot,
       });
-      if (!r.ok)
+      if (!r.ok) {
         return notify(
           r.code === "BLACKLIST_DUPLIKAT" || /duplikat/i.test(r.error || "")
             ? "Penyewa ini sudah ada di blacklist."
             : r.error || "Gagal menyimpan blacklist.",
           "error",
         );
+      }
+      const entryId = r.data?.id || r.data?.entry?.id;
+      // Upload file baru setelah entri punya id; gagal per file jangan batalkan.
+      const baru = slots
+        .map((s, i) => (s?.file ? { ...s, index: i } : null))
+        .filter(Boolean);
+      if (entryId && baru.length) {
+        for (const s of baru) {
+          const up = await uploadBlacklistFoto(entryId, s.file, s.index, s.label);
+          if (!up.ok)
+            notify(`Gagal upload ${s.label}: ${up.error || "coba lagi"}.`, "warning");
+        }
+      }
       notify("Penyewa ditambahkan ke blacklist.");
       onDone?.();
       onClose?.();
@@ -135,23 +160,13 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
             </div>
           </div>
 
-          {form.fotoJaminan.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-semibold text-gray-500">
-                Snapshot dokumen jaminan ({form.fotoJaminan.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {form.fotoJaminan.map((f, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600"
-                  >
-                    {f.label || `Dokumen ${i + 1}`}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="mt-5">
+            <BlacklistFotoSlot items={slots} onChange={setSlots} />
+            <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+              JPG/PNG/PDF maks 10MB per file. File baru diunggah setelah entri
+              dibuat.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">

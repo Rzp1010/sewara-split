@@ -8,13 +8,16 @@ import {
   tambahBlacklist,
   ubahBlacklist,
   hapusBlacklist,
+  uploadBlacklistFoto,
 } from "@/lib/db";
 import { formatTanggal } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import BlacklistFotoSlot, { FOTO_SLOTS } from "@/components/BlacklistFotoSlot";
 
-const EMPTY = { nama: "", hp: "", alamat: "", alasan: "", fotoJaminan: [] };
+const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
+const SLOT_KOSONG = Array(5).fill(null);
 
 // Asal entri: transaksi / member / manual.
 function asalEntri(row) {
@@ -32,6 +35,7 @@ export default function BlacklistPage() {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
+  const [slots, setSlots] = useState(SLOT_KOSONG);
   const [saving, setSaving] = useState(false);
 
   const bolehEdit = userRole === ROLE_OWNER;
@@ -71,6 +75,7 @@ export default function BlacklistPage() {
   function bukaTambah() {
     setEditing(null);
     setForm(EMPTY);
+    setSlots(SLOT_KOSONG);
     setModal(true);
   }
 
@@ -81,10 +86,17 @@ export default function BlacklistPage() {
       hp: row.hp || "",
       alamat: row.alamat || "",
       alasan: row.alasan || "",
-      fotoJaminan: Array.isArray(row.fotoJaminan)
-        ? row.fotoJaminan.filter((f) => f?.path)
-        : [],
     });
+    // Entri tersimpan: tampilkan path sebagai snapshot readonly di slot;
+    // file baru menggantikan slot index yang sama saat upload.
+    const awal = Array(5).fill(null);
+    (Array.isArray(row.fotoJaminan) ? row.fotoJaminan : [])
+      .filter((f) => f?.path)
+      .slice(0, 5)
+      .forEach((f, i) => {
+        awal[i] = { label: f.label || FOTO_SLOTS[i], path: f.path, snapshot: true };
+      });
+    setSlots(awal);
     setModal(true);
   }
 
@@ -94,12 +106,16 @@ export default function BlacklistPage() {
     if (!form.alasan.trim()) return notify("Alasan wajib diisi.", "error");
     setSaving(true);
     try {
+      // Simpan slot lama (path) minus yang dihapus/diganti; file baru via upload.
+      const snapshot = slots
+        .filter((s) => s?.path && s.snapshot)
+        .map((s) => ({ label: s.label, path: s.path }));
       const payload = {
         nama: form.nama.trim(),
-        hp: form.hp || "",
+        hp: form.hp.trim(),
         alamat: form.alamat || "",
         alasan: form.alasan.trim(),
-        fotoJaminan: form.fotoJaminan,
+        fotoJaminan: snapshot,
       };
       const r = editing
         ? await ubahBlacklist(editing.id, payload)
@@ -111,6 +127,17 @@ export default function BlacklistPage() {
             : r.error || "Gagal menyimpan blacklist.",
           "error",
         );
+      }
+      const entryId = editing?.id || r.data?.id || r.data?.entry?.id;
+      const baru = slots
+        .map((s, i) => (s?.file ? { ...s, index: i } : null))
+        .filter(Boolean);
+      if (entryId && baru.length) {
+        for (const s of baru) {
+          const up = await uploadBlacklistFoto(entryId, s.file, s.index, s.label);
+          if (!up.ok)
+            notify(`Gagal upload ${s.label}: ${up.error || "coba lagi"}.`, "warning");
+        }
       }
       setModal(false);
       notify(editing ? "Blacklist diperbarui." : "Penyewa ditambahkan ke blacklist.");
@@ -325,6 +352,14 @@ export default function BlacklistPage() {
                       className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
+                </div>
+
+                <div className="mt-5">
+                  <BlacklistFotoSlot items={slots} onChange={setSlots} />
+                  <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+                    JPG/PNG/PDF maks 10MB per file. Menghapus slot lama menyimpan
+                    ulang daftar tanpa file itu (file R2 lama dibiarkan).
+                  </p>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
