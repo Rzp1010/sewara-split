@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar, cekBlacklist } from "@/lib/db";
+import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar, cekBlacklist, getBlacklist } from "@/lib/db";
 import { useDebounce } from "use-debounce";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
@@ -609,6 +609,19 @@ export default function BookingPage() {
     window.addEventListener("dataChanged", handler);
     return () => window.removeEventListener("dataChanged", handler);
   }, []);
+
+  // Daftar blacklist untuk badge di saran penyewa. Refresh ikut `refresh`
+  // (yang sudah naik saat event dataChanged) — tanpa listener dobel.
+  const [blacklistArr, setBlacklistArr] = useState([]);
+  useEffect(() => {
+    let aktif = true;
+    getBlacklist().then((list) => {
+      if (aktif) setBlacklistArr(Array.isArray(list) ? list : []);
+    });
+    return () => {
+      aktif = false;
+    };
+  }, [refresh]);
 
   useEffect(() => {
     const q = debouncedSearch.trim();
@@ -2073,11 +2086,31 @@ export default function BookingPage() {
                               }}
                             >
                               <span className="font-bold">{m.nama}</span>
-                              {m.sumber === "member" && (
-                                <span className="inline-block px-2 py-1 rounded text-xs bg-[#579171] text-white text-[10px] px-1.5 py-0.5">
-                                  Member
-                                </span>
-                              )}
+                              <span className="flex flex-wrap gap-1">
+                                {m.sumber === "member" && (
+                                  <span className="inline-block rounded text-[10px] px-1.5 py-0.5 bg-[#579171] text-white">
+                                    Member
+                                  </span>
+                                )}
+                                {blacklistArr.some(
+                                  (b) =>
+                                    String(b.nama || "")
+                                      .toLowerCase()
+                                      .trim() ===
+                                      String(m.nama || "")
+                                        .toLowerCase()
+                                        .trim() ||
+                                    (m.hp &&
+                                      String(b.hp || "")
+                                        .toLowerCase()
+                                        .trim() ===
+                                        String(m.hp).toLowerCase().trim()),
+                                ) && (
+                                  <span className="inline-block rounded text-[10px] px-1.5 py-0.5 bg-red-600 text-white">
+                                    Blacklist
+                                  </span>
+                                )}
+                              </span>
                             </span>
                             <span className="text-xs text-gray-500">
                               {m.hp || "-"}
