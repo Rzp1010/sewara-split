@@ -357,8 +357,7 @@ export default function BlacklistPage() {
                 <div className="mt-5">
                   <BlacklistFotoSlot items={slots} onChange={setSlots} />
                   <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
-                    JPG/PNG/PDF maks 10MB per file. Menghapus slot lama menyimpan
-                    ulang daftar tanpa file itu (file R2 lama dibiarkan).
+                    JPG/PNG/PDF maks 5MB per file.
                   </p>
                 </div>
               </div>

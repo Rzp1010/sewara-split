@@ -163,8 +163,7 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
           <div className="mt-5">
             <BlacklistFotoSlot items={slots} onChange={setSlots} />
             <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
-              JPG/PNG/PDF maks 10MB per file. File baru diunggah setelah entri
-              dibuat.
+              JPG/PNG/PDF maks 5MB per file.
             </p>
           </div>
         </div>

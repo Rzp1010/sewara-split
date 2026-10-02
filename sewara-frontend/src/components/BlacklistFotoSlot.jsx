@@ -6,7 +6,7 @@ import { useNotify } from "@/components/NotificationProvider";
 // Slot dokumen jaminan — label tetap per index (0-4), sinkron dengan
 // backend POST /api/blacklist/upload (index mengganti slot yang sama).
 export const FOTO_SLOTS = ["KTP", "Kartu Keluarga", "SIM", "NPWP", "Lainnya"];
-const MAKS_BYTE = 10 * 1024 * 1024;
+const MAKS_BYTE = 5 * 1024 * 1024;
 const TIPE_OK = ["image/jpeg", "image/png", "application/pdf"];
 
 /** items: array(5) tiap elemen null | {label, path?, url?, file?, snapshot?} */
@@ -21,7 +21,7 @@ export default function BlacklistFotoSlot({ items, onChange }) {
     if (!TIPE_OK.includes(file.type))
       return notify("File harus JPG, PNG, atau PDF.", "error");
     if (file.size > MAKS_BYTE)
-      return notify("Ukuran file maksimal 10MB.", "error");
+      return notify("Ukuran file maksimal 5MB.", "error");
     const next = [...items];
     next[index] = {
       label: FOTO_SLOTS[index],
