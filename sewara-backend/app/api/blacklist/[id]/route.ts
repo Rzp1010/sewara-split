@@ -49,7 +49,13 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
     if (!alasan) return validationErrorResponse('Alasan tidak boleh kosong.');
     update.alasan = alasan;
   }
-  if (body?.hp !== undefined) update.hp = body.hp == null ? null : String(body.hp).trim();
+  if (body?.hp !== undefined) {
+    const hp = body.hp == null ? '' : String(body.hp).trim();
+    if (!hp) {
+      return validationErrorResponse('HP wajib diisi (blacklist memakai pasangan nama + HP).');
+    }
+    update.hp = hp;
+  }
   if (body?.alamat !== undefined) update.alamat = body.alamat == null ? null : String(body.alamat);
   if (body?.fotoJaminan !== undefined) {
     if (!Array.isArray(body.fotoJaminan)) {

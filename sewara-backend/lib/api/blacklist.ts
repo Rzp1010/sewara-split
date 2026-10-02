@@ -3,9 +3,11 @@
  * Blacklist Penyewa — helper bersama.
  *
  * Tabel public.penyewa_blacklist per tenant. cariBlacklist dipakai endpoint
- * /api/blacklist/check untuk memberi TAUAN (bukan blokir) ke frontend:
- * match HP ternormalisasi dulu, fallback nama lower/trim persis.
- * Kebijakan 2026-10-02: penyewa ter-blacklist TETAP bisa booking, hanya notif.
+ * /api/blacklist/check untuk memberi TAUAN ke frontend.
+ * Kebijakan 2026-10-02: blacklist = PASANGAN (nama + HP). Hit HANYA bila kedua
+ * nilai terisi dan keduanya sama: nama lower(trim) identik DAN normalisasiHp
+ * identik. Tidak ada fallback nama-saja / HP-saja. Penyewa ter-blacklist tetap
+ * bisa booking, hanya notif.
  */
 
 /**
@@ -54,11 +56,14 @@ export async function isOwnerRole(supabase, userId) {
 /**
  * Cari entri blacklist yang match untuk tenant.
  *
- * Urutan: HP ternormalisasi dulu, fallback nama lower/trim persis.
+ * Kebijakan pair: hit hanya bila nama DAN hp sama-sama terisi lalu keduanya
+ * identik (nama lower(trim) + normalisasiHp). Salah satu kosong -> null.
  * @returns {Promise<{hit:boolean,nama:string,alasan:string}|null>}
  */
 export async function cariBlacklist(supabase, tenantId, { nama, hp } = {}) {
-  if (!tenantId || (!nama && !hp)) return null;
+  const targetHp = normalisasiHp(hp);
+  const targetNama = String(nama ?? '').trim().toLowerCase();
+  if (!tenantId || !targetNama || !targetHp) return null;
 
   const { data, error } = await supabase
     .from('penyewa_blacklist')
@@ -67,18 +72,12 @@ export async function cariBlacklist(supabase, tenantId, { nama, hp } = {}) {
   if (error) throw error;
 
   const rows = data || [];
-  const targetHp = normalisasiHp(hp);
-  const targetNama = String(nama ?? '').trim().toLowerCase();
-
-  if (targetHp) {
-    const byHp = rows.find((r) => r.hp && normalisasiHp(r.hp) === targetHp);
-    if (byHp) return { hit: true, nama: byHp.nama, alasan: byHp.alasan };
-  }
-  if (targetNama) {
-    const byNama = rows.find(
-      (r) => String(r.nama ?? '').trim().toLowerCase() === targetNama,
-    );
-    if (byNama) return { hit: true, nama: byNama.nama, alasan: byNama.alasan };
-  }
+  const hit = rows.find(
+    (r) =>
+      r.hp &&
+      normalisasiHp(r.hp) === targetHp &&
+      String(r.nama ?? '').trim().toLowerCase() === targetNama,
+  );
+  if (hit) return { hit: true, nama: hit.nama, alasan: hit.alasan };
   return null;
 }

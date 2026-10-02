@@ -4,8 +4,8 @@
  *
  * GET  — daftar entri blacklist tenant caller (semua role boleh baca).
  * POST — tambah entri; owner/superadmin saja.
- *        Body: {nama, hp?, alamat?, alasan, transaksiId?, memberId?, fotoJaminan?}
- *        409 bila sudah ada entri sama (HP ternormalisasi ATAU lower(trim(nama))).
+ *        Body: {nama, hp, alamat?, alasan, transaksiId?, memberId?, fotoJaminan?}
+ *        nama + hp + alasan wajib. 409 bila pasangan (nama+hp) sudah ada.
  */
 
 import { getServerClient } from '@/lib/api/supabase';
@@ -56,7 +56,10 @@ export const POST = withErrorHandler(async (request) => {
   if (!nama) return validationErrorResponse('Nama wajib diisi.');
   if (!alasan) return validationErrorResponse('Alasan wajib diisi.');
 
-  const hp = body?.hp != null ? String(body.hp).trim() : null;
+  const hp = body?.hp != null ? String(body.hp).trim() : '';
+  if (!hp) {
+    return validationErrorResponse('HP wajib diisi (blacklist memakai pasangan nama + HP).');
+  }
   const alamat = body?.alamat != null ? String(body.alamat) : null;
   const fotoJaminan = Array.isArray(body?.fotoJaminan) ? body.fotoJaminan : [];
 
@@ -66,7 +69,7 @@ export const POST = withErrorHandler(async (request) => {
 
   const tenantId = await getTenantId(supabase, user.id);
 
-  // 409 bila sudah ada entri sama (HP ternormalisasi atau nama lower/trim persis).
+  // 409 bila pasangan (nama + HP) sudah ada.
   const duplikat = await cariBlacklist(supabase, tenantId, { nama, hp });
   if (duplikat) {
     return errorResponse(
