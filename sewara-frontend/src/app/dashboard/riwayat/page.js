@@ -2,12 +2,15 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar } from "@/lib/db";
+import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar, getBlacklist } from "@/lib/db";
 import dynamic from "next/dynamic";
 import { formatRupiah } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
+import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
+import { api } from "@/lib/api-client";
 import ModalBuktiBayar from "@/components/ModalBuktiBayar";
+import BlacklistModal from "@/components/BlacklistModal";
 import BannerBackupBukti from "@/components/BannerBackupBukti";
 
 const BULAN_ID = [
@@ -93,6 +96,46 @@ function RiwayatPageInner() {
   }
 
   const [dataCetak, setDataCetak] = useState(null);
+
+  const [userRole, setUserRole] = useState("");
+  const [blacklist, setBlacklist] = useState([]);
+  const [blTrx, setBlTrx] = useState(null);
+  const bolehBlacklist = userRole === ROLE_OWNER || userRole === ROLE_SUPERADMIN;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await api.auth.me();
+        setUserRole(me?.user?.role || "");
+      } catch {}
+      const list = await getBlacklist();
+      setBlacklist(Array.isArray(list) ? list : []);
+    })();
+  }, []);
+
+  const sudahBlacklist = (t) =>
+    blacklist.some((b) => {
+      const namaSama =
+        String(b.nama || "").toLowerCase().trim() ===
+        String(t.penyewa || "").toLowerCase().trim();
+      const hpSama =
+        t.hp_penyewa &&
+        String(b.hp || "").toLowerCase().trim() ===
+          String(t.hp_penyewa).toLowerCase().trim();
+      return namaSama || hpSama;
+    });
+
+  async function bukaBlacklist(t) {
+    const penuh = await getTransactionById(t.id);
+    const d = penuh || t;
+    setBlTrx({
+      nama: d.penyewa || "",
+      hp: d.hp_penyewa || "",
+      alamat: d.alamat_penyewa || "",
+      transaksiId: d.id,
+      fotoJaminan: Array.isArray(d.foto_jaminan) ? d.foto_jaminan : [],
+    });
+  }
 
   const [buktiTrx, setBuktiTrx] = useState(null);
   const [loadingBuktiId, setLoadingBuktiId] = useState(null);
@@ -216,6 +259,20 @@ function RiwayatPageInner() {
                     >
                       Struk
                     </Button>
+                    {bolehBlacklist &&
+                      (sudahBlacklist(t) ? (
+                        <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
+                          Ter-blacklist
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => bukaBlacklist(t)}
+                          className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                        >
+                          Blacklist
+                        </button>
+                      ))}
                   </div>
                 </td>
               </tr>
@@ -265,6 +322,16 @@ function RiwayatPageInner() {
           onClose={() => setBuktiTrx(null)}
         />
       )}
+
+      <BlacklistModal
+        open={!!blTrx}
+        prefill={blTrx}
+        onClose={() => setBlTrx(null)}
+        onDone={async () => {
+          const list = await getBlacklist();
+          setBlacklist(Array.isArray(list) ? list : []);
+        }}
+      />
     </div>
   );
 }

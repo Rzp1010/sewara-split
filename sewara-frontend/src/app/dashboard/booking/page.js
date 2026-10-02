@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar } from "@/lib/db";
+import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, getTransactionsCari, getTransactionById, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar, cekBlacklist } from "@/lib/db";
 import { useDebounce } from "use-debounce";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
@@ -250,6 +250,24 @@ export default function BookingPage() {
   const [alamat_penyewa, setAlamatPenyewa] = useState("");
   const [saranMember, setSaranMember] = useState([]);
   const [showSaran, setShowSaran] = useState(false);
+  const [blacklistHit, setBlacklistHit] = useState(null);
+
+  // Cek blacklist saat nama/HP penyewa berubah (debounce 500ms).
+  const identitasCek = useDebounce(`${namaPenyewa}|${hp_penyewa}`, 500);
+  useEffect(() => {
+    const [nama, hp] = String(identitasCek || "").split("|");
+    if (!nama.trim() && !hp.trim()) {
+      setBlacklistHit(null);
+      return;
+    }
+    let aktif = true;
+    cekBlacklist(nama.trim(), hp.trim()).then((h) => {
+      if (aktif) setBlacklistHit(h?.hit ? h : null);
+    });
+    return () => {
+      aktif = false;
+    };
+  }, [identitasCek]);
 
   useEffect(() => {
     const perbarui = () => {
@@ -1433,11 +1451,17 @@ export default function BookingPage() {
       };
 
       const okSimpan = await tambahTransactions([trxBaru]);
-      if (!okSimpan)
+      if (!okSimpan) {
+        const pesan = getLastDbError();
+        if (/blacklist/i.test(pesan || "")) {
+          setBlacklistHit({ hit: true, alasan: "" });
+          return notify(pesan || "Penyewa ter-blacklist. Booking ditolak.", "error");
+        }
         return notify(
-          getLastDbError() || "Gagal menyimpan booking. Silakan coba lagi.",
+          pesan || "Gagal menyimpan booking. Silakan coba lagi.",
           "error",
         );
+      }
       if (dp > 0 && buktiFile) {
         const path = await uploadBuktiBayar(buktiFile, trxBaru.id);
         if (!path) {
@@ -1971,6 +1995,31 @@ export default function BookingPage() {
             <h3 className="text-base font-semibold mb-4 text-[#7181E0]">
               Identitas Penyewa
             </h3>
+            {blacklistHit && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-solid border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <svg
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                </svg>
+                <span>
+                  <strong>Penyewa ter-blacklist.</strong>{" "}
+                  {blacklistHit.alasan
+                    ? `Alasan: ${blacklistHit.alasan}.`
+                    : "Penyewa ini diblokir dari booking."}{" "}
+                  Booking akan ditolak server saat disimpan.
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">

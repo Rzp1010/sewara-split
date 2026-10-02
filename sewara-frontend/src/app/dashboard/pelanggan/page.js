@@ -1,18 +1,21 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { getTransactionsLaporan, getPelangganSuggestions } from "@/lib/db";
+import { getTransactionsLaporan, getPelangganSuggestions, getBlacklist } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import { unduhCSV } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
+import BlacklistModal from "@/components/BlacklistModal";
 
 export default function PelangganPage() {
   const { notify } = useNotify();
   const [rows, setRows] = useState([]);
+  const [blacklist, setBlacklist] = useState([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("");
+  const [blRow, setBlRow] = useState(null);
   const [exportModal, setExportModal] = useState(false),
     [exportBulan, setExportBulan] = useState(""),
     [exportTipe, setExportTipe] = useState("semua");
@@ -54,6 +57,7 @@ export default function PelangganPage() {
     };
   }, []);
   const bolehExport = userRole === ROLE_OWNER || userRole === ROLE_SUPERADMIN;
+  const bolehBlacklist = bolehExport;
   async function load() {
     setLoading(true);
     setRows(await getPelangganSuggestions());
@@ -61,7 +65,22 @@ export default function PelangganPage() {
   }
   useEffect(() => {
     load();
+    getBlacklist().then((list) => setBlacklist(Array.isArray(list) ? list : []));
   }, []);
+  const blacklistIndex = useMemo(() => {
+    const nama = new Set();
+    const hp = new Set();
+    blacklist.forEach((b) => {
+      if (b.nama) nama.add(String(b.nama).toLowerCase().trim());
+      if (b.hp) hp.add(String(b.hp).toLowerCase().trim());
+    });
+    return { nama, hp };
+  }, [blacklist]);
+  const isBlacklisted = (row) =>
+    blacklistIndex.nama.has(String(row.nama || "").toLowerCase().trim()) ||
+    (row.hp
+      ? blacklistIndex.hp.has(String(row.hp).toLowerCase().trim())
+      : false);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter(
@@ -204,7 +223,14 @@ export default function PelangganPage() {
                     key={`${row.sumber}-${row.id}`}
                     className="hover:bg-slate-50"
                   >
-                    <td className="px-4 py-3 text-left">{row.nama}</td>
+                    <td className="px-4 py-3 text-left">
+                      {row.nama}
+                      {isBlacklisted(row) && (
+                        <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                          Blacklist
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-left">{row.hp || "-"}</td>
                     <td className="px-4 py-3 text-left">{row.alamat || "-"}</td>
                     <td>
@@ -225,6 +251,24 @@ export default function PelangganPage() {
                           onClick={() => makeMember(row)}
                         >
                           Jadikan Member
+                        </button>
+                      )}
+                      {bolehBlacklist && !isBlacklisted(row) && (
+                        <button
+                          className="ml-2 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                          onClick={() =>
+                            setBlRow({
+                              nama: row.nama || "",
+                              hp: row.hp || "",
+                              alamat: row.alamat || "",
+                              memberId: row.sumber === "member" ? row.id : undefined,
+                              fotoJaminan: Array.isArray(row.foto_jaminan)
+                                ? row.foto_jaminan
+                                : [],
+                            })
+                          }
+                        >
+                          Blacklist
                         </button>
                       )}
                     </td>
@@ -306,6 +350,16 @@ export default function PelangganPage() {
           {filtered.length} pelanggan ditampilkan.
         </p>
       )}
+
+      <BlacklistModal
+        open={!!blRow}
+        prefill={blRow}
+        onClose={() => setBlRow(null)}
+        onDone={async () => {
+          const list = await getBlacklist();
+          setBlacklist(Array.isArray(list) ? list : []);
+        }}
+      />
     </div>
   );
 }

@@ -219,6 +219,21 @@ const I = {
       <line x1="9" y1="17" x2="13" y2="17" />
     </svg>
   ),
+  shield: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+    </svg>
+  ),
 };
 
 /* Struktur menu 2 level (5 grup). Progres & Manajemen sengaja tidak ditampilkan. */
@@ -283,6 +298,11 @@ const MENU_GRUP = [
         fitur: "memberPromo",
       },
       { href: "/dashboard/pelanggan", label: "Data Pelanggan", icon: I.users },
+      {
+        href: "/dashboard/blacklist",
+        label: "Blacklist",
+        icon: I.shield,
+      },
       {
         href: "/dashboard/promo",
         label: "Kode Promo",

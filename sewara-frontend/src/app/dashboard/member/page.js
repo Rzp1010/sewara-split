@@ -7,6 +7,7 @@ import { api, API_BASE } from "@/lib/api-client";
 import { ROLE_OWNER } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import BlacklistModal from "@/components/BlacklistModal";
 
 const EMPTY = {
   nama: "",
@@ -146,6 +147,7 @@ export default function MemberPage() {
     [tierEditing, setTierEditing] = useState(null),
     [tierForm, setTierForm] = useState(EMPTY_TIER),
     [settingsModal, setSettingsModal] = useState(false);
+  const [blMember, setBlMember] = useState(null);
 
   function clearDocumentPreview() {
     setDocumentPreviews({});
@@ -824,6 +826,24 @@ export default function MemberPage() {
                   >
                     Edit member
                   </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f] transition-colors"
+                    onClick={() => {
+                      setBlMember({
+                        nama: detail.nama || "",
+                        hp: detail.hp || "",
+                        alamat: detail.alamat || "",
+                        memberId: detail.id,
+                        fotoJaminan: Array.isArray(detail.foto_jaminan)
+                          ? detail.foto_jaminan
+                          : [],
+                      });
+                      closeDetail();
+                    }}
+                  >
+                    Blacklist
+                  </button>
                 </div>
               </div>
             </div>,
@@ -1140,6 +1160,12 @@ export default function MemberPage() {
             </div>,
             document.body,
           )}
+
+        <BlacklistModal
+          open={!!blMember}
+          prefill={blMember}
+          onClose={() => setBlMember(null)}
+        />
       </div>
     </>
   );

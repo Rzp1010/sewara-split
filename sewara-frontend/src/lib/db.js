@@ -672,6 +672,62 @@ export async function hapusMemberTemplate(id) {
   }
 }
 
+// ============================================================================
+// BLACKLIST PENYEWA
+// ============================================================================
+
+export async function getBlacklist() {
+  try {
+    const data = await api.blacklist.getAll();
+    return Array.isArray(data) ? data : data?.blacklist || [];
+  } catch (e) {
+    console.error('getBlacklist error:', e.message);
+    return [];
+  }
+}
+
+export async function tambahBlacklist(entry) {
+  try {
+    const hasil = await api.blacklist.create(entry);
+    kirimEventData();
+    return { ok: true, data: hasil?.entry || hasil };
+  } catch (e) {
+    console.error('tambahBlacklist error:', e.message);
+    return { ok: false, error: e.message, code: e.code };
+  }
+}
+
+export async function ubahBlacklist(id, entry) {
+  try {
+    const hasil = await api.blacklist.update(id, entry);
+    kirimEventData();
+    return { ok: true, data: hasil?.entry || hasil };
+  } catch (e) {
+    console.error('ubahBlacklist error:', e.message);
+    return { ok: false, error: e.message, code: e.code };
+  }
+}
+
+export async function hapusBlacklist(id) {
+  try {
+    await api.blacklist.remove(id);
+    kirimEventData();
+    return { ok: true };
+  } catch (e) {
+    console.error('hapusBlacklist error:', e.message);
+    return { ok: false, error: e.message, code: e.code };
+  }
+}
+
+export async function cekBlacklist(nama, hp) {
+  try {
+    return await api.blacklist.check(nama, hp);
+  } catch (e) {
+    console.error('cekBlacklist error:', e.message);
+    return { hit: false };
+  }
+}
+
 /** Saran pelanggan: member + riwayat transaksi. */
 export async function getPelangganSuggestions() {
   try {

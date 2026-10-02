@@ -163,6 +163,18 @@ export const api = {
     delete: (id) => apiRequest(`/api/members/${id}`, { method: 'DELETE' }),
   },
 
+  blacklist: {
+    getAll: () => apiRequest('/api/blacklist'),
+    create: (data) =>
+      apiRequest('/api/blacklist', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) =>
+      apiRequest(`/api/blacklist/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id) => apiRequest(`/api/blacklist/${id}`, { method: 'DELETE' }),
+    check: (nama, hp) => apiRequest(`/api/blacklist/check${qs({ nama, hp })}`),
+    upload: (fd) => apiRequest('/api/blacklist/upload', { method: 'POST', body: fd }),
+    photoUrl: (path) => `${API_BASE}/api/blacklist/header?path=${encodeURIComponent(path)}`,
+  },
+
   memberTypes: {
     getAll: () => apiRequest('/api/member-types'),
     create: (data) =>

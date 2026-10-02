@@ -20,6 +20,7 @@ export const HAK_MENU = {
   "/dashboard/sdm": [ROLE_OWNER],
   "/dashboard/member": [ROLE_OWNER, ROLE_CS],
   "/dashboard/pelanggan": [ROLE_OWNER, ROLE_CS],
+  "/dashboard/blacklist": [ROLE_SUPERADMIN, ROLE_OWNER, ROLE_CS],
   "/dashboard/promo": [ROLE_OWNER, ROLE_CS],
   "/dashboard/pengaturan": [ROLE_OWNER, ROLE_SUPERADMIN],
   "/dashboard/loginlog": [ROLE_SUPERADMIN, ROLE_OWNER],
