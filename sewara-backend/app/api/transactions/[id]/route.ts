@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
+import { getTenantId } from '@/lib/api/tenant';
 import { successResponse, errorResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
 import { guardMaintenance } from '@/lib/api/kondisi-sn';
+import { guardBlacklist } from '@/lib/api/blacklist';
 
 export const runtime = 'nodejs';
 
@@ -35,7 +37,7 @@ export const GET = withErrorHandler(async (request, { params }) => {
 
 export const PATCH = withErrorHandler(async (request, { params }) => {
   const supabase = await getServerClient();
-  await requireAuth(supabase);
+  const user = await requireAuth(supabase);
   
   const { id } = await params;
   const body = await request.json();
@@ -58,6 +60,16 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
       })),
     );
     if (guardError) return guardError;
+  }
+
+  // Guard blacklist: hanya bila body mengubah penyewa / hp_penyewa.
+  if (body?.penyewa !== undefined || body?.hp_penyewa !== undefined) {
+    const tenantId = await getTenantId(supabase, user.id);
+    const blacklistError = await guardBlacklist(supabase, tenantId, {
+      penyewa: body?.penyewa,
+      hp: body?.hp_penyewa,
+    });
+    if (blacklistError) return blacklistError;
   }
 
   // Filter: buang child tables & metadata sebelum update

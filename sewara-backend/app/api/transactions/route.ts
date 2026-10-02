@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { getServerClient } from '@/lib/api/supabase';
 import { requireAuth } from '@/lib/api/auth';
+import { getTenantId } from '@/lib/api/tenant';
 import { successResponse } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/errors';
 import { guardMaintenance } from '@/lib/api/kondisi-sn';
+import { guardBlacklist } from '@/lib/api/blacklist';
 
 export const runtime = 'nodejs';
 
@@ -89,16 +91,25 @@ export const GET = withErrorHandler(async (request) => {
  */
 export const POST = withErrorHandler(async (request) => {
   const supabase = await getServerClient();
-  await requireAuth(supabase);
+  const user = await requireAuth(supabase);
 
   const body = await request.json();
+  const tx = body?.transaction ?? body;
 
   // Guard: tolak SN berstatus maintenance sebelum simpan (bermasalah tetap boleh).
   const guardError = await guardMaintenance(supabase, body?.items ?? []);
   if (guardError) return guardError;
 
+  // Guard: tolak penyewa yang terdaftar blacklist tenant.
+  const tenantId = await getTenantId(supabase, user.id);
+  const blacklistError = await guardBlacklist(supabase, tenantId, {
+    penyewa: tx?.penyewa,
+    hp: tx?.hp_penyewa,
+  });
+  if (blacklistError) return blacklistError;
+
   const { data, error } = await supabase.rpc('rpc_save_transaction', {
-    p_transaction: body?.transaction ?? body,
+    p_transaction: tx,
     p_items: body?.items ?? [],
     p_payments: body?.payments ?? [],
     p_replace_items: true,
