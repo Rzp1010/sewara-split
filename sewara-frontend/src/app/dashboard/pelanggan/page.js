@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getTransactionsLaporan, getPelangganSuggestions, getBlacklist } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
-import { unduhCSV } from "@/lib/utils";
+import { unduhCSV, terBlacklist } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import BlacklistModal from "@/components/BlacklistModal";
@@ -67,20 +67,7 @@ export default function PelangganPage() {
     load();
     getBlacklist().then((list) => setBlacklist(Array.isArray(list) ? list : []));
   }, []);
-  const blacklistIndex = useMemo(() => {
-    const nama = new Set();
-    const hp = new Set();
-    blacklist.forEach((b) => {
-      if (b.nama) nama.add(String(b.nama).toLowerCase().trim());
-      if (b.hp) hp.add(String(b.hp).toLowerCase().trim());
-    });
-    return { nama, hp };
-  }, [blacklist]);
-  const isBlacklisted = (row) =>
-    blacklistIndex.nama.has(String(row.nama || "").toLowerCase().trim()) ||
-    (row.hp
-      ? blacklistIndex.hp.has(String(row.hp).toLowerCase().trim())
-      : false);
+  const isBlacklisted = (row) => !!terBlacklist(blacklist, { nama: row.nama, hp: row.hp });
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter(

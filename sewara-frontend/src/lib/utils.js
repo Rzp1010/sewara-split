@@ -51,6 +51,27 @@ export function formatJaminan(nilai) {
   return arr.length ? arr.join(", ") : "-";
 }
 
+// Normalisasi HP: strip non-digit, leading '0' → '6' sekali (samakan backend).
+export function hpNormal(hp) {
+  let d = String(hp || "").replace(/\D/g, "");
+  if (d.startsWith("0")) d = "6" + d.slice(1);
+  return d;
+}
+
+// Hit blacklist HANYA bila nama DAN HP terisi & keduanya pair-match.
+export function terBlacklist(list, { nama, hp } = {}) {
+  const n = String(nama || "").toLowerCase().trim();
+  const h = hpNormal(hp);
+  if (!n || !h) return null;
+  return (
+    (Array.isArray(list) ? list : []).find(
+      (b) =>
+        String(b?.nama || "").toLowerCase().trim() === n &&
+        hpNormal(b?.hp) === h,
+    ) || null
+  );
+}
+
 export function hitungDurasi(ambil, kembali) {
   if (!ambil || !kembali) return { error: "Pilih tanggal!" };
   const diff = new Date(kembali) - new Date(ambil);

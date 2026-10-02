@@ -16,6 +16,7 @@ import {
   kondisiUnit,
   catatanUnit,
   parseJaminan,
+  terBlacklist,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import { useNotify } from "@/components/NotificationProvider";
@@ -256,7 +257,7 @@ export default function BookingPage() {
   const identitasCek = useDebounce(`${namaPenyewa}|${hp_penyewa}`, 500);
   useEffect(() => {
     const [nama, hp] = String(identitasCek || "").split("|");
-    if (!nama.trim() && !hp.trim()) {
+    if (!nama.trim() || !hp.trim()) {
       setBlacklistHit(null);
       return;
     }
@@ -2092,20 +2093,7 @@ export default function BookingPage() {
                                     Member
                                   </span>
                                 )}
-                                {blacklistArr.some(
-                                  (b) =>
-                                    String(b.nama || "")
-                                      .toLowerCase()
-                                      .trim() ===
-                                      String(m.nama || "")
-                                        .toLowerCase()
-                                        .trim() ||
-                                    (m.hp &&
-                                      String(b.hp || "")
-                                        .toLowerCase()
-                                        .trim() ===
-                                        String(m.hp).toLowerCase().trim()),
-                                ) && (
+                                {terBlacklist(blacklistArr, { nama: m.nama, hp: m.hp }) && (
                                   <span className="inline-block rounded text-[10px] px-1.5 py-0.5 bg-red-600 text-white">
                                     Blacklist
                                   </span>

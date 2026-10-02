@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar, getBlacklist } from "@/lib/db";
 import dynamic from "next/dynamic";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, terBlacklist } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
@@ -114,16 +114,7 @@ function RiwayatPageInner() {
   }, []);
 
   const sudahBlacklist = (t) =>
-    blacklist.some((b) => {
-      const namaSama =
-        String(b.nama || "").toLowerCase().trim() ===
-        String(t.penyewa || "").toLowerCase().trim();
-      const hpSama =
-        t.hp_penyewa &&
-        String(b.hp || "").toLowerCase().trim() ===
-          String(t.hp_penyewa).toLowerCase().trim();
-      return namaSama || hpSama;
-    });
+    !!terBlacklist(blacklist, { nama: t.penyewa, hp: t.hp_penyewa });
 
   async function bukaBlacklist(t) {
     const penuh = await getTransactionById(t.id);

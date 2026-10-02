@@ -90,6 +90,7 @@ export default function BlacklistPage() {
 
   async function simpan() {
     if (!form.nama.trim()) return notify("Nama wajib diisi.", "error");
+    if (!form.hp.trim()) return notify("HP wajib diisi.", "error");
     if (!form.alasan.trim()) return notify("Alasan wajib diisi.", "error");
     setSaving(true);
     try {
@@ -289,11 +290,12 @@ export default function BlacklistPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                      No HP
+                      No. HP <span className="text-red-500">*</span>
                     </label>
                     <input
                       value={form.hp}
                       onChange={(e) => setForm({ ...form, hp: e.target.value })}
+                      placeholder="08xxxxxxxxxx"
                       className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
@@ -336,7 +338,12 @@ export default function BlacklistPage() {
                 <button
                   type="button"
                   onClick={simpan}
-                  disabled={saving}
+                  disabled={
+                    saving ||
+                    !form.nama.trim() ||
+                    !form.hp.trim() ||
+                    !form.alasan.trim()
+                  }
                   className="rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f] disabled:opacity-60"
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
