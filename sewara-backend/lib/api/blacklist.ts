@@ -2,12 +2,11 @@
 /**
  * Blacklist Penyewa — helper bersama.
  *
- * Tabel public.penyewa_blacklist per tenant. Guard transaksi memakai
- * cariBlacklist untuk menolak penyewa yang match HP (ternormalisasi) atau
- * nama (lower/trim persis).
+ * Tabel public.penyewa_blacklist per tenant. cariBlacklist dipakai endpoint
+ * /api/blacklist/check untuk memberi TAUAN (bukan blokir) ke frontend:
+ * match HP ternormalisasi dulu, fallback nama lower/trim persis.
+ * Kebijakan 2026-10-02: penyewa ter-blacklist TETAP bisa booking, hanya notif.
  */
-
-import { errorResponse } from './response';
 
 /**
  * Normalisasi HP untuk perbandingan: buang semua non-digit, lalu bila diawali
@@ -82,17 +81,4 @@ export async function cariBlacklist(supabase, tenantId, { nama, hp } = {}) {
     if (byNama) return { hit: true, nama: byNama.nama, alasan: byNama.alasan };
   }
   return null;
-}
-
-/**
- * Guard transaksi: kembalikan Response 403 bila penyewa ter-blacklist, else null.
- */
-export async function guardBlacklist(supabase, tenantId, { penyewa, hp } = {}) {
-  const found = await cariBlacklist(supabase, tenantId, { nama: penyewa, hp });
-  if (!found) return null;
-  return errorResponse(
-    `Penyewa terdaftar blacklist: ${found.nama} — ${found.alasan}`,
-    'PENYEWA_BLACKLIST',
-    403,
-  );
 }

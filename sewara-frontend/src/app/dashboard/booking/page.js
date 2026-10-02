@@ -1453,10 +1453,6 @@ export default function BookingPage() {
       const okSimpan = await tambahTransactions([trxBaru]);
       if (!okSimpan) {
         const pesan = getLastDbError();
-        if (/blacklist/i.test(pesan || "")) {
-          setBlacklistHit({ hit: true, alasan: "" });
-          return notify(pesan || "Penyewa ter-blacklist. Booking ditolak.", "error");
-        }
         return notify(
           pesan || "Gagal menyimpan booking. Silakan coba lagi.",
           "error",
@@ -2015,8 +2011,8 @@ export default function BookingPage() {
                   <strong>Penyewa ter-blacklist.</strong>{" "}
                   {blacklistHit.alasan
                     ? `Alasan: ${blacklistHit.alasan}.`
-                    : "Penyewa ini diblokir dari booking."}{" "}
-                  Booking akan ditolak server saat disimpan.
+                    : "Penyewa ini pernah bermasalah."}{" "}
+                  Booking tetap bisa dilanjutkan, hati-hati.
                 </span>
               </div>
             )}
