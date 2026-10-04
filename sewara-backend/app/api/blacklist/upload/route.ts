@@ -2,9 +2,8 @@
 /**
  * /api/blacklist/upload
  *
- * POST multipart: entryId, file, index (slot 0-4), label?.
- * Simpan ke R2 `blacklist/<tenantId>/<entryId>/doc-<index>.<ext>` lalu perbarui
- * fotoJaminan entri (array [{label,path}] max 5, ganti slot). Pola member/upload.
+ * POST multipart: entryId, file, label? (index ignored for compatibility).
+ * Label slot is one of FOTO_SLOTS; R2 key uses slug(label).
  */
 
 import { getServerClient } from '@/lib/api/supabase';
@@ -22,7 +21,26 @@ import { storage } from '@/lib/storage';
 export const runtime = 'nodejs';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'application/pdf'];
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
+const FOTO_SLOTS = ['KTP', 'Kartu Keluarga', 'SIM', 'NPWP', 'Lainnya'];
+
+function slugLabel(label) {
+  return label.toLowerCase().replace(/\s+/g, '-');
+}
+
+async function deleteBlacklistFile(path, tenantId) {
+  if (!path.startsWith(`blacklist/${tenantId}/`)) {
+    logError(new Error('Skip deletion of non-blacklist tenant path.'), {
+      route: '/api/blacklist/upload', operation: 'delete_old_file_skip_unsafe_path', path,
+    });
+    return;
+  }
+  try {
+    await storage.delete(path);
+  } catch (e) {
+    logError(e, { route: '/api/blacklist/upload', operation: 'delete_old_file', path });
+  }
+}
 
 export const POST = withErrorHandler(async (request) => {
   const supabase = await getServerClient();
@@ -38,21 +56,21 @@ export const POST = withErrorHandler(async (request) => {
   const formData = await request.formData();
   const file = formData.get('file');
   const entryId = formData.get('entryId');
-  const indexRaw = formData.get('index');
-  const label = formData.get('label') || 'Lainnya';
+  // Multipart index sengaja tidak dipakai lagi; slot ditentukan label.
+  const labelRaw = formData.get('label') || 'Lainnya';
+  const label = String(labelRaw);
 
   if (!file || typeof file.arrayBuffer !== 'function' || !entryId) {
     return validationErrorResponse('File atau entry ID tidak valid.');
   }
-  const index = Number(indexRaw);
-  if (!Number.isInteger(index) || index < 0 || index > 4) {
-    return validationErrorResponse('Index dokumen tidak valid (harus 0-4).');
+  if (!FOTO_SLOTS.includes(label)) {
+    return validationErrorResponse('Label dokumen tidak valid.');
   }
   if (!ALLOWED_MIME.includes(file.type)) {
     return validationErrorResponse('Jenis file tidak didukung. Gunakan JPG, PNG, atau PDF.');
   }
   if (file.size > MAX_SIZE) {
-    return validationErrorResponse('Ukuran file maksimal 10 MB.');
+    return validationErrorResponse('Ukuran file maksimal 5 MB.');
   }
 
   const tenantId = await getTenantId(supabase, user.id);
@@ -66,28 +84,23 @@ export const POST = withErrorHandler(async (request) => {
   if (entryError) throw entryError;
   if (!entry) return notFoundResponse('Entri blacklist tidak ditemukan.');
 
+  const documents = Array.isArray(entry.foto_jaminan) ? entry.foto_jaminan : [];
+  const existingIndex = documents.findIndex((doc) => doc?.label === label);
+  if (existingIndex < 0 && documents.length >= 5) {
+    return validationErrorResponse('Maksimal 5 dokumen diizinkan.');
+  }
+
   const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : 'jpg';
-  const key = `blacklist/${tenantId}/${entryId}/doc-${index}.${ext}`;
+  const key = `blacklist/${tenantId}/${entryId}/${slugLabel(label)}.${ext}`;
+  const oldPath = existingIndex >= 0 ? documents[existingIndex]?.path : null;
 
   await storage.upload(key, Buffer.from(await file.arrayBuffer()), file.type);
 
-  const documents = Array.isArray(entry.foto_jaminan) ? entry.foto_jaminan : [];
-  const newDoc = { label: String(label), path: key };
-
-  if (index < documents.length) {
-    const oldPath = documents[index]?.path;
-    if (oldPath && oldPath !== key) {
-      try {
-        await storage.delete(oldPath);
-      } catch (e) {
-        logError(e, { route: '/api/blacklist/upload', operation: 'delete_old_file', path: oldPath });
-      }
-    }
-    documents[index] = newDoc;
+  const newDoc = { label, path: key };
+  if (existingIndex >= 0) {
+    if (oldPath && oldPath !== key) await deleteBlacklistFile(oldPath, tenantId);
+    documents[existingIndex] = newDoc;
   } else {
-    if (documents.length >= 5) {
-      return validationErrorResponse('Maksimal 5 dokumen diizinkan.');
-    }
     documents.push(newDoc);
   }
 
@@ -98,5 +111,5 @@ export const POST = withErrorHandler(async (request) => {
     .eq('user_id', tenantId);
   if (updateError) throw updateError;
 
-  return successResponse({ path: key, label: String(label) });
+  return successResponse({ path: key, label });
 });

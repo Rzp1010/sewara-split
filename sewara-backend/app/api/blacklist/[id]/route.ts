@@ -38,6 +38,22 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
 
   const body = await request.json().catch(() => ({}));
   const update = {};
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const parseOptionalUuid = (value, field) => {
+    if (value == null || value === '' || value === 'null') return null;
+    if (typeof value !== 'string' || !UUID_RE.test(value)) {
+      return validationErrorResponse(`${field} harus berupa UUID yang valid.`);
+    }
+    return value;
+  };
+
+  for (const field of ['transaksiId', 'memberId']) {
+    if (body?.[field] !== undefined) {
+      const parsed = parseOptionalUuid(body[field], field);
+      if (parsed instanceof Response) return parsed;
+      update[field === 'transaksiId' ? 'transaksi_id' : 'member_id'] = parsed;
+    }
+  }
 
   if (body?.nama !== undefined) {
     const nama = String(body.nama).trim();
@@ -64,6 +80,12 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
     if (body.fotoJaminan.length > 5) {
       return validationErrorResponse('Maksimal 5 foto jaminan.');
     }
+    const tenantId = await getTenantId(supabase, user.id);
+    for (const photo of body.fotoJaminan) {
+      if (!photo || typeof photo.label !== 'string' || typeof photo.path !== 'string' || !photo.path.startsWith(`blacklist/${tenantId}/`)) {
+        return validationErrorResponse('Setiap foto harus memiliki label dan path blacklist tenant yang valid.');
+      }
+    }
     update.foto_jaminan = body.fotoJaminan;
   }
 
@@ -72,6 +94,19 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
   }
 
   const tenantId = await getTenantId(supabase, user.id);
+  let oldPhotos = [];
+  if (Object.prototype.hasOwnProperty.call(update, 'foto_jaminan')) {
+    const { data: current, error: currentError } = await supabase
+      .from('penyewa_blacklist')
+      .select('foto_jaminan')
+      .eq('id', id)
+      .eq('user_id', tenantId)
+      .maybeSingle();
+    if (currentError) throw currentError;
+    if (!current) return notFoundResponse('Entri blacklist tidak ditemukan.');
+    oldPhotos = Array.isArray(current.foto_jaminan) ? current.foto_jaminan : [];
+  }
+
   const { data, error } = await supabase
     .from('penyewa_blacklist')
     .update(update)
@@ -81,6 +116,21 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
     .maybeSingle();
   if (error) throw error;
   if (!data) return notFoundResponse('Entri blacklist tidak ditemukan.');
+
+  if (Object.prototype.hasOwnProperty.call(update, 'foto_jaminan')) {
+    const retained = new Set(update.foto_jaminan.map((photo) => photo.path));
+    for (const photo of oldPhotos) {
+      const path = photo?.path;
+      if (!path || retained.has(path) || !path.startsWith(`blacklist/${tenantId}/`)) continue;
+      try {
+        await storage.delete(path);
+      } catch (e) {
+        if (e?.name !== 'NoSuchKey' && e?.name !== 'NotFound') {
+          logError(e, { route: '/api/blacklist/[id]', operation: 'delete_removed_photo', path });
+        }
+      }
+    }
+  }
 
   return successResponse({ entry: rowToCamel(data) });
 });
@@ -108,6 +158,12 @@ export const DELETE = withErrorHandler(async (request, { params }) => {
     .map((d) => d?.path)
     .filter(Boolean);
   for (const path of paths) {
+    if (!path.startsWith(`blacklist/${tenantId}/`)) {
+      logError(new Error('Skip deletion of non-blacklist tenant path.'), {
+        route: '/api/blacklist/[id]', operation: 'delete_r2_skip_unsafe_path', path,
+      });
+      continue;
+    }
     try {
       await storage.delete(path);
     } catch (e) {
