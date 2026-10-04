@@ -32,10 +32,7 @@ sewara-backend/
 │       ├── telegram/        # webhook & test notifikasi Telegram
 │       ├── invoice-counter/ # nomor invoice berikutnya
 │       ├── profiles/        # list profile
-│       ├── webhooks/        # webhook payment provider (skeleton)
-│       ├── check-inventory/ # debug/diagnostik inventory
-│       ├── test-atomic/     # test integrasi RPC saveTransactionAtomic (non-prod)
-│       └── test-rpc/        # test RPC save_transaction_atomic (non-prod)
+│       └── webhooks/        # webhook payment provider (skeleton)
 ├── lib/
 │   ├── api/                 # helper API bersama
 │   │   ├── supabase.ts      # factory client Supabase (server/service/anon)
@@ -248,16 +245,6 @@ Catatan purge: retensi bukti bayar **tidak** memakai lifecycle R2 — dilakukan 
 | POST | `/api/telegram/test` | requireAuth | Kirim test message Telegram (superadmin) |
 | POST | `/api/webhooks/payment` | publik (skeleton) | Webhook payment provider (Midtrans/Xendit/Stripe) — belum diimplementasi penuh |
 
-### Debug / diagnostik (non-produksi)
-
-| Method | Path | Auth | Fungsi |
-|---|---|---|---|
-| GET | `/api/check-inventory` | sesi | Diagnostik koneksi & inventory (balas 404 di produksi) |
-| GET | `/api/test-rpc` | sesi | Test RPC `save_transaction_atomic` (balas 404 di produksi) |
-| GET | `/api/test-atomic` | sesi | Test integrasi `saveTransactionAtomic` (balas 404 di produksi) |
-
----
-
 ## Database & migrasi
 
 - Database: Supabase project `obhvrzholszhjnpvmnna`.
@@ -310,4 +297,3 @@ Nginx jadi reverse proxy dari domain ke port backend (`PORT=4000`). Webhook/noti
 - **Autentikasi:** `requireAuth(supabase)` untuk user login; helper peran/ownership lain ada di `lib/api/auth.ts`.
 - **Multi-tenant (RLS):** baris data milik owner (`owner_id`), staf mengikuti tenant owner-nya. Frontend tidak mengirim `user_id`; resolusi tenant dilakukan backend lewat `getTenantId` / `withTenant` supaya tidak bisa dipalsukan client.
 - **Backend tidak menghitung diskon** (termasuk diskon durasi). Perhitungan diskon dilakukan di frontend; backend hanya menyimpan dan mengembalikan nilai.
-- Route debug (`check-inventory`, `test-rpc`, `test-atomic`) mengembalikan 404 saat `NODE_ENV=production`.
