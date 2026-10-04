@@ -182,9 +182,13 @@ export default function DashboardPage() {
   }, [role, userId, rentangKey, customMulai, customAkhir]);
 
   async function handleLogout() {
-    await api.auth.logout();
-    resetOwnerIdCache();
-    router.replace("/");
+    try {
+      await api.auth.logout();
+    } catch (error) {
+      console.error("Logout API failed:", error);
+    } finally {
+      window.location.href = "/";
+    }
   }
 
   if (role === null) {

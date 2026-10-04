@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useNotify } from "@/components/NotificationProvider";
 import { getSetting } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { hitungPembayaran } from "@/lib/utils";
@@ -12,6 +13,7 @@ const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function InvoiceView({ data, onClose }) {
+  const { notify } = useNotify();
   const footer = getSetting("invoice_footer", "") || FOOTER_DEFAULT;
   const ganda = getSetting("invoice_ganda", false) === true;
   const layout = getSetting("invoice_layout", null) || {};
@@ -53,7 +55,7 @@ export default function InvoiceView({ data, onClose }) {
         .save();
     } catch (err) {
       console.error("Gagal download PDF:", err);
-      alert(`Gagal download PDF: ${err?.message || err}`);
+      notify("Gagal membuat PDF. Coba lagi.", "error");
     } finally {
       isi.style.padding = padLama;
       if (tombol) tombol.style.display = styleLama;

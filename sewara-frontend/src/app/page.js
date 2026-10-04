@@ -57,7 +57,17 @@ export default function LoginPage() {
       await api.auth.login(user, pass); // backend set cookie sesi
       router.replace("/dashboard");
     } catch (err) {
-      const errorText = err.message || "Email atau password salah.";
+      console.error("Login failed:", err);
+      const isNetworkError = err instanceof TypeError;
+      const isRateLimited = err.status === 429 || /RATE|LIMIT/i.test(err.code || "");
+      const isInvalidCredentials = err.status === 401 || /invalid.*credential|email.*password/i.test(err.message || "");
+      const errorText = isNetworkError
+        ? "Server tidak terjangkau. Periksa koneksi lalu coba lagi."
+        : isRateLimited
+          ? "Terlalu banyak percobaan. Coba lagi beberapa menit."
+          : isInvalidCredentials
+            ? "Email atau password salah."
+            : "Login gagal. Coba lagi.";
       setErrorMsg(errorText);
       setFieldError(true);
       if (err.status === 423 || err.status === 429) {

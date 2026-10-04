@@ -418,7 +418,7 @@ function SidebarContent({ children }) {
 
   useEffect(() => {
     function handler(e) {
-      if (accountOpen && !e.target.closest(".account-dropdown, .flex"))
+      if (accountOpen && !e.target.closest(".account-dropdown"))
         setAccountOpen(false);
     }
     document.addEventListener("mousedown", handler);
