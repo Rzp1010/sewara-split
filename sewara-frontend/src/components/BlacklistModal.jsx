@@ -67,12 +67,10 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
       }
       const entryId = r.data?.id || r.data?.entry?.id;
       // Upload file baru setelah entri punya id; gagal per file jangan batalkan.
-      const baru = slots
-        .map((s, i) => (s?.file ? { ...s, index: i } : null))
-        .filter(Boolean);
+      const baru = slots.filter((s) => s?.file);
       if (entryId && baru.length) {
         for (const s of baru) {
-          const up = await uploadBlacklistFoto(entryId, s.file, s.index, s.label);
+          const up = await uploadBlacklistFoto(entryId, s.file, s.label);
           if (!up.ok)
             notify(`Gagal upload ${s.label}: ${up.error || "coba lagi"}.`, "warning");
         }

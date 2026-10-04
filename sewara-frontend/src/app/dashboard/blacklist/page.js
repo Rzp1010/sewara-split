@@ -38,7 +38,7 @@ export default function BlacklistPage() {
   const [slots, setSlots] = useState(SLOT_KOSONG);
   const [saving, setSaving] = useState(false);
 
-  const bolehEdit = userRole === ROLE_OWNER;
+  const bolehEdit = userRole === ROLE_OWNER || userRole === ROLE_SUPERADMIN;
   const bolehTambah = userRole === ROLE_OWNER || userRole === ROLE_SUPERADMIN;
 
   const muat = async () => {
@@ -93,8 +93,14 @@ export default function BlacklistPage() {
     (Array.isArray(row.fotoJaminan) ? row.fotoJaminan : [])
       .filter((f) => f?.path)
       .slice(0, 5)
-      .forEach((f, i) => {
-        awal[i] = { label: f.label || FOTO_SLOTS[i], path: f.path, snapshot: true };
+      .forEach((f) => {
+        const index = FOTO_SLOTS.indexOf(f.label);
+        if (index < 0) return;
+        awal[index] = {
+          label: f.label,
+          path: f.path,
+          snapshot: !String(f.path).startsWith("blacklist/"),
+        };
       });
     setSlots(awal);
     setModal(true);
@@ -106,16 +112,24 @@ export default function BlacklistPage() {
     if (!form.alasan.trim()) return notify("Alasan wajib diisi.", "error");
     setSaving(true);
     try {
-      // Simpan slot lama (path) minus yang dihapus/diganti; file baru via upload.
-      const snapshot = slots
-        .filter((s) => s?.path && s.snapshot)
+      // PATCH hanya menerima path milik blacklist. Snapshot member create-only.
+      const snapshotLama = slots.filter(
+        (s) => s?.path && s.snapshot && !String(s.path).startsWith("blacklist/"),
+      );
+      const adaSnapshotTakDidukung = Boolean(editing && snapshotLama.length);
+      const fotoJaminan = slots
+        .filter(
+          (s) =>
+            s?.path &&
+            (!s.snapshot || String(s.path).startsWith("blacklist/")),
+        )
         .map((s) => ({ label: s.label, path: s.path }));
       const payload = {
         nama: form.nama.trim(),
         hp: form.hp.trim(),
         alamat: form.alamat || "",
         alasan: form.alasan.trim(),
-        fotoJaminan: snapshot,
+        fotoJaminan,
       };
       const r = editing
         ? await ubahBlacklist(editing.id, payload)
@@ -129,18 +143,21 @@ export default function BlacklistPage() {
         );
       }
       const entryId = editing?.id || r.data?.id || r.data?.entry?.id;
-      const baru = slots
-        .map((s, i) => (s?.file ? { ...s, index: i } : null))
-        .filter(Boolean);
+      const baru = slots.filter((s) => s?.file);
       if (entryId && baru.length) {
         for (const s of baru) {
-          const up = await uploadBlacklistFoto(entryId, s.file, s.index, s.label);
+          const up = await uploadBlacklistFoto(entryId, s.file, s.label);
           if (!up.ok)
             notify(`Gagal upload ${s.label}: ${up.error || "coba lagi"}.`, "warning");
         }
       }
       setModal(false);
       notify(editing ? "Blacklist diperbarui." : "Penyewa ditambahkan ke blacklist.");
+      if (adaSnapshotTakDidukung)
+        notify(
+          "Dokumen snapshot lama tidak bisa diubah dari sini, hapus & upload ulang.",
+          "warning",
+        );
       muat();
     } finally {
       setSaving(false);
@@ -355,7 +372,11 @@ export default function BlacklistPage() {
                 </div>
 
                 <div className="mt-5">
-                  <BlacklistFotoSlot items={slots} onChange={setSlots} />
+                  <BlacklistFotoSlot
+                    items={slots}
+                    onChange={setSlots}
+                    allowRemoveSnapshot={Boolean(editing)}
+                  />
                   <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
                     JPG/PNG/PDF maks 5MB per file.
                   </p>

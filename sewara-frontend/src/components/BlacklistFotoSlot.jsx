@@ -3,18 +3,18 @@
 import { api } from "@/lib/api-client";
 import { useNotify } from "@/components/NotificationProvider";
 
-// Slot dokumen jaminan — label tetap per index (0-4), sinkron dengan
-// backend POST /api/blacklist/upload (index mengganti slot yang sama).
+// Slot dokumen jaminan — label adalah identitas slot; upload mengganti per-label.
 export const FOTO_SLOTS = ["KTP", "Kartu Keluarga", "SIM", "NPWP", "Lainnya"];
 const MAKS_BYTE = 5 * 1024 * 1024;
 const TIPE_OK = ["image/jpeg", "image/png", "application/pdf"];
 
 /** items: array(5) tiap elemen null | {label, path?, url?, file?, snapshot?} */
-export default function BlacklistFotoSlot({ items, onChange }) {
+export default function BlacklistFotoSlot({ items, onChange, allowRemoveSnapshot = false }) {
   const { notify } = useNotify();
-  const jml = items.filter(
-    (it) => it && (it.path || it.file || it.url),
-  ).length;
+  const slots = FOTO_SLOTS.map(
+    (label) => items.find((it) => it?.label === label) || null,
+  );
+  const jml = slots.filter((it) => it && (it.path || it.file || it.url)).length;
 
   function pilih(index, file) {
     if (!file) return;
@@ -22,7 +22,7 @@ export default function BlacklistFotoSlot({ items, onChange }) {
       return notify("File harus JPG, PNG, atau PDF.", "error");
     if (file.size > MAKS_BYTE)
       return notify("Ukuran file maksimal 5MB.", "error");
-    const next = [...items];
+    const next = [...slots];
     next[index] = {
       label: FOTO_SLOTS[index],
       file,
@@ -33,7 +33,7 @@ export default function BlacklistFotoSlot({ items, onChange }) {
   }
 
   function hapus(index) {
-    const next = [...items];
+    const next = [...slots];
     next[index] = null;
     onChange(next);
   }
@@ -49,7 +49,7 @@ export default function BlacklistFotoSlot({ items, onChange }) {
       </div>
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
         {FOTO_SLOTS.map((label, index) => {
-          const it = items[index];
+          const it = slots[index];
           const terisi = Boolean(it && (it.path || it.file || it.url));
           return (
             <div
@@ -88,9 +88,14 @@ export default function BlacklistFotoSlot({ items, onChange }) {
               <div
                 className={`text-[11px] font-semibold ${terisi ? "text-emerald-800" : "text-gray-400"}`}
               >
-                {it?.snapshot ? "snapshot" : it?.label || label}
+                {it?.label || label}
               </div>
-              {terisi && !it?.snapshot && (
+              {it?.snapshot && (
+                <span className="text-[9px] leading-tight text-gray-400">
+                  Dokumen dari member — akan disalin saat disimpan.
+                </span>
+              )}
+              {terisi && (!it?.snapshot || allowRemoveSnapshot) && (
                 <div
                   className="text-center text-[10px] text-red-500"
                   onClick={(e) => {
