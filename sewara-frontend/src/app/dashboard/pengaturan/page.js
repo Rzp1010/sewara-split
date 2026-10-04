@@ -200,13 +200,50 @@ function Seg({ value, onChange, options }) {
   );
 }
 
+function ToggleBaris({ checked, onChange, label, hint }) {
+  return (
+    <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto]">
+      <div>
+        <p className="m-0 text-sm font-semibold text-gray-800">{label}</p>
+        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">{hint}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`relative h-6 w-11 shrink-0 rounded-full border-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7181E0] focus-visible:ring-offset-2 ${checked ? "bg-[#7181E0]" : "bg-gray-300"}`}
+      >
+        <span
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0"}`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function BarisKontrol({ label, hint, control }) {
+  return (
+    <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+      <div>
+        <p className="m-0 text-sm font-semibold text-gray-800">{label}</p>
+        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">{hint}</p>}
+      </div>
+      <div className="md:justify-self-end">{control}</div>
+    </div>
+  );
+}
+
 function KartuSeksi({ ikon, judul, deskripsi, children }) {
   return (
     <section className="pengaturan-in rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#7181E0]/10 text-[#7181E0] [&>svg]:h-5 [&>svg]:w-5">
-          {ikon}
-        </span>
+      <div className={`flex items-start gap-3 border-b border-gray-100 px-6 py-5 ${ikon ? "" : "pl-6"}`}>
+        {ikon && (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#7181E0]/10 text-[#7181E0] [&>svg]:h-5 [&>svg]:w-5">
+            {ikon}
+          </span>
+        )}
         <div>
           <h3 className="m-0 text-base font-semibold text-gray-900">{judul}</h3>
           {deskripsi && (
@@ -731,11 +768,8 @@ export default function PengaturanPage() {
         <div className="min-w-0 lg:col-span-3">
       {/* ===== Tab: Invoice & Dokumen ===== */}
       {tab === "invoice" && (
-        <KartuSeksi
-          ikon={Ikon.dok}
-          judul="Invoice & Dokumen"
-          deskripsi="Format penomoran dan teks yang tampil pada invoice dan nota penyewa."
-        >
+        <div className="space-y-6">
+          <KartuSeksi judul="Format Penomoran" deskripsi="Atur format nomor invoice berikutnya.">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <Field label="Awalan Nomor Invoice" >
               <input
@@ -782,6 +816,9 @@ export default function PengaturanPage() {
             </p>
           </div>
 
+          </KartuSeksi>
+
+          <KartuSeksi judul="Footer & Opsi Cetak">
           <Field
             label="Footer Invoice"
             hint="Tampil di bagian bawah invoice."
@@ -795,60 +832,50 @@ export default function PengaturanPage() {
             />
           </Field>
 
-          <Field
+          <ToggleBaris
+            checked={f.invoice_ganda === true}
+            onChange={(v) => setNilai("invoice_ganda", v)}
             label="Cetak 2 salinan dalam 1 halaman A4 landscape"
             hint="Dua invoice identik berdampingan (kiri-kanan) untuk dipotong menjadi salinan pelanggan & arsip. Hanya berlaku untuk tombol Cetak."
-          >
-            <Seg
-              value={f.invoice_ganda}
-              onChange={(v) => setNilai("invoice_ganda", v)}
-              options={[
-                { value: false, label: "Nonaktif" },
-                { value: true, label: "Aktif" },
-              ]}
-            />
-          </Field>
+          />
 
-          <Field
+          <ToggleBaris
+            checked={f.invoice_ttd === true}
+            onChange={(v) => setNilai("invoice_ttd", v)}
             label="Kolom Tanda Tangan"
             hint="Menampilkan kolom tanda tangan Penyewa dan Yang Melayani di bagian bawah invoice."
-          >
-            <Seg
-              value={f.invoice_ttd}
-              onChange={(v) => setNilai("invoice_ttd", v)}
-              options={[
-                { value: false, label: "Nonaktif" },
-                { value: true, label: "Aktif" },
-              ]}
-            />
-          </Field>
+          />
 
-          <Field
+          </KartuSeksi>
+
+          <KartuSeksi judul="Tata Letak & Header">
+          <BarisKontrol
             label="Tata Letak Invoice"
             hint="Default memakai susunan bawaan. Custom membebaskan Anda menata bagian atas, kiri, kanan, dan bawah invoice."
-          >
-            <Seg
-              value={f.invoice_layout?.mode || "default"}
-              onChange={(v) => {
-                if (v === "custom") {
-                  const ada = f.invoice_layout?.mode === "custom";
-                  setNilai(
-                    "invoice_layout",
-                    ada ? f.invoice_layout : { ...DEFAULT_LAYOUT },
-                  );
-                } else {
-                  setNilai("invoice_layout", {
-                    ...(f.invoice_layout || {}),
-                    mode: "default",
-                  });
-                }
-              }}
-              options={[
-                { value: "default", label: "Default" },
-                { value: "custom", label: "Custom" },
-              ]}
-            />
-          </Field>
+            control={
+              <Seg
+                value={f.invoice_layout?.mode || "default"}
+                onChange={(v) => {
+                  if (v === "custom") {
+                    const ada = f.invoice_layout?.mode === "custom";
+                    setNilai(
+                      "invoice_layout",
+                      ada ? f.invoice_layout : { ...DEFAULT_LAYOUT },
+                    );
+                  } else {
+                    setNilai("invoice_layout", {
+                      ...(f.invoice_layout || {}),
+                      mode: "default",
+                    });
+                  }
+                }}
+                options={[
+                  { value: "default", label: "Default" },
+                  { value: "custom", label: "Custom" },
+                ]}
+              />
+            }
+          />
 
           {f.invoice_layout?.mode === "custom" && (
             <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
@@ -885,12 +912,6 @@ export default function PengaturanPage() {
             </div>
           )}
 
-          <BarisSimpan
-            dirty={dirtyTab(KEYS_TAB.invoice)}
-            saving={saving}
-            onSimpan={simpanSeksi}
-          />
-
           <InvoiceLayoutEditor
             open={editorLayoutOpen}
             onClose={() => setEditorLayoutOpen(false)}
@@ -903,17 +924,20 @@ export default function PengaturanPage() {
               setNilai("invoice_header", headerBaru || "");
             }}
           />
-        </KartuSeksi>
+          </KartuSeksi>
+          <BarisSimpan
+            dirty={dirtyTab(KEYS_TAB.invoice)}
+            saving={saving}
+            onSimpan={simpanSeksi}
+          />
+        </div>
       )}
 
       {/* ===== Tab: Profil (owner) ===== */}
       {tab === "profil" && (
         userRole === ROLE_OWNER ? (
-          <KartuSeksi
-            ikon={Ikon.user}
-            judul="Profil"
-            deskripsi="Informasi langganan dan identitas akun yang tampil di aplikasi."
-          >
+          <div className="space-y-6">
+          <KartuSeksi judul="Informasi Langganan">
             <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
               <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Langganan
@@ -940,7 +964,9 @@ export default function PengaturanPage() {
                 Masa aktif langganan bisnis Anda. Hubungi admin untuk perpanjang.
               </p>
             </div>
+          </KartuSeksi>
 
+          <KartuSeksi judul="Data Akun" deskripsi="Identitas akun yang tampil di aplikasi.">
             <Field
               label="Username"
               hint="Ditampilkan di navbar & dropdown profil."
@@ -1007,6 +1033,7 @@ export default function PengaturanPage() {
               </button>
             </div>
           </KartuSeksi>
+          </div>
         ) : (
           <KartuSeksi ikon={Ikon.user} judul="Profil">
             <p className="text-sm leading-relaxed text-gray-600">
@@ -1018,21 +1045,21 @@ export default function PengaturanPage() {
 
       {/* ===== Tab: Operasional ===== */}
       {tab === "operasional" && (
-        <KartuSeksi
-          ikon={Ikon.jam}
-          judul="Operasional"
-          deskripsi="Jam operasional toko, aturan sewa, denda, dan keamanan akun."
-        >
-          <Field label="Jam Operasional">
-            <Seg
-              value={f.jam_mode}
-              onChange={(v) => setNilai("jam_mode", v)}
-              options={[
-                { value: "buka_tutup", label: "Mengikuti Jam Buka-Tutup" },
-                { value: "fleksibel", label: "Fleksibel (bebas 24 jam)" },
-              ]}
-            />
-          </Field>
+        <div className="space-y-6">
+          <KartuSeksi judul="Jam Operasional">
+          <BarisKontrol
+            label="Jam Operasional"
+            control={
+              <Seg
+                value={f.jam_mode}
+                onChange={(v) => setNilai("jam_mode", v)}
+                options={[
+                  { value: "buka_tutup", label: "Mengikuti Jam Buka-Tutup" },
+                  { value: "fleksibel", label: "Fleksibel (bebas 24 jam)" },
+                ]}
+              />
+            }
+          />
 
           {f.jam_mode === "buka_tutup" && (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -1065,133 +1092,117 @@ export default function PengaturanPage() {
             </p>
           )}
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Field
-              label="Peringatan Mendekati Kembali (jam)"
-              hint={`Transaksi dengan sisa waktu ≤ ${
-                f.notif_jam || "2"
-              } jam masuk board Mendekati.`}
-            >
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={f.notif_jam}
-                onChange={ubahAngka("notif_jam")}
-                className={INPUT_CLS}
-                placeholder="2"
-              />
-            </Field>
-            <Field
-              label="Logout Otomatis (menit)"
-              hint="Semua akun di bisnis Anda logout otomatis setelah tidak ada aktivitas selama menit ini. 0 = nonaktif."
-            >
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={f.auto_logout_minutes}
-                onChange={ubahAngka("auto_logout_minutes")}
-                className={INPUT_CLS}
-                placeholder="15"
-              />
-            </Field>
-          </div>
+          </KartuSeksi>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Field
+          <KartuSeksi judul="Booking & Jadwal">
+          <Field
+            label="Peringatan Mendekati Kembali (jam)"
+            hint={`Transaksi dengan sisa waktu ≤ ${f.notif_jam || "2"} jam masuk board Mendekati.`}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={f.notif_jam}
+              onChange={ubahAngka("notif_jam")}
+              className={INPUT_CLS}
+              placeholder="2"
+            />
+          </Field>
+
+          <div className="space-y-4">
+            <BarisKontrol
               label="Jika Ambil SEBELUM Jadwal"
               hint="Mempengaruhi hitungan biaya sewa."
-            >
-              <select
-                value={f.aturan_ambil_cepat}
-                onChange={ubah("aturan_ambil_cepat")}
-                className={INPUT_CLS}
-              >
-                <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
-                <option value="aktual">
-                  Ikuti Aktual (dari waktu ambil sebenarnya)
-                </option>
-              </select>
-            </Field>
-            <Field
+              control={
+                <select value={f.aturan_ambil_cepat} onChange={ubah("aturan_ambil_cepat")} className={INPUT_CLS}>
+                  <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
+                  <option value="aktual">Ikuti Aktual (dari waktu ambil sebenarnya)</option>
+                </select>
+              }
+            />
+            <BarisKontrol
               label="Jika Ambil SETELAH Jadwal"
               hint="Mempengaruhi hitungan biaya saat Serahkan / Terima Kembali."
-            >
-              <select
-                value={f.aturan_ambil_telat}
-                onChange={ubah("aturan_ambil_telat")}
-                className={INPUT_CLS}
-              >
-                <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
-                <option value="aktual">
-                  Ikuti Aktual (dari waktu ambil sebenarnya)
-                </option>
-              </select>
-            </Field>
+              control={
+                <select value={f.aturan_ambil_telat} onChange={ubah("aturan_ambil_telat")} className={INPUT_CLS}>
+                  <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
+                  <option value="aktual">Ikuti Aktual (dari waktu ambil sebenarnya)</option>
+                </select>
+              }
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Field label="Aturan DP (Uang Muka)">
-              <select
-                value={f.aturan_dp}
-                onChange={ubah("aturan_dp")}
-                className={INPUT_CLS}
-              >
-                <option value="bebas">Bebas</option>
-                <option value="wajib">Wajib DP</option>
-              </select>
-              <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
-                {f.aturan_dp === "wajib"
-                  ? "Form booking mewajibkan isi DP sebelum transaksi bisa disimpan."
-                  : "Booking boleh tanpa DP — ditandai Belum DP (belum terkunci) sampai DP dibayar."}
-              </p>
-            </Field>
-            <Field
-              label="Gabung Booking Identitas Sama"
-              hint="Tawaran gabung item muncul saat identitas penyewa & periode sama persis dengan booking aktif."
-            >
-              <select
-                value={f.gabung_status}
-                onChange={ubah("gabung_status")}
-                className={INPUT_CLS}
-              >
+          <BarisKontrol
+            label="Gabung Booking Identitas Sama"
+            hint="Tawaran gabung item muncul saat identitas penyewa & periode sama persis dengan booking aktif."
+            control={
+              <select value={f.gabung_status} onChange={ubah("gabung_status")} className={INPUT_CLS}>
                 <option value="booking">Hanya status Booking (belum diambil)</option>
                 <option value="booking_disewa">Booking & Disewa (sudah diambil)</option>
               </select>
-            </Field>
-          </div>
+            }
+          />
+          </KartuSeksi>
 
-          <Field
+          <KartuSeksi judul="Pembayaran">
+          <BarisKontrol
+            label="Aturan DP (Uang Muka)"
+            hint={f.aturan_dp === "wajib"
+              ? "Form booking mewajibkan isi DP sebelum transaksi bisa disimpan."
+              : "Booking boleh tanpa DP — ditandai Belum DP (belum terkunci) sampai DP dibayar."}
+            control={
+              <select value={f.aturan_dp} onChange={ubah("aturan_dp")} className={INPUT_CLS}>
+                <option value="bebas">Bebas</option>
+                <option value="wajib">Wajib DP</option>
+              </select>
+            }
+          />
+            <ToggleBaris
+              checked={f.dp_hangus_aktif === "1"}
+              onChange={(v) => setNilai("dp_hangus_aktif", v ? "1" : "0")}
+              label="DP Hangus Otomatis"
+              hint={f.dp_hangus_aktif === "1"
+                ? "Saat booking dibatalkan, DP hangus dihitung otomatis berdasarkan aturan di bawah."
+                : "Saat booking dibatalkan, admin menginput jumlah DP hangus secara manual."}
+            />
+            {f.dp_hangus_aktif === "1" && (
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Tabel Aturan (berdasarkan hari sebelum jadwal ambil)
+                </label>
+                <p className="mb-3 text-xs text-gray-500">
+                  Aturan diterapkan dari tier terbesar ke terkecil. Persentase = bagian DP yang hangus (tidak dikembalikan).
+                </p>
+                <DpHangusAturanEditor
+                  value={f.dp_hangus_aturan}
+                  onChange={(v) => setNilai("dp_hangus_aturan", v)}
+                />
+              </div>
+            )}
+          </KartuSeksi>
+
+          <KartuSeksi judul="Pendapatan & Denda">
+          <BarisKontrol
             label="Basis Pendapatan"
             hint="Mempengaruhi kartu Total Pendapatan di Dashboard dan rekap di Laporan Keuangan."
-          >
-            <select
-              value={f.basis_pendapatan}
-              onChange={ubah("basis_pendapatan")}
-              className={INPUT_CLS}
-            >
-              <option value="selesai">Hanya Selesai</option>
-              <option value="aktif">Selesai + Sedang Disewa</option>
-              <option value="semua">Semua (termasuk Booking)</option>
-            </select>
-          </Field>
+            control={
+              <select value={f.basis_pendapatan} onChange={ubah("basis_pendapatan")} className={INPUT_CLS}>
+                <option value="selesai">Hanya Selesai</option>
+                <option value="aktif">Selesai + Sedang Disewa</option>
+                <option value="semua">Semua (termasuk Booking)</option>
+              </select>
+            }
+          />
 
-          <Field label="Denda Keterlambatan">
-            <Seg
-              value={f.denda_aktif}
-              onChange={(v) => setNilai("denda_aktif", v)}
-              options={[
-                { value: "1", label: "Aktif" },
-                { value: "0", label: "Mati" },
-              ]}
-            />
-            <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
-              {f.denda_aktif === "1"
-                ? "Transaksi telat dihitung denda otomatis — admin masih bisa memilih tanpa denda saat Terima Kembali."
-                : "Transaksi telat diproses tanpa peringatan denda sama sekali."}
-            </p>
-          </Field>
+          <ToggleBaris
+            checked={f.denda_aktif === "1"}
+            onChange={(v) => setNilai("denda_aktif", v ? "1" : "0")}
+            label="Denda Keterlambatan"
+            hint={f.denda_aktif === "1"
+              ? "Transaksi telat dihitung denda otomatis — admin masih bisa memilih tanpa denda saat Terima Kembali."
+              : "Transaksi telat diproses tanpa peringatan denda sama sekali."}
+          />
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Field
@@ -1210,39 +1221,9 @@ export default function PengaturanPage() {
             </Field>
           </div>
 
-          <div className="border-t border-gray-100 pt-5">
-            <Field label="Aturan DP Hangus (saat pembatalan)">
-              <Seg
-                value={f.dp_hangus_aktif}
-                onChange={(v) => setNilai("dp_hangus_aktif", v)}
-                options={[
-                  { value: "1", label: "Otomatis" },
-                  { value: "0", label: "Manual" },
-                ]}
-              />
-              <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
-                {f.dp_hangus_aktif === "1"
-                  ? "Saat booking dibatalkan, jumlah DP hangus dihitung otomatis berdasarkan aturan di bawah."
-                  : "Saat booking dibatalkan, admin menginput jumlah DP hangus secara manual."}
-              </p>
-            </Field>
-            {f.dp_hangus_aktif === "1" && (
-              <div className="mt-4">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Tabel Aturan (berdasarkan hari sebelum jadwal ambil)
-                </label>
-                <p className="mb-3 text-xs text-gray-500">
-                  Aturan diterapkan dari tier terbesar ke terkecil. Persentase = bagian DP yang hangus (tidak dikembalikan).
-                </p>
-                <DpHangusAturanEditor
-                  value={f.dp_hangus_aturan}
-                  onChange={(v) => setNilai("dp_hangus_aturan", v)}
-                />
-              </div>
-            )}
-          </div>
+          </KartuSeksi>
 
-          <div className="border-t border-gray-100 pt-5">
+          <KartuSeksi judul="Aksesoris">
             <Field
               label="Daftar Aksesoris"
               hint="Item yang muncul sebagai pilihan checklist saat membuat booking."
@@ -1297,7 +1278,25 @@ export default function PengaturanPage() {
                 </button>
               </div>
             </Field>
+            <BarisKontrol
+              label="Tampilan Aksesoris di Invoice"
+              hint={f.printilan_invoice_mode === "semua"
+                ? "Invoice menampilkan semua daftar aksesoris dengan tanda dicentang (✓/✗)."
+                : "Invoice hanya menampilkan aksesoris yang dicentang admin saat booking."}
+              control={
+                <Seg
+                  value={f.printilan_invoice_mode}
+                  onChange={(v) => setNilai("printilan_invoice_mode", v)}
+                  options={[
+                    { value: "dicentang", label: "Hanya Dicentang" },
+                    { value: "semua", label: "Semua + Tanda" },
+                  ]}
+                />
+              }
+            />
+          </KartuSeksi>
 
+          <KartuSeksi judul="Jaminan">
             <Field
               label="Daftar Jenis Jaminan"
               hint="Pilihan jaminan di form booking. Sertakan opsi eksklusif seperti “Tanpa Jaminan” bila perlu. Booking memakai default jika daftar ini kosong."
@@ -1352,103 +1351,89 @@ export default function PengaturanPage() {
                 </button>
               </div>
             </Field>
+          </KartuSeksi>
 
-            <div className="mt-4">
-              <Field label="Tampilan Aksesoris di Invoice">
-                <Seg
-                  value={f.printilan_invoice_mode}
-                  onChange={(v) => setNilai("printilan_invoice_mode", v)}
-                  options={[
-                    { value: "dicentang", label: "Hanya Dicentang" },
-                    { value: "semua", label: "Semua + Tanda" },
-                  ]}
-                />
-                <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
-                  {f.printilan_invoice_mode === "semua"
-                    ? "Invoice menampilkan semua daftar aksesoris, tandai mana yang dicentang (✓/✗)."
-                    : "Invoice hanya menampilkan aksesoris yang dicentang admin saat booking."}
-                </p>
-              </Field>
-            </div>
-          </div>
+          <KartuSeksi judul="Akun & Keamanan">
+            <Field
+              label="Logout Otomatis (menit)"
+              hint="Semua akun di bisnis Anda logout otomatis setelah tidak ada aktivitas selama menit ini. 0 = nonaktif."
+            >
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={f.auto_logout_minutes}
+                onChange={ubahAngka("auto_logout_minutes")}
+                className={INPUT_CLS}
+                placeholder="15"
+              />
+            </Field>
+          </KartuSeksi>
 
           <BarisSimpan
             dirty={dirtyTab(KEYS_TAB.operasional)}
             saving={saving}
             onSimpan={simpanSeksi}
           />
-        </KartuSeksi>
+        </div>
       )}
 
       {/* ===== Tab: Tampilan ===== */}
       {tab === "tampilan" && (
-        <KartuSeksi
-          ikon={Ikon.mata}
-          judul="Tampilan & Personalisasi"
-          deskripsi="Preferensi tampilan board, kalender, dan pencarian."
-        >
-          <Field
+        <div className="space-y-6">
+          <KartuSeksi judul="Tema">
+          <BarisKontrol
             label="Tema"
             hint="Berlaku untuk akun Anda di perangkat ini."
-          >
-            <Seg
-              value={theme}
-              onChange={ubahTema}
-              options={[
-                { value: "light", label: "Terang" },
-                { value: "dark", label: "Gelap" },
-                { value: "system", label: "Sistem" },
-              ]}
-            />
-          </Field>
+            control={
+              <Seg
+                value={theme}
+                onChange={ubahTema}
+                options={[
+                  { value: "light", label: "Terang" },
+                  { value: "dark", label: "Gelap" },
+                  { value: "system", label: "Sistem" },
+                ]}
+              />
+            }
+          />
+          </KartuSeksi>
 
-          <Field
+          <KartuSeksi judul="Board & Kalender">
+          <BarisKontrol
             label="Tampilan Board Status Sewa"
-          >
-            <Seg
-              value={f.board_mode}
-              onChange={(v) => setNilai("board_mode", v)}
-              options={[
-                { value: "scroll", label: "Geser" },
-                { value: "stack", label: "Tumpuk" },
-              ]}
-            />
-          </Field>
+            control={
+              <Seg
+                value={f.board_mode}
+                onChange={(v) => setNilai("board_mode", v)}
+                options={[
+                  { value: "scroll", label: "Geser" },
+                  { value: "stack", label: "Tumpuk" },
+                ]}
+              />
+            }
+          />
 
-          <Field
+          <ToggleBaris
+            checked={f.cari_sembunyikan_riwayat === "1"}
+            onChange={(v) => setNilai("cari_sembunyikan_riwayat", v ? "1" : "0")}
             label="Sembunyikan Riwayat di Pencarian"
             hint="Saat aktif, hasil pencarian penyewa tidak menampilkan transaksi yang sudah Selesai atau Dibatalkan."
-          >
-            <Seg
-              value={f.cari_sembunyikan_riwayat}
-              onChange={(v) => setNilai("cari_sembunyikan_riwayat", v)}
-              options={[
-                { value: "0", label: "Tampilkan Riwayat" },
-                { value: "1", label: "Sembunyikan Riwayat" },
-              ]}
-            />
-          </Field>
+          />
 
-          <Field
-            label="Transaksi Selesai di Kalender"
+          <ToggleBaris
+            checked={f.kalender_selesai === "sembunyi"}
+            onChange={(v) => setNilai("kalender_selesai", v ? "sembunyi" : "tampil")}
+            label="Sembunyikan transaksi Selesai di kalender"
             hint="Sembunyikan untuk merapikan kalender jadwal agar hanya menampilkan transaksi aktif."
-          >
-            <Seg
-              value={f.kalender_selesai}
-              onChange={(v) => setNilai("kalender_selesai", v)}
-              options={[
-                { value: "tampil", label: "Tampil" },
-                { value: "sembunyi", label: "Sembunyi" },
-              ]}
-            />
-          </Field>
-
+          />
+          </KartuSeksi>
           <BarisSimpan
             dirty={dirtyTab(KEYS_TAB.tampilan)}
             saving={saving}
             onSimpan={simpanSeksi}
           />
-        </KartuSeksi>
+        </div>
       )}
 
       {/* ===== Tab: Integrasi & Notifikasi ===== */}
@@ -1460,20 +1445,12 @@ export default function PengaturanPage() {
               judul="Notifikasi Telegram (Super Admin)"
               deskripsi="Kirim notifikasi login ke Telegram untuk memantau semua aktivitas login di aplikasi."
             >
-              <Field label="Status Notifikasi">
-                <Seg
-                  value={f.tg_aktif ? "1" : "0"}
-                  onChange={(v) => setNilai("tg_aktif", v === "1")}
-                  options={[
-                    { value: "1", label: "Aktif" },
-                    { value: "0", label: "Mati" },
-                  ]}
-                />
-                <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
-                  Superadmin menerima notifikasi untuk semua login di aplikasi
-                  (sukses & gagal), lintas tenant.
-                </p>
-              </Field>
+              <ToggleBaris
+                checked={f.tg_aktif === true}
+                onChange={(v) => setNilai("tg_aktif", v)}
+                label="Status Notifikasi"
+                hint="Superadmin menerima notifikasi untuk semua login di aplikasi (sukses & gagal), lintas tenant."
+              />
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Field
@@ -1499,27 +1476,17 @@ export default function PengaturanPage() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                <Field label="Notifikasi Login Sukses">
-                  <Seg
-                    value={f.tg_kirimSukses ? "1" : "0"}
-                    onChange={(v) => setNilai("tg_kirimSukses", v === "1")}
-                    options={[
-                      { value: "1", label: "Kirim" },
-                      { value: "0", label: "Jangan" },
-                    ]}
-                  />
-                </Field>
-                <Field label="Notifikasi Login Gagal">
-                  <Seg
-                    value={f.tg_kirimGagal ? "1" : "0"}
-                    onChange={(v) => setNilai("tg_kirimGagal", v === "1")}
-                    options={[
-                      { value: "1", label: "Kirim" },
-                      { value: "0", label: "Jangan" },
-                    ]}
-                  />
-                </Field>
+              <div className="space-y-4">
+                <ToggleBaris
+                  checked={f.tg_kirimSukses === true}
+                  onChange={(v) => setNilai("tg_kirimSukses", v)}
+                  label="Notifikasi Login Sukses"
+                />
+                <ToggleBaris
+                  checked={f.tg_kirimGagal === true}
+                  onChange={(v) => setNilai("tg_kirimGagal", v)}
+                  label="Notifikasi Login Gagal"
+                />
                 <Field
                   label="Topic ID (Log Login)"
                   hint="Khusus grup dengan topik. Kosongkan jika tidak memakai topik."
@@ -1612,7 +1579,7 @@ export default function PengaturanPage() {
       {tab === "diskon" && (
         <KartuSeksi
           ikon={Ikon.tag}
-          judul="Diskon & Promo"
+          judul="Aturan Diskon & Promo"
           deskripsi="Aturan diskon member dan syarat promo saat membuat booking."
         >
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -1644,20 +1611,17 @@ export default function PengaturanPage() {
             </Field>
           </div>
 
-          <Field
+          <BarisKontrol
             label="Cara Diskon Berpadu dengan Promo"
             hint="Ketika member punya diskon dan ada kode promo sekaligus."
-          >
-            <select
-              value={f.diskon_stack}
-              onChange={ubah("diskon_stack")}
-              className={INPUT_CLS}
-            >
-              <option value="terbesar">Pilih diskon terbesar</option>
-              <option value="gabung">Boleh digabung</option>
-              <option value="satu">Hanya satu jenis</option>
-            </select>
-          </Field>
+            control={
+              <select value={f.diskon_stack} onChange={ubah("diskon_stack")} className={INPUT_CLS}>
+                <option value="terbesar">Pilih diskon terbesar</option>
+                <option value="gabung">Boleh digabung</option>
+                <option value="satu">Hanya satu jenis</option>
+              </select>
+            }
+          />
 
           <BarisSimpan
             dirty={dirtyTab(KEYS_TAB.diskon)}
