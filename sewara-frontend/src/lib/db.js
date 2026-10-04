@@ -12,6 +12,7 @@
  */
 
 import { api, apiRequest, API_BASE } from '@/lib/api-client';
+import { samaOrangnya } from '@/lib/utils';
 
 // ============================================================================
 // EVENT HELPERS — halaman mendengarkan event ini untuk refresh
@@ -755,28 +756,31 @@ export async function getPelangganSuggestions() {
       ...m,
       sumber: 'member',
     }));
-    const memberNames = new Set(
-      memberSuggestions
-        .map((m) => String(m.nama || '').trim().toLowerCase())
-        .filter(Boolean),
-    );
 
     const history = [];
-    const historyNames = new Set();
     for (const t of transactions || []) {
-      const nama = String(t.penyewa || '').trim();
-      const key = nama.toLowerCase();
-      if (!key || memberNames.has(key) || historyNames.has(key)) continue;
-      historyNames.add(key);
-      history.push({
+      const calon = {
         id: `history-${t.id}`,
-        nama,
+        nama: String(t.penyewa || '').trim(),
         hp: t.hp_penyewa || '',
         alamat: t.alamat_penyewa || '',
         status: 'history',
         sumber: 'history',
         diskon_persen: 0,
-      });
+      };
+      if (!calon.nama) continue;
+      if (memberSuggestions.some((m) => samaOrangnya(calon, m))) continue;
+
+      const ada = history.find((h) => samaOrangnya(calon, h));
+      if (ada) {
+        // Riwayat sudah paling baru lebih dulu; lengkapi hanya data yang kosong.
+        if (!ada.hp && calon.hp) {
+          ada.hp = calon.hp;
+          if (calon.alamat) ada.alamat = calon.alamat;
+        }
+        continue;
+      }
+      history.push(calon);
     }
     return [...history, ...memberSuggestions];
   } catch (e) {

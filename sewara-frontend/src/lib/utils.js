@@ -58,6 +58,17 @@ export function hpNormal(hp) {
   return d;
 }
 
+// Dua identitas cocok bila pasangan nama+HP sama, atau salah satu HP kosong
+// dan nama sama (fallback untuk data lama/tidak lengkap).
+export function samaOrangnya(a, b) {
+  const namaA = String(a?.nama || "").toLowerCase().trim();
+  const namaB = String(b?.nama || "").toLowerCase().trim();
+  if (!namaA || namaA !== namaB) return false;
+  const hpA = hpNormal(a?.hp);
+  const hpB = hpNormal(b?.hp);
+  return !hpA || !hpB ? true : hpA === hpB;
+}
+
 // Hit blacklist HANYA bila nama DAN HP terisi & keduanya pair-match.
 export function terBlacklist(list, { nama, hp } = {}) {
   const n = String(nama || "").toLowerCase().trim();

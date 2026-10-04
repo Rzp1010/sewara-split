@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getTransactionsLaporan, getPelangganSuggestions, getBlacklist } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
-import { unduhCSV, terBlacklist } from "@/lib/utils";
+import { unduhCSV, terBlacklist, samaOrangnya } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import BlacklistModal from "@/components/BlacklistModal";
@@ -96,37 +96,45 @@ export default function PelangganPage() {
       : all;
     if (!filtered.length)
       return notify("Tidak ada data pada periode yang dipilih!", "error");
-    const map = {};
-    filtered.forEach((t) => {
-      const key = (t.hp_penyewa || t.penyewa).toString().toLowerCase().trim();
-      if (!map[key])
-        map[key] = {
-          nama: t.penyewa,
+    // Data dari server sudah urut created_at DESC (preset laporan tidak kirim
+    // created_at, jadi tidak perlu sort lokal — transaksi pertama = terbaru).
+    const data = [];
+    for (const t of filtered) {
+      let pelanggan = data.find((p) =>
+        samaOrangnya(p, { nama: t.penyewa, hp: t.hp_penyewa }),
+      );
+      if (!pelanggan) {
+        pelanggan = {
+          nama: t.penyewa || "",
           hp: t.hp_penyewa || "-",
           email: t.emailPenyewa || "-",
           alamat: t.alamat_penyewa || "-",
           totalTrx: 0,
           isMember: false,
         };
-      map[key].totalTrx += 1;
-      if (t.alamat_penyewa) map[key].alamat = t.alamat_penyewa;
-      if (t.emailPenyewa) map[key].email = t.emailPenyewa;
+        data.push(pelanggan);
+      }
+      pelanggan.totalTrx += 1;
+      // Tambal field kosong dari transaksi lebih lama (perilaku export lama).
+      if (pelanggan.hp === "-" && t.hp_penyewa) pelanggan.hp = t.hp_penyewa;
+      if (pelanggan.alamat === "-" && t.alamat_penyewa)
+        pelanggan.alamat = t.alamat_penyewa;
+      if (pelanggan.email === "-" && t.emailPenyewa)
+        pelanggan.email = t.emailPenyewa;
+    }
+    const members = rows.filter((r) => r.sumber === "member");
+    data.forEach((p) => {
+      p.isMember = members.some((m) =>
+        samaOrangnya(p, { nama: m.nama, hp: m.hp }),
+      );
     });
-    const memberNames = new Set(
-      rows
-        .filter((r) => r.sumber === "member")
-        .map((r) => r.nama.toLowerCase().trim()),
-    );
-    Object.values(map).forEach((p) => {
-      p.isMember = memberNames.has(p.nama.toLowerCase().trim());
-    });
-    const data = Object.values(map).filter(
+    const dataEkspor = data.filter(
       (p) => exportTipe !== "member" || p.isMember,
     );
-    if (!data.length)
+    if (!dataEkspor.length)
       return notify("Tidak ada data yang sesuai filter!", "error");
     let csv = "Nama,No HP,Email,Alamat,Daftar Anggota,Jumlah Transaksi\n";
-    data.forEach((p) => {
+    dataEkspor.forEach((p) => {
       const statusMember = p.isMember ? "Member" : "Non Member";
       csv += `"${p.nama}","${p.hp}","${p.email}","${p.alamat.replace(/\r?\n/g, " ")}","${statusMember}",${p.totalTrx}\n`;
     });
