@@ -1,12 +1,19 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { getTransactionsLaporan, getPelangganSuggestions, getBlacklist } from "@/lib/db";
+import {
+  getTransactionsLaporan,
+  getPelangganSuggestions,
+  getPelangganSuggestionsGagalTerakhir,
+  getBlacklist,
+} from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import { unduhCSV, terBlacklist, samaOrangnya } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import BlacklistModal from "@/components/BlacklistModal";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 
 export default function PelangganPage() {
   const { notify } = useNotify();
@@ -14,6 +21,7 @@ export default function PelangganPage() {
   const [blacklist, setBlacklist] = useState([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [gagal, setGagal] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [blRow, setBlRow] = useState(null);
   const [exportModal, setExportModal] = useState(false),
@@ -60,12 +68,23 @@ export default function PelangganPage() {
   const bolehBlacklist = bolehExport;
   async function load() {
     setLoading(true);
-    setRows(await getPelangganSuggestions());
-    setLoading(false);
+    setGagal(false);
+    try {
+      const suggestions = await getPelangganSuggestions();
+      const saranGagal = getPelangganSuggestionsGagalTerakhir();
+      const daftarBlacklist = await getBlacklist();
+      if (saranGagal || daftarBlacklist === null)
+        throw new Error("Gagal memuat data.");
+      setRows(Array.isArray(suggestions) ? suggestions : []);
+      setBlacklist(Array.isArray(daftarBlacklist) ? daftarBlacklist : []);
+    } catch {
+      setGagal(true);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();
-    getBlacklist().then((list) => setBlacklist(Array.isArray(list) ? list : []));
   }, []);
   const isBlacklisted = (row) => !!terBlacklist(blacklist, { nama: row.nama, hp: row.hp });
   const filtered = useMemo(() => {
@@ -154,6 +173,9 @@ export default function PelangganPage() {
     });
     window.location.href = `/dashboard/member?${params.toString()}`;
   }
+  if (loading) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={load} />;
+
   return (
     <div className="min-h-full">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -350,10 +372,7 @@ export default function PelangganPage() {
         open={!!blRow}
         prefill={blRow}
         onClose={() => setBlRow(null)}
-        onDone={async () => {
-          const list = await getBlacklist();
-          setBlacklist(Array.isArray(list) ? list : []);
-        }}
+        onDone={load}
       />
     </div>
   );

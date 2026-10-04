@@ -7,6 +7,7 @@ import { api, API_BASE } from "@/lib/api-client";
 import { ROLE_OWNER } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 import BlacklistModal from "@/components/BlacklistModal";
 
 const EMPTY = {
@@ -128,6 +129,7 @@ export default function MemberPage() {
   const { notify, confirm: konfirm } = useNotify();
   const [loading, setLoading] = useState(true),
     [allowed, setAllowed] = useState(true),
+    [gagal, setGagal] = useState(false),
     [members, setMembers] = useState([]),
     [templates, setTemplates] = useState([]);
   const [stack, setStack] = useState("terbesar"),
@@ -209,27 +211,30 @@ export default function MemberPage() {
 
   const muat = useCallback(async () => {
     setLoading(true);
-    let role = "";
+    setGagal(false);
     try {
       const me = await api.auth.me();
-      role = me?.user?.role || "";
-    } catch {}
-    setAllowed(role === ROLE_OWNER);
-    if (role === ROLE_OWNER) {
-      const [m, t, s, x, p] = await Promise.all([
-        getMembers(),
-        getMemberTemplates(),
-        getSettingTenant("diskon_stack", "terbesar"),
-        getSettingTenant("diskon_maks_persen", 50),
-        getSettingTenant("promo_min_transaksi", 0),
-      ]);
-      setMembers(m);
-      setTemplates(t);
-      setStack(s);
-      setMaks(String(x));
-      setMin(String(p));
+      const role = me?.user?.role || "";
+      setAllowed(role === ROLE_OWNER);
+      if (role === ROLE_OWNER) {
+        const [m, t, s, x, p] = await Promise.all([
+          getMembers(),
+          getMemberTemplates(),
+          getSettingTenant("diskon_stack", "terbesar"),
+          getSettingTenant("diskon_maks_persen", 50),
+          getSettingTenant("promo_min_transaksi", 0),
+        ]);
+        setMembers(m);
+        setTemplates(t);
+        setStack(s);
+        setMaks(String(x));
+        setMin(String(p));
+      }
+    } catch {
+      setGagal(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -383,6 +388,7 @@ export default function MemberPage() {
   });
 
   if (loading) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={muat} />;
   if (!allowed)
     return (
       <div className="min-h-full p-6">
@@ -448,7 +454,16 @@ export default function MemberPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map((m) => (
+                {filteredMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                      {members.length === 0
+                        ? "Belum ada member."
+                        : "Tidak ada member yang cocok dengan pencarian."}
+                    </td>
+                  </tr>
+                ) : (
+                filteredMembers.map((m) => (
                   <tr key={m.id} className="odd:bg-white even:bg-slate-50">
                     <td className="px-4 py-3">{m.nama}</td>
                     <td className="px-4 py-3">{m.hp || "-"}</td>
@@ -494,7 +509,8 @@ export default function MemberPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))
+                }
               </tbody>
             </table>
           </div>

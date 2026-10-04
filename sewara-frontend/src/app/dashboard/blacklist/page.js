@@ -14,6 +14,7 @@ import { formatTanggal } from "@/lib/utils";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 import BlacklistFotoSlot, { FOTO_SLOTS } from "@/components/BlacklistFotoSlot";
 
 const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
@@ -30,6 +31,7 @@ export default function BlacklistPage() {
   const { notify, confirm: konfirm } = useNotify();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [gagal, setGagal] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
@@ -43,13 +45,20 @@ export default function BlacklistPage() {
 
   const muat = async () => {
     setLoading(true);
+    setGagal(false);
     try {
       const [me, list] = await Promise.all([
         api.auth.me().catch(() => null),
         getBlacklist(),
       ]);
+      if (list === null) {
+        setGagal(true);
+        return;
+      }
       setUserRole(me?.user?.role || "");
       setRows(list);
+    } catch {
+      setGagal(true);
     } finally {
       setLoading(false);
     }
@@ -173,6 +182,7 @@ export default function BlacklistPage() {
   }
 
   if (loading) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
     <div className="min-h-full">

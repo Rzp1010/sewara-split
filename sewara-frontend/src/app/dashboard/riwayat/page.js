@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getTransactionsRingkas, getTransactionById, eksporBuktiBayar, getBlacklist } from "@/lib/db";
 import dynamic from "next/dynamic";
@@ -12,6 +12,8 @@ import { api } from "@/lib/api-client";
 import ModalBuktiBayar from "@/components/ModalBuktiBayar";
 import BlacklistModal from "@/components/BlacklistModal";
 import BannerBackupBukti from "@/components/BannerBackupBukti";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 
 const BULAN_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -45,6 +47,8 @@ function RiwayatPageInner() {
   const { notify } = useNotify();
   const searchParams = useSearchParams();
   const [trx, setTrx] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [gagal, setGagal] = useState(false);
   const [halaman, setHalaman] = useState(1);
   const perHalaman = 50;
   const [bulanEkspor, setBulanEkspor] = useState(() => bulanLokal(new Date()));
@@ -58,25 +62,28 @@ function RiwayatPageInner() {
     setBulanEkstra(q);
   }, [searchParams]);
 
-  useEffect(() => {
-    (async () => {
+  const muat = useCallback(async () => {
+    setLoading(true);
+    setGagal(false);
+    try {
       const t = await getTransactionsRingkas();
       setTrx(t);
       setHalaman(1);
-    })();
+    } catch {
+      setGagal(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const handler = () => {
-      (async () => {
-        const t = await getTransactionsRingkas();
-        setTrx(t);
-        setHalaman(1);
-      })();
-    };
-    window.addEventListener("dataChanged", handler);
-    return () => window.removeEventListener("dataChanged", handler);
-  }, []);
+    muat();
+  }, [muat]);
+
+  useEffect(() => {
+    window.addEventListener("dataChanged", muat);
+    return () => window.removeEventListener("dataChanged", muat);
+  }, [muat]);
 
   const [cetakId, setCetakId] = useState(null);
 
@@ -159,6 +166,9 @@ function RiwayatPageInner() {
     if (bulanEkstra && !out.includes(bulanEkstra)) out.unshift(bulanEkstra);
     return out;
   })();
+
+  if (loading) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
     <div className="min-h-full bg-gray-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">

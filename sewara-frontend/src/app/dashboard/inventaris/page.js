@@ -16,6 +16,8 @@ import { api } from "@/lib/api-client";
 import { useNotify } from "@/components/NotificationProvider";
 import { Button } from "@/components/ui";
 import SearchableSelect from "@/components/SearchableSelect";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 
 // Inisial avatar dari S/N: potongan paling kiri (max 4 char), fallback karakter pertama.
 function inisialSN(sn) {
@@ -40,6 +42,8 @@ const labelKondisi = (o) => o.label;
 export default function InventarisPage() {
   const { notify, confirm: konfirm } = useNotify();
   const [inv, setInv] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [gagal, setGagal] = useState(false);
   const [editId, setEditId] = useState(null);
   const tempKomponenRef = useRef([]);
   const [refresh, setRefresh] = useState(0);
@@ -68,13 +72,21 @@ export default function InventarisPage() {
   const [tampilkanKosong, setTampilkanKosong] = useState(false);
 
   async function muat() {
-    const [invData, trxAktifData] = await Promise.all([
-      getInventory(),
-      getTransactionsAktif(),
-    ]);
-    setInv(invData);
-    setTrxAktif(trxAktifData || []);
-    setRefresh((r) => r + 1);
+    setLoading(true);
+    setGagal(false);
+    try {
+      const [invData, trxAktifData] = await Promise.all([
+        getInventory(),
+        getTransactionsAktif(),
+      ]);
+      setInv(invData);
+      setTrxAktif(trxAktifData || []);
+      setRefresh((r) => r + 1);
+    } catch {
+      setGagal(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // S/N yang sedang dipegang transaksi aktif (Booking/Disewa) per id barang.
@@ -119,14 +131,27 @@ export default function InventarisPage() {
   };
 
   useEffect(() => {
+    let aktif = true;
     (async () => {
-      const [invData, trxAktifData] = await Promise.all([
-        getInventory(),
-        getTransactionsAktif(),
-      ]);
-      setInv(invData);
-      setTrxAktif(trxAktifData || []);
+      setLoading(true);
+      setGagal(false);
+      try {
+        const [invData, trxAktifData] = await Promise.all([
+          getInventory(),
+          getTransactionsAktif(),
+        ]);
+        if (!aktif) return;
+        setInv(invData);
+        setTrxAktif(trxAktifData || []);
+      } catch {
+        if (aktif) setGagal(true);
+      } finally {
+        if (aktif) setLoading(false);
+      }
     })();
+    return () => {
+      aktif = false;
+    };
   }, [refresh]);
 
   useEffect(() => {
@@ -784,6 +809,9 @@ export default function InventarisPage() {
       renderListKomponenTemp();
     };
   }, []);
+
+  if (loading) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
     <div className="min-h-full bg-gray-100">

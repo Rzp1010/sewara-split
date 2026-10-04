@@ -8,6 +8,8 @@ import { useTransactionsAktif } from "@/hooks/useTransactions";
 import { formatRupiah, kondisiUnit } from "@/lib/utils";
 import DateTimePicker from "@/components/DateTimePicker";
 import { Button } from "@/components/ui";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 
 const hariNama = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAY_MS = 86400000;
@@ -122,6 +124,10 @@ function parseDatetimeLocal(str) {
 
 export default function TrackingPage() {
   const [inv, setInv] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [loadingTimeline, setLoadingTimeline] = useState(true);
+  const [gagal, setGagal] = useState(false);
+  const [reload, setReload] = useState(0);
   const [trx, setTrx] = useState([]);
   const [trxRange, setTrxRange] = useState([]);
   const [search, setSearch] = useState("");
@@ -142,11 +148,27 @@ export default function TrackingPage() {
     useTransactionsAktif();
 
   useEffect(() => {
+    let aktif = true;
     (async () => {
-      setInv(await getInventory());
-      setTrx(cachedTransactions || (await refetchTransactions()));
+      setLoadingData(true);
+      try {
+        const [inventory, transactions] = await Promise.all([
+          getInventory(),
+          cachedTransactions || refetchTransactions(),
+        ]);
+        if (!aktif) return;
+        setInv(inventory);
+        setTrx(transactions || []);
+      } catch {
+        if (aktif) setGagal(true);
+      } finally {
+        if (aktif) setLoadingData(false);
+      }
     })();
-  }, [cachedTransactions, refetchTransactions]);
+    return () => {
+      aktif = false;
+    };
+  }, [cachedTransactions, refetchTransactions, reload]);
 
   const days = useMemo(() => {
     const start = awalHari(tglFokus);
@@ -169,22 +191,35 @@ export default function TrackingPage() {
   }, [mulaiISO, akhirISO]);
 
   useEffect(() => {
+    let aktif = true;
     (async () => {
-      await muatTimeline();
+      setLoadingTimeline(true);
+      try {
+        await muatTimeline();
+      } catch {
+        if (aktif) setGagal(true);
+      } finally {
+        if (aktif) setLoadingTimeline(false);
+      }
     })();
-  }, [muatTimeline]);
+    return () => {
+      aktif = false;
+    };
+  }, [muatTimeline, reload]);
 
   useEffect(() => {
     const handler = () => {
-      (async () => {
-        setInv(await getInventory());
-        setTrx(await refetchTransactions());
-        await muatTimeline();
-      })();
+      setGagal(false);
+      setReload((r) => r + 1);
     };
     window.addEventListener("dataChanged", handler);
     return () => window.removeEventListener("dataChanged", handler);
-  }, [muatTimeline]);
+  }, []);
+
+  const muatUlang = () => {
+    setGagal(false);
+    setReload((r) => r + 1);
+  };
 
   // ---------- Mode Tabel (existing) ----------
   function rentangHari(d) {
@@ -295,6 +330,11 @@ export default function TrackingPage() {
       return { item, total, terpakai, tersedia: total - terpakai.qty };
     });
   }, [inv, indeks, rentang.mulai, rentang.selesai]);
+
+  const barisTampil = useMemo(
+    () => baris.filter((b) => b.item.nama.toLowerCase().includes(search.toLowerCase())),
+    [baris, search],
+  );
 
   const tersediaCount = baris.filter((b) => b.tersedia > 0).length;
   const habisCount = baris.filter((b) => b.tersedia < 1).length;
@@ -685,6 +725,9 @@ export default function TrackingPage() {
     { label: "Selesai", cls: "#8b98a5" },
   ];
 
+  if (loadingData || loadingTimeline) return <LoadingOverlay />;
+  if (gagal) return <ErrorMuat onRetry={muatUlang} />;
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-6">Tracking Alat</h2>
@@ -786,7 +829,7 @@ export default function TrackingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {baris.length === 0 && (
+                {baris.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -795,12 +838,17 @@ export default function TrackingPage() {
                       Belum ada alat.
                     </td>
                   </tr>
-                )}
-                {baris
-                  .filter((b) =>
-                    b.item.nama.toLowerCase().includes(search.toLowerCase()),
-                  )
-                  .map(({ item, total, terpakai, tersedia }) => (
+                ) : barisTampil.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-12 text-center italic text-gray-500"
+                    >
+                      Tidak ada alat yang cocok dengan pencarian.
+                    </td>
+                  </tr>
+                ) : (
+                  barisTampil.map(({ item, total, terpakai, tersedia }) => (
                     <tr key={item.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-semibold text-slate-900">
                         {item.nama}
@@ -837,7 +885,8 @@ export default function TrackingPage() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )))
+                }
               </tbody>
             </table>
           </div>

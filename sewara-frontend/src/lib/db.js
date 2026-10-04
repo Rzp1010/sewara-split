@@ -680,10 +680,11 @@ export async function hapusMemberTemplate(id) {
 export async function getBlacklist() {
   try {
     const data = await api.blacklist.getAll();
-    return Array.isArray(data) ? data : data?.blacklist || [];
+    const list = Array.isArray(data) ? data : data?.blacklist;
+    return Array.isArray(list) ? list : [];
   } catch (e) {
     console.error('getBlacklist error:', e.message);
-    return [];
+    return null;
   }
 }
 
@@ -744,12 +745,23 @@ export async function uploadBlacklistFoto(entryId, file, label) {
   }
 }
 
+/** Error request saran terakhir; getter dipakai halaman pelanggan tanpa mengubah bentuk hasil. */
+let pelangganSuggestionsGagal = false;
+export function getPelangganSuggestionsGagalTerakhir() {
+  return pelangganSuggestionsGagal;
+}
+
 /** Saran pelanggan: member + riwayat transaksi. */
 export async function getPelangganSuggestions() {
+  pelangganSuggestionsGagal = false;
   try {
     const [members, transactions] = await Promise.all([
       getMembers(),
-      getTransactionsLaporan().catch(() => []),
+      getTransactionsLaporan().catch((e) => {
+        pelangganSuggestionsGagal = true;
+        console.error('getPelangganSuggestions transactions error:', e.message);
+        return [];
+      }),
     ]);
 
     const memberSuggestions = (members || []).map((m) => ({
@@ -784,6 +796,7 @@ export async function getPelangganSuggestions() {
     }
     return [...history, ...memberSuggestions];
   } catch (e) {
+    pelangganSuggestionsGagal = true;
     console.error('getPelangganSuggestions error:', e.message);
     return [];
   }
