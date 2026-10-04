@@ -235,6 +235,66 @@ function BarisKontrol({ label, hint, control }) {
   );
 }
 
+/* Chips daftar + input tambah (dipakai Daftar Aksesoris & Daftar Jaminan). */
+function DaftarChips({
+  items,
+  input,
+  setInput,
+  tambah,
+  hapus,
+  placeholder,
+  kosongLabel,
+  hapusTitle,
+}) {
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {(items || []).map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+          >
+            {item}
+            <button
+              type="button"
+              onClick={() => hapus(i)}
+              className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
+              title={hapusTitle}
+            >
+              &times;
+            </button>
+          </span>
+        ))}
+        {!(items || []).length && (
+          <span className="text-xs text-gray-400">{kosongLabel}</span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={placeholder}
+          className={INPUT_CLS}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            tambah();
+          }}
+        />
+        <button
+          type="button"
+          onClick={tambah}
+          disabled={!String(input).trim()}
+          className={BTN_SEKUNDER}
+        >
+          Tambah
+        </button>
+      </div>
+    </>
+  );
+}
+
 function KartuSeksi({ ikon, judul, deskripsi, children }) {
   return (
     <section className="pengaturan-in rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -508,26 +568,15 @@ export default function PengaturanPage() {
 
   const setNilai = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const tambahPrintilan = () => {
-    const val = printilanBaru.trim();
+  const tambahItemDaftar = (key, valBaru, setValBaru) => {
+    const val = String(valBaru || "").trim();
     if (!val) return;
     setForm((f) => {
-      const arr = f.printilan_daftar || [];
+      const arr = f[key] || [];
       if (arr.includes(val)) return f;
-      return { ...f, printilan_daftar: [...arr, val] };
+      return { ...f, [key]: [...arr, val] };
     });
-    setPrintilanBaru("");
-  };
-
-  const tambahJaminan = () => {
-    const val = jaminanBaru.trim();
-    if (!val) return;
-    setForm((f) => {
-      const arr = f.daftar_jaminan || [];
-      if (arr.includes(val)) return f;
-      return { ...f, daftar_jaminan: [...arr, val] };
-    });
-    setJaminanBaru("");
+    setValBaru("");
   };
 
   const dirtyTab = (keys) =>
@@ -1228,55 +1277,26 @@ export default function PengaturanPage() {
               label="Daftar Aksesoris"
               hint="Item yang muncul sebagai pilihan checklist saat membuat booking."
             >
-              <div className="mb-3 flex flex-wrap gap-2">
-                {(f.printilan_daftar || []).map((item, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const arr = [...(f.printilan_daftar || [])];
-                        arr.splice(i, 1);
-                        setNilai("printilan_daftar", arr);
-                      }}
-                      className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
-                      title="Hapus aksesoris ini"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-                {!(f.printilan_daftar || []).length && (
-                  <span className="text-xs text-gray-400">
-                    Belum ada aksesoris.
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={printilanBaru}
-                  onChange={(e) => setPrintilanBaru(e.target.value)}
-                  placeholder="Nama aksesoris..."
-                  className={INPUT_CLS}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
-                    e.preventDefault();
-                    tambahPrintilan();
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={tambahPrintilan}
-                  disabled={!printilanBaru.trim()}
-                  className={BTN_SEKUNDER}
-                >
-                  Tambah
-                </button>
-              </div>
+              <DaftarChips
+                items={f.printilan_daftar}
+                input={printilanBaru}
+                setInput={setPrintilanBaru}
+                tambah={() =>
+                  tambahItemDaftar(
+                    "printilan_daftar",
+                    printilanBaru,
+                    setPrintilanBaru,
+                  )
+                }
+                hapus={(i) => {
+                  const arr = [...(f.printilan_daftar || [])];
+                  arr.splice(i, 1);
+                  setNilai("printilan_daftar", arr);
+                }}
+                placeholder="Nama aksesoris..."
+                kosongLabel="Belum ada aksesoris."
+                hapusTitle="Hapus aksesoris ini"
+              />
             </Field>
             <BarisKontrol
               label="Tampilan Aksesoris di Invoice"
@@ -1301,55 +1321,26 @@ export default function PengaturanPage() {
               label="Daftar Jenis Jaminan"
               hint="Pilihan jaminan di form booking. Sertakan opsi eksklusif seperti “Tanpa Jaminan” bila perlu. Booking memakai default jika daftar ini kosong."
             >
-              <div className="mb-3 flex flex-wrap gap-2">
-                {(f.daftar_jaminan || []).map((item, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const arr = [...(f.daftar_jaminan || [])];
-                        arr.splice(i, 1);
-                        setNilai("daftar_jaminan", arr);
-                      }}
-                      className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
-                      title="Hapus jaminan ini"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-                {!(f.daftar_jaminan || []).length && (
-                  <span className="text-xs text-gray-400">
-                    Belum ada jenis jaminan.
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={jaminanBaru}
-                  onChange={(e) => setJaminanBaru(e.target.value)}
-                  placeholder="Nama jaminan..."
-                  className={INPUT_CLS}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
-                    e.preventDefault();
-                    tambahJaminan();
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={tambahJaminan}
-                  disabled={!jaminanBaru.trim()}
-                  className={BTN_SEKUNDER}
-                >
-                  Tambah
-                </button>
-              </div>
+              <DaftarChips
+                items={f.daftar_jaminan}
+                input={jaminanBaru}
+                setInput={setJaminanBaru}
+                tambah={() =>
+                  tambahItemDaftar(
+                    "daftar_jaminan",
+                    jaminanBaru,
+                    setJaminanBaru,
+                  )
+                }
+                hapus={(i) => {
+                  const arr = [...(f.daftar_jaminan || [])];
+                  arr.splice(i, 1);
+                  setNilai("daftar_jaminan", arr);
+                }}
+                placeholder="Nama jaminan..."
+                kosongLabel="Belum ada jenis jaminan."
+                hapusTitle="Hapus jaminan ini"
+              />
             </Field>
           </KartuSeksi>
 
