@@ -9,6 +9,7 @@ import { ROLE_SUPERADMIN } from "@/lib/role";
 import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import BannerBackupBukti from "@/components/BannerBackupBukti";
+import ErrorMuat from "@/components/ErrorMuat";
 
 const fmtYMD = (d) =>
   d
@@ -19,6 +20,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [role, setRole] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [authError, setAuthError] = useState(false);
+  const [statsError, setStatsError] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const [stats, setStats] = useState({
     barang: 0,
     aktif: 0,
@@ -59,12 +63,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function init() {
+      setAuthError(false);
       try {
-      const { user } = await api.auth.me();
-      setRole(user.role || "");
-      if (user.id) setUserId(user.id);
+        const { user } = await api.auth.me();
+        setRole(user.role || "");
+        if (user.id) setUserId(user.id);
       } catch (e) {
         console.error("Failed to fetch user profile:", e);
+        setAuthError(true);
       }
     }
     init();
@@ -104,6 +110,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function hitung() {
       setIsRefreshing(true);
+      setStatsError(false);
       try {
         if (role === ROLE_SUPERADMIN) {
           const data = await api.dashboard.getManajemen();
@@ -132,6 +139,7 @@ export default function DashboardPage() {
             invCount = Array.isArray(arr) ? arr.length : 0;
           } catch (invErr) {
             console.error("[Dashboard] inventory.getAll error:", invErr);
+            throw invErr;
           }
           
           setStats({
@@ -158,8 +166,10 @@ export default function DashboardPage() {
             qris: bayar.qris || 0,
           });
         }
+        setStatsLoaded(true);
       } catch (e) {
         console.error("Dashboard stats error:", e);
+        setStatsError(true);
       } finally {
         setIsRefreshing(false);
       }
@@ -191,6 +201,21 @@ export default function DashboardPage() {
     }
   }
 
+  if (authError) {
+    return <ErrorMuat onRetry={() => {
+      setRole(null);
+      setUserId(null);
+      setAuthError(false);
+      api.auth.me().then(({ user }) => {
+        setRole(user.role || "");
+        if (user.id) setUserId(user.id);
+      }).catch((e) => {
+        console.error("Failed to fetch user profile:", e);
+        setAuthError(true);
+      });
+    }} />;
+  }
+
   if (role === null) {
     return <LoadingOverlay />;
   }
@@ -215,6 +240,8 @@ export default function DashboardPage() {
   }
 
   if (role === ROLE_SUPERADMIN) {
+    if (statsError) return <ErrorMuat onRetry={() => window.dispatchEvent(new Event("dataChanged"))} />;
+    if (!statsLoaded || isRefreshing) return <LoadingOverlay />;
     const cards = [
       { label: "Total Owner", value: mng.totalOwner, accent: "primary" },
       { label: "Owner Aktif", value: mng.ownerAktif, accent: "success" },
@@ -248,6 +275,9 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  if (statsError) return <ErrorMuat onRetry={() => window.dispatchEvent(new Event("dataChanged"))} />;
+  if (!statsLoaded || isRefreshing) return <LoadingOverlay />;
 
   const cards = [
     { label: "Total Katalog", value: stats.barang, accent: "info" },

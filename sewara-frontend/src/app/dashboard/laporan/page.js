@@ -13,6 +13,7 @@ import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import DateTimePicker from "@/components/DateTimePicker";
 import { Button } from "@/components/ui";
+import ErrorMuat from "@/components/ErrorMuat";
 
 const fmtYMD = (d) =>
   d
@@ -31,6 +32,8 @@ export default function LaporanPage() {
   const [userRole, setUserRole] = useState("");
   const [tab, setTab] = useState("keuangan");
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let aktif = true;
@@ -64,24 +67,40 @@ export default function LaporanPage() {
   };
 
   useEffect(() => {
+    let aktif = true;
+    setLoading(true);
+    setLoadError(false);
     (async () => {
-      const r = hitungRange();
-      const data =
-        r && r.mulai && r.akhir
-          ? await getTransactionsLaporanRange(
-              r.mulai.toISOString(),
-              r.akhir.toISOString(),
-            )
-          : await getTransactionsLaporan();
-      setTrx(data);
+      try {
+        const r = hitungRange();
+        const data =
+          r && r.mulai && r.akhir
+            ? await getTransactionsLaporanRange(
+                r.mulai.toISOString(),
+                r.akhir.toISOString(),
+              )
+            : await getTransactionsLaporan();
+        if (aktif) setTrx(data);
+      } catch {
+        if (aktif) setLoadError(true);
+      } finally {
+        if (aktif) setLoading(false);
+      }
     })();
+    return () => { aktif = false; };
   }, [periode, dari, sampai, versi]);
 
   useEffect(() => {
     let aktif = true;
     (async () => {
-      const data = await getTransactionItemsSemua();
-      if (aktif) setItems(data || []);
+      try {
+        const data = await getTransactionItemsSemua();
+        if (aktif) setItems(data || []);
+      } catch {
+        if (aktif) setLoadError(true);
+      } finally {
+        if (aktif) setLoading(false);
+      }
     })();
     return () => {
       aktif = false;
@@ -319,7 +338,11 @@ export default function LaporanPage() {
         )}
       </div>
 
-      {tab === "keuangan" && (
+      {loadError ? (
+        <ErrorMuat onRetry={() => setVersi((v) => v + 1)} />
+      ) : loading ? (
+        <p role="status" className="py-12 text-center text-sm text-gray-500">Memuat laporan...</p>
+      ) : tab === "keuangan" && (
         <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-[#7181E0] p-4">
@@ -461,7 +484,7 @@ export default function LaporanPage() {
         </>
       )}
 
-      {tab === "alat" && (
+      {!loadError && !loading && tab === "alat" && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-[#7181E0] p-4">

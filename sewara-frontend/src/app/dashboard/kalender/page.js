@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { getSetting, setSetting, getTransactionsRangeRingkas } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { formatRupiah, hitungPembayaran } from "@/lib/utils";
+import ErrorMuat from "@/components/ErrorMuat";
 
 const bulanNama = [
   "Januari",
@@ -134,6 +135,8 @@ const DetailCard = memo(function DetailCard({ t }) {
 
 export default function KalenderPage() {
   const [trx, setTrx] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [today] = useState(new Date());
   const [modeView, setModeView] = useState("bulan");
   const [bulan, setBulan] = useState(today.getMonth());
@@ -191,8 +194,17 @@ export default function KalenderPage() {
   }, [modeView, bulan, tahun, tglFokus]);
 
   const muatData = useCallback(async () => {
-    const t = await getTransactionsRangeRingkas(mulaiISO, akhirISO);
-    setTrx(t.filter((x) => x.status !== "Dibatalkan"));
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const t = await getTransactionsRangeRingkas(mulaiISO, akhirISO);
+      setTrx(t.filter((x) => x.status !== "Dibatalkan"));
+    } catch (e) {
+      console.error("Kalender load error:", e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [mulaiISO, akhirISO]);
 
   useEffect(() => {
@@ -481,9 +493,13 @@ export default function KalenderPage() {
     };
   }, [visible, mingguDays]);
 
+  if (loading) return <div role="status" className="p-8 text-center text-sm text-gray-500">Memuat kalender...</div>;
+  if (loadError) return <ErrorMuat onRetry={muatData} />;
+
   return (
     <div className="w-full max-w-7xl mx-auto">
       <h2 className="text-xl font-bold mb-6">Kalender Jadwal</h2>
+      {visible.length === 0 && <p className="mb-4 rounded-lg border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">Belum ada jadwal pada rentang ini.</p>}
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <div className="flex gap-2 rounded-xl bg-gray-100 p-1">

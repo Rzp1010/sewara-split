@@ -10,6 +10,7 @@ import { formatTanggal } from "@/lib/utils";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { EmptyState } from "@/components/ui";
+import ErrorMuat from "@/components/ErrorMuat";
 import DateTimePicker from "@/components/DateTimePicker";
 
 const FORM_KOSONG = {
@@ -27,6 +28,7 @@ export default function PromoPage() {
   const [memberPromo, setMemberPromo] = useState(true);
   const [promos, setPromos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Modal tambah/edit
   const [showTambah, setShowTambah] = useState(false);
@@ -36,28 +38,27 @@ export default function PromoPage() {
 
   const muat = useCallback(async () => {
     setLoading(true);
-    const fitur = getFITUR();
-    setMemberPromo(fitur.memberPromo);
-    // Versi LAMA: tanpa fetch data, tampilkan info alert.
-    if (!fitur.memberPromo) {
-      setUserRole("");
-      setPromos([]);
-      setLoading(false);
-      return;
-    }
-    let role = "";
+    setLoadError(false);
     try {
+      const fitur = getFITUR();
+      setMemberPromo(fitur.memberPromo);
+      // Versi LAMA: tanpa fetch data, tampilkan info alert.
+      if (!fitur.memberPromo) {
+        setUserRole("");
+        setPromos([]);
+        return;
+      }
       const me = await api.auth.me();
-      role = me?.user?.role || "";
-    } catch {}
-    setUserRole(role);
-    if (role !== ROLE_OWNER && role !== ROLE_CS) {
+      const role = me?.user?.role || "";
+      setUserRole(role);
+      if (role !== ROLE_OWNER && role !== ROLE_CS) return;
+      const hasil = await getPromoCodes();
+      setPromos(hasil);
+    } catch {
+      setLoadError(true);
+    } finally {
       setLoading(false);
-      return;
     }
-    const hasil = await getPromoCodes();
-    setPromos(hasil);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -135,6 +136,7 @@ export default function PromoPage() {
   if (loading) {
     return <LoadingOverlay />;
   }
+  if (loadError) return <ErrorMuat onRetry={muat} />;
 
   // Versi LAMA: fitur tidak tersedia — info alert, tanpa fetch data.
   if (!memberPromo) {

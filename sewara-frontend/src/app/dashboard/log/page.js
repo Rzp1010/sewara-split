@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getLogsTerbaru } from "@/lib/db";
 import { formatTanggal } from "@/lib/utils";
 import { Button, EmptyState } from "@/components/ui";
+import ErrorMuat from "@/components/ErrorMuat";
 
 // Fallback utk log lama (sebelum kolom pelayan/trx_info ada): tebak dari catatan/detail lama
 function trxInfoFallback(log) {
@@ -18,20 +19,25 @@ export default function LogPage() {
   const [offset, setOffset] = useState(0);
   const [habis, setHabis] = useState(false);
   const [memuat, setMemuat] = useState(false);
+  const [error, setError] = useState(false);
 
   const muat = useCallback(async (dariOffset, ganti) => {
-    const l = await getLogsTerbaru(dariOffset);
-    setLogs((prev) => (ganti ? l : [...prev, ...l]));
-    setOffset(dariOffset + l.length);
-    if (l.length === 0) setHabis(true);
+    setMemuat(true);
+    setError(false);
+    try {
+      const l = await getLogsTerbaru(dariOffset);
+      setLogs((prev) => (ganti ? l : [...prev, ...l]));
+      setOffset(dariOffset + l.length);
+      setHabis(l.length === 0);
+    } catch {
+      setError(true);
+    } finally {
+      setMemuat(false);
+    }
   }, []);
 
   useEffect(() => {
-    (async () => {
-      setMemuat(true);
-      await muat(0, true);
-      setMemuat(false);
-    })();
+    muat(0, true);
   }, [muat]);
 
   useEffect(() => {
@@ -47,7 +53,11 @@ export default function LogPage() {
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold tracking-tight">Log Aktivitas</h2>
-      <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+      {error ? (
+        <ErrorMuat onRetry={() => muat(0, true)} />
+      ) : memuat && logs.length === 0 ? (
+        <p role="status" className="py-12 text-center text-sm text-gray-500">Memuat log aktivitas...</p>
+      ) : <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
         <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
           <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
             <tr>
@@ -87,8 +97,8 @@ export default function LogPage() {
             ))}
           </tbody>
         </table>
-      </div>
-      <div className="flex items-center justify-center mt-4">
+      </div>}
+      {!error && <div className="flex items-center justify-center mt-4">
         <Button
           variant="ghost"
           onClick={() => {
@@ -104,7 +114,7 @@ export default function LogPage() {
         >
           {habis ? "Semua log sudah dimuat" : "Muat Lagi"}
         </Button>
-      </div>
+      </div>}
     </div>
   );
 }

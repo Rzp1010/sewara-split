@@ -8,6 +8,7 @@ import { LABEL_ROLE, SUPERADMIN_EMAIL } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import PasswordInput from "@/components/PasswordInput";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMuat from "@/components/ErrorMuat";
 
 function formatTanggal(iso) {
   if (!iso) return "-";
@@ -57,17 +58,29 @@ export default function ManajemenPage() {
     try {
       const me = await api.auth.me();
       userEmail = me?.user?.email || "";
-    } catch {}
+    } catch (e) {
+      console.error("Manajemen auth error:", e);
+      setLoadError("Gagal memverifikasi akun.");
+      setLoading(false);
+      return;
+    }
     setEmail(userEmail);
     if (userEmail !== SUPERADMIN_EMAIL) {
       setLoading(false);
       return;
     }
-    const [o, l] = await Promise.all([listOwners(), getAdminLogs()]);
-    if (!o.ok) setLoadError(o.error || "");
-    else setOwners(o.data);
-    if (l.ok) setLogs(l.data);
-    setLoading(false);
+    try {
+      const [o, l] = await Promise.all([listOwners(), getAdminLogs()]);
+      if (!o.ok) throw new Error(o.error || "Gagal memuat daftar owner.");
+      if (!l.ok) throw new Error(l.error || "Gagal memuat log aktivitas.");
+      setOwners(o.data);
+      setLogs(l.data);
+    } catch (e) {
+      console.error("Manajemen data error:", e);
+      setLoadError(e.message || "Gagal memuat data.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -267,6 +280,8 @@ export default function ManajemenPage() {
     );
   }
 
+  if (loadError) return <ErrorMuat onRetry={muat} />;
+
   return (
     <div className="min-h-full bg-surface px-4 py-6 text-text-primary sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -294,19 +309,7 @@ export default function ManajemenPage() {
         </div>
       </div>
 
-      {loadError && (
-        <div className="rounded-lg p-4 text-sm leading-relaxed rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 mb-4">
-          <p className="font-bold">Gagal memuat data:</p>
-          <p className="mt-2 break-all font-mono text-xs">{loadError}</p>
-          <button
-            type="button"
-            onClick={muat}
-            className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition bg-red-500 text-white shadow-sm hover:bg-red-600 px-3 py-1.5 text-xs mt-4"
-          >
-            Coba Lagi
-          </button>
-        </div>
-      )}
+      {loadError && <ErrorMuat onRetry={muat} />}
 
       {tab === "owners" && (
         <>
