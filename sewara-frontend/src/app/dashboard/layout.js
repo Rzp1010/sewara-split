@@ -572,18 +572,18 @@ function SidebarContent({ children }) {
               <span className="text-xs opacity-80">▾</span>
             </button>
             {accountOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded border border-gray-200 bg-white text-gray-900 shadow-lg overflow-hidden">
-                <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+              <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-lg overflow-hidden">
+                <div className="flex items-center gap-3 p-4 border-b border-[var(--border-color)]">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7181E0] text-lg font-bold text-white">
                     {userUsername || userNama || userEmail
                       ? (userUsername || userNama || userEmail)[0].toUpperCase()
                       : "A"}
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="truncate text-sm font-medium text-gray-900 m-0">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)] m-0">
                       {userUsername || userNama || "..."}
                     </p>
-                    <p className="break-words text-xs text-gray-600 m-0">
+                    <p className="break-words text-xs text-[var(--text-muted)] m-0">
                       {userEmail || "..."}
                     </p>
                     {userRole && (
@@ -593,7 +593,7 @@ function SidebarContent({ children }) {
                     )}
                   </div>
                 </div>
-                <div className="bg-white">
+                <div className="bg-[var(--bg-surface)]">
                   {(userRole === ROLE_OWNER ||
                     userRole === ROLE_SUPERADMIN ||
                     userRole === ROLE_CS ||
@@ -603,7 +603,7 @@ function SidebarContent({ children }) {
                         setAccountOpen(false);
                         router.push("/dashboard/pengaturan");
                       }}
-                      className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 border-0 transition-colors"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border-0 transition-colors"
                     >
                       Pengaturan
                     </button>
@@ -687,7 +687,7 @@ function SidebarContent({ children }) {
           onMouseLeave={() => {
             if (!isMobile) setHoverGrup(null);
           }}
-          className={`fixed left-16 top-16 z-30 h-[calc(100vh-4rem)] w-64 overflow-y-auto bg-white p-4 shadow-lg ${
+          className={`fixed left-16 top-16 z-30 h-[calc(100vh-4rem)] w-64 overflow-y-auto bg-[var(--bg-surface)] p-4 shadow-lg ${
             (isMobile
               ? navOpen && aktifGrup === g.id
               : (hoverGrup || aktifGrup) === g.id)
@@ -695,7 +695,7 @@ function SidebarContent({ children }) {
               : "hidden"
           }`}
         >
-          <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+          <div className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">
             {g.label}
           </div>
           <div className="flex-col gap-1">
@@ -708,7 +708,8 @@ function SidebarContent({ children }) {
                   key={it.href}
                   href={it.href}
                   onClick={() => (isMobile ? tutupNavigasi() : setNavOpen(false))}
-                  className={`flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${pathname === it.href ? "bg-[#7181E0] text-white" : "text-gray-900 hover:bg-gray-100"}`}
+                   className={`flex items-center gap-2 rounded px-3 py-2 text-sm transition-colors ${pathname === it.href ? "bg-[#7181E0] text-white" : "text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
+
                   style={{ textDecoration: "none" }}
                 >
                   <span
