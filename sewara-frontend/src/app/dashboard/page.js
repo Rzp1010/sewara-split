@@ -265,9 +265,9 @@ export default function DashboardPage() {
           {cards.map((c) => (
             <div
               key={c.label}
-              className={`rounded-lg border border-border bg-surface-card p-5 shadow-sm border-l-4 ${c.accent === "info" ? "border-blue-500" : c.accent === "success" ? "border-green-500" : c.accent === "warning" ? "border-yellow-500" : c.accent === "primary" ? "border-blue-500" : "border-gray-500"}`}
+              className={`rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-5 shadow-sm border-l-4 ${c.accent === "info" ? "border-blue-500" : c.accent === "success" ? "border-green-500" : c.accent === "warning" ? "border-yellow-500" : c.accent === "primary" ? "border-blue-500" : "border-gray-500"}`}
             >
-              <p className="text-sm text-slate-500">{c.label}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{c.label}</p>
               <p className="text-2xl font-bold">{c.value}</p>
             </div>
           ))}
@@ -364,14 +364,14 @@ export default function DashboardPage() {
             className={
               idx === 3
                 ? "bg-[#7181E0] rounded-xl shadow-lg p-5"
-                : "bg-white rounded-xl border border-gray-100 shadow-lg p-5"
+                : "bg-[var(--bg-surface)] rounded-xl border border-[var(--border-color)] shadow-lg p-5"
             }
           >
             <p
               className={
                 idx === 3
                   ? "text-sm font-medium text-indigo-200 mb-3"
-                  : "text-sm font-medium text-gray-500 mb-3"
+                   : "text-sm font-medium text-[var(--text-secondary)] mb-3"
               }
             >
               {c.label}
@@ -380,7 +380,7 @@ export default function DashboardPage() {
               className={
                 idx === 3
                   ? "text-3xl font-bold text-white"
-                  : "text-3xl font-bold text-gray-900"
+                   : "text-3xl font-bold text-[var(--text-primary)]"
               }
             >
               {c.value}
@@ -389,7 +389,7 @@ export default function DashboardPage() {
               className={
                 idx === 3
                   ? "text-xs text-indigo-300 mt-1"
-                  : "text-xs text-gray-400 mt-1"
+                   : "text-xs text-[var(--text-muted)] mt-1"
               }
             >
               {idx === 0
@@ -414,13 +414,13 @@ export default function DashboardPage() {
 
       {/* Rekap status + Total Diterima (berdampingan) */}
       <div className="grid grid-cols-2 gap-5 mt-6 max-[700px]:grid-cols-1">
-        <div className="rounded-xl border border-gray-100 bg-white shadow-lg">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-color)]">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 Rekap Persewaan
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 Status transaksi periode ini
               </p>
             </div>
@@ -428,7 +428,7 @@ export default function DashboardPage() {
               Terkini
             </span>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-[var(--border-color)]">
             {[
               {
                 label: "Booking",
@@ -497,20 +497,20 @@ export default function DashboardPage() {
                       className={`w-2 h-2 rounded-full ${item.dotColor}`}
                     ></div>
                     <span
-                      className={`text-sm ${item.bgClass ? "font-medium text-red-700" : "text-gray-700"}`}
+                      className={`text-sm ${item.bgClass ? "font-medium text-red-700" : "text-[var(--text-secondary)]"}`}
                     >
                       {item.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-24 rounded-full h-1.5 bg-gray-100`}>
+                    <div className={`w-24 rounded-full h-1.5 bg-[var(--bg-subtle)]`}>
                       <div
                         className={`h-1.5 rounded-full ${item.barColor}`}
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
                     <span
-                      className={`text-sm w-4 text-right ${item.bgClass ? "font-bold text-red-600" : "font-semibold text-gray-900"}`}
+                      className={`text-sm w-4 text-right ${item.bgClass ? "font-bold text-red-600" : "font-semibold text-[var(--text-primary)]"}`}
                     >
                       {item.value}
                     </span>
@@ -522,26 +522,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Detail Total Diterima */}
-        <div className="rounded-xl border border-gray-100 bg-white shadow-lg">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
+          <div className="px-5 py-4 border-b border-[var(--border-color)]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               Total Diterima
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
               Breakdown metode pembayaran
             </p>
           </div>
           <div className="px-5 py-5">
             {/* Big number */}
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">
               {formatRupiah(bayar.diterima)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-[var(--text-muted)] mt-1">
               dari total {formatRupiah(bayar.total_akhir)} yang tercatat
             </p>
 
             {/* Progress bar */}
-            <div className="mt-3 w-full bg-gray-100 rounded-full h-2">
+            <div className="mt-3 w-full bg-[var(--bg-subtle)] rounded-full h-2">
               <div
                 className="bg-[#7181E0] h-2 rounded-full"
                 style={{
@@ -549,7 +549,7 @@ export default function DashboardPage() {
                 }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
               <span>Diterima</span>
               <span>
                 {bayar.total_akhir > 0
@@ -561,28 +561,28 @@ export default function DashboardPage() {
 
             {/* Breakdown */}
             <div className="mt-5 space-y-2.5">
-              <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Tunai</span>
+              <div className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-subtle)] rounded-lg">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Tunai</span>
                 <span
-                  className={`text-sm font-semibold ${bayar.tunai > 0 ? "text-gray-900" : "text-gray-400"}`}
+                  className={`text-sm font-semibold ${bayar.tunai > 0 ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}
                 >
                   {formatRupiah(bayar.tunai)}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-subtle)] rounded-lg">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">
                   Transfer
                 </span>
                 <span
-                  className={`text-sm font-semibold ${bayar.transfer > 0 ? "text-gray-900" : "text-gray-400"}`}
+                  className={`text-sm font-semibold ${bayar.transfer > 0 ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}
                 >
                   {formatRupiah(bayar.transfer)}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">QRIS</span>
+              <div className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-subtle)] rounded-lg">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">QRIS</span>
                 <span
-                  className={`text-sm font-semibold ${bayar.qris > 0 ? "text-gray-900" : "text-gray-400"}`}
+                  className={`text-sm font-semibold ${bayar.qris > 0 ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}
                 >
                   {formatRupiah(bayar.qris)}
                 </span>
