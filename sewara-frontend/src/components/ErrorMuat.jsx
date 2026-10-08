@@ -4,18 +4,18 @@ export default function ErrorMuat({ onRetry }) {
   return (
     <section
       role="alert"
-      className="mx-auto flex min-h-56 w-full max-w-xl flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm"
+      className="mx-auto flex min-h-56 w-full max-w-xl flex-col items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-8 text-center text-[var(--text-primary)] shadow-sm"
     >
       <span
         aria-hidden="true"
-        className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-xl font-bold text-red-600"
+        className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-danger-soft)] text-xl font-bold text-[var(--color-danger-text)]"
       >
         !
       </span>
-      <p className="m-0 text-base font-semibold text-gray-900">
+      <p className="m-0 text-base font-semibold text-[var(--text-primary)]">
         Gagal memuat data.
       </p>
-      <p className="mb-4 mt-1 text-sm text-gray-500">
+      <p className="mb-4 mt-1 text-sm text-[var(--text-secondary)]">
         Periksa koneksi lalu coba lagi.
       </p>
       <button

@@ -133,6 +133,8 @@
   --text-secondary: #6b7280;
   --text-muted: #9ca3af;
   --border-color: #d1d5db;
+  --color-danger-soft: #fef2f2;
+  --color-danger-text: #dc2626;
 }
 
 .dark {

@@ -1,11 +1,11 @@
 function Field({ as: Element = "input", label, name, error, hint, required = false, className = "", ...props }) {
   const inputClass = [
-    "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+    "w-full px-3 py-2 border border-[var(--border-color)] rounded-lg bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500",
     error ? "border-red-500 focus:ring-red-500" : "",
-    props.disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : "",
+    props.disabled ? "bg-[var(--bg-body)] cursor-not-allowed opacity-60" : "",
     className,
   ].filter(Boolean).join(" ");
-  return <div className="mb-4">{label && <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-600">*</span>}</label>}<Element id={name} name={name} className={inputClass} required={required} {...props} />{error && <span className="text-red-600 text-sm mt-1">{error}</span>}{hint && <span className="text-gray-500 text-sm mt-1">{hint}</span>}</div>;
+  return <div className="mb-4">{label && <label htmlFor={name} className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{label}{required && <span className="text-red-600">*</span>}</label>}<Element id={name} name={name} className={inputClass} required={required} {...props} />{error && <span className="text-red-600 text-sm mt-1">{error}</span>}{hint && <span className="text-[var(--text-muted)] text-sm mt-1">{hint}</span>}</div>;
 }
 
 /** Reusable labeled input field. */
