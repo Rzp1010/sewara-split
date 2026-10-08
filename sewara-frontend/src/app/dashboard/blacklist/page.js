@@ -189,7 +189,7 @@ export default function BlacklistPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Blacklist Penyewa</h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-secondary)]">
             Daftar penyewa yang diblokir dari booking.
           </p>
         </div>
@@ -204,13 +204,13 @@ export default function BlacklistPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-4">
-          <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+      <div className="overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-subtle)] p-4">
+          <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Daftar Blacklist ({filtered.length})
           </span>
           <input
-            className="w-full rounded-lg border border-solid border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 sm:max-w-md"
+            className="w-full rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 sm:max-w-md"
             placeholder="Cari nama atau HP..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -218,7 +218,7 @@ export default function BlacklistPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Nama</th>
                 <th className="px-4 py-3 text-left">HP</th>
@@ -233,27 +233,27 @@ export default function BlacklistPage() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={bolehEdit ? 7 : 6}>
-                    <div className="px-4 py-10 text-center text-sm text-gray-400">
+                    <div className="px-4 py-10 text-center text-sm text-[var(--text-muted)]">
                       Belum ada penyewa di blacklist.
                     </div>
                   </td>
                 </tr>
               ) : (
                 filtered.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-semibold text-gray-800">
+                  <tr key={row.id} className="hover:bg-[var(--bg-subtle)]">
+                    <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">
                       {row.nama}
                     </td>
                     <td className="px-4 py-3">{row.hp || "-"}</td>
-                    <td className="max-w-[16rem] whitespace-normal break-words px-4 py-3 text-gray-600">
+                    <td className="max-w-[16rem] whitespace-normal break-words px-4 py-3 text-[var(--text-secondary)]">
                       {row.alasan || "-"}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                      <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-xs font-medium text-[var(--text-secondary)]">
                         {asalEntri(row)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatTanggal(row.createdAt)}
                     </td>
                     <td className="px-4 py-3">
@@ -265,7 +265,7 @@ export default function BlacklistPage() {
                             target="_blank"
                             rel="noreferrer"
                             title={f.label || "Jaminan"}
-                            className="block h-9 w-9 overflow-hidden rounded border border-gray-200 bg-gray-50"
+                            className="block h-9 w-9 overflow-hidden rounded border border-[var(--border-color)] bg-[var(--bg-subtle)]"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -276,7 +276,7 @@ export default function BlacklistPage() {
                           </a>
                         ))}
                         {!(row.fotoJaminan || []).length && (
-                          <span className="text-xs text-gray-400">-</span>
+                          <span className="text-xs text-[var(--text-muted)]">-</span>
                         )}
                       </div>
                     </td>
@@ -285,7 +285,7 @@ export default function BlacklistPage() {
                         <button
                           type="button"
                           onClick={() => bukaEdit(row)}
-                          className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-300"
+                          className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                         >
                           Edit
                         </button>{" "}
@@ -314,10 +314,10 @@ export default function BlacklistPage() {
             onClick={() => setModal(false)}
           >
             <div
-              className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
                 <h3 className="m-0 text-lg font-bold">
                   {editing ? "Edit" : "Tambah"} Blacklist
                 </h3>
@@ -325,7 +325,7 @@ export default function BlacklistPage() {
                   type="button"
                   aria-label="Tutup"
                   onClick={() => setModal(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-gray-100 text-xl text-gray-600 hover:bg-gray-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-[var(--bg-subtle)] text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                 >
                   ×
                 </button>
@@ -333,28 +333,28 @@ export default function BlacklistPage() {
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                       Nama
                     </label>
                     <input
                       value={form.nama}
                       onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                       No. HP <span className="text-red-500">*</span>
                     </label>
                     <input
                       value={form.hp}
                       onChange={(e) => setForm({ ...form, hp: e.target.value })}
                       placeholder="08xxxxxxxxxx"
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                       Alamat
                     </label>
                     <input
@@ -362,11 +362,11 @@ export default function BlacklistPage() {
                       onChange={(e) =>
                         setForm({ ...form, alamat: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                       Alasan <span className="text-red-500">*</span>
                     </label>
                     <textarea
@@ -376,7 +376,7 @@ export default function BlacklistPage() {
                         setForm({ ...form, alasan: e.target.value })
                       }
                       placeholder="Cth: barang tidak dikembalikan, telat berulang, dll."
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
                   </div>
                 </div>
@@ -387,16 +387,16 @@ export default function BlacklistPage() {
                     onChange={setSlots}
                     allowRemoveSnapshot={Boolean(editing)}
                   />
-                  <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+                  <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
                     JPG/PNG/PDF maks 5MB per file.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-color)] px-6 py-4">
                 <button
                   type="button"
                   onClick={() => setModal(false)}
-                  className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                  className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                 >
                   Batal
                 </button>

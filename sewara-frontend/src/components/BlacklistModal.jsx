@@ -91,18 +91,18 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
           <h3 className="m-0 text-lg font-bold">Blacklist Penyewa</h3>
           <button
             type="button"
             aria-label="Tutup"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-gray-100 text-xl text-gray-600 hover:bg-gray-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-[var(--bg-subtle)] text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
           >
             ×
           </button>
@@ -111,41 +111,41 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                 Nama
               </label>
               <input
                 value={form.nama}
                 onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                 No. HP <span className="text-red-500">*</span>
               </label>
               <input
                 value={form.hp}
                 onChange={(e) => setForm({ ...form, hp: e.target.value })}
                 placeholder="08xxxxxxxxxx"
-                className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               />
-              <p className="mt-1 text-[11px] text-gray-400">
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
                 Blacklist memakai pasangan nama + nomor HP.
               </p>
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                 Alamat
               </label>
               <input
                 value={form.alamat}
                 onChange={(e) => setForm({ ...form, alamat: e.target.value })}
-                className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
                 Alasan <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -153,24 +153,24 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
                 value={form.alasan}
                 onChange={(e) => setForm({ ...form, alasan: e.target.value })}
                 placeholder="Cth: barang tidak dikembalikan, telat berulang, dll."
-                className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               />
             </div>
           </div>
 
           <div className="mt-5">
             <BlacklistFotoSlot items={slots} onChange={setSlots} />
-            <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+            <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
               JPG/PNG/PDF maks 5MB per file.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-color)] px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
           >
             Batal
           </button>

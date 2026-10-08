@@ -733,7 +733,7 @@ export default function TrackingPage() {
       <h2 className="text-xl font-bold mb-6">Tracking Alat</h2>
 
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-2 rounded-lg bg-slate-100 p-1">
+        <div className="flex gap-2 rounded-lg bg-[var(--bg-subtle)] p-1">
           {[
             ["tabel", "Tabel"],
             ["timeline", "Timeline"],
@@ -745,7 +745,7 @@ export default function TrackingPage() {
               className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-all ${
                 mode === v
                   ? "bg-[#7181E0] text-white shadow-sm hover:bg-[#5d6fcc]"
-                  : "bg-transparent text-slate-700 hover:bg-slate-200"
+                  : "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
               }`}
             >
               {lbl}
@@ -757,24 +757,24 @@ export default function TrackingPage() {
       {mode === "tabel" && (
         <>
           <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border-2 border-slate-200 bg-white p-6 shadow-lg">
-              <p className="text-sm text-gray-500 mb-2">Total Alat</p>
-              <p className="text-4xl font-bold text-gray-900">{inv.length}</p>
+            <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
+              <p className="text-sm text-[var(--text-muted)] mb-2">Total Alat</p>
+              <p className="text-4xl font-bold text-[var(--text-primary)]">{inv.length}</p>
             </div>
-            <div className="rounded-xl border-2 border-slate-200 bg-white p-6 shadow-lg">
-              <p className="text-sm text-gray-500 mb-2">
+            <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
+              <p className="text-sm text-[var(--text-muted)] mb-2">
                 Tersedia · {labelTgl}
               </p>
               <p className="text-4xl font-bold text-[#579171]">
                 {tersediaCount}
               </p>
             </div>
-            <div className="rounded-xl border-2 border-slate-200 bg-white p-6 shadow-lg">
-              <p className="text-sm text-gray-500 mb-2">Disewa · {labelTgl}</p>
+            <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
+              <p className="text-sm text-[var(--text-muted)] mb-2">Disewa · {labelTgl}</p>
               <p className="text-4xl font-bold text-blue-500">{disewaCount}</p>
             </div>
-            <div className="rounded-xl border-2 border-slate-200 bg-white p-6 shadow-lg">
-              <p className="text-sm text-gray-500 mb-2">Habis · {labelTgl}</p>
+            <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
+              <p className="text-sm text-[var(--text-muted)] mb-2">Habis · {labelTgl}</p>
               <p className="text-4xl font-bold text-[#F04438]">{habisCount}</p>
             </div>
           </div>
@@ -799,31 +799,31 @@ export default function TrackingPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama alat..."
-              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
             />
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
             <table className="min-w-full border-collapse">
-              <thead className="bg-slate-100">
+              <thead className="bg-[var(--bg-subtle)]">
                 <tr>
                   {["Nama Alat", "Jenis"].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-sm font-semibold text-slate-700"
+                      className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-secondary)]"
                     >
                       {h}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
                     Total Unit
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
                     Terpakai {tglStr}
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
                     S/N Terpakai
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
                     Status
                   </th>
                 </tr>
@@ -833,7 +833,7 @@ export default function TrackingPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-12 text-center italic text-gray-500"
+                      className="px-4 py-12 text-center italic text-[var(--text-muted)]"
                     >
                       Belum ada alat.
                     </td>
@@ -842,18 +842,18 @@ export default function TrackingPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-12 text-center italic text-gray-500"
+                      className="px-4 py-12 text-center italic text-[var(--text-muted)]"
                     >
                       Tidak ada alat yang cocok dengan pencarian.
                     </td>
                   </tr>
                 ) : (
                   barisTampil.map(({ item, total, terpakai, tersedia }) => (
-                    <tr key={item.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-semibold text-slate-900">
+                    <tr key={item.id} className="hover:bg-[var(--bg-subtle)]">
+                      <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">
                         {item.nama}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
                         {item.jenis === "satuan" ? "Satuan" : "Bundling"}
                       </td>
                       <td className="px-4 py-3 text-center font-bold">
@@ -865,10 +865,10 @@ export default function TrackingPage() {
                             {terpakai.qty}
                           </span>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-[var(--text-muted)]">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-500">
+                      <td className="px-4 py-3 text-center text-sm text-[var(--text-muted)]">
                         {terpakai.sns.length > 0 && (
                           <div>{terpakai.sns.join(", ")}</div>
                         )}
@@ -920,7 +920,7 @@ export default function TrackingPage() {
                 onChange={(e) => setCariAlat(e.target.value)}
                 onBlur={() => setTimeout(() => setCariAlat(""), 150)}
                 placeholder="Cari alat untuk ditambahkan ke tracking..."
-                className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               />
               {cariAlat.trim() !== "" && (
                 <div
@@ -993,7 +993,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={() => geserHari(-RENTANG_HARI)}
-                className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 &larr; Sebelum
               </button>
@@ -1005,7 +1005,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={() => geserHari(RENTANG_HARI)}
-                className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 Berikut &rarr;
               </button>
@@ -1101,7 +1101,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={bersihkanPrefill}
-                className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 Bersihkan
               </button>
@@ -1166,7 +1166,7 @@ export default function TrackingPage() {
                             ? "1px solid var(--border-color)"
                             : "none",
                         background: isToday
-                          ? "#EEF2FF"
+                          ? "var(--bg-subtle)"
                           : isHariPrefill(d)
                             ? "rgba(79, 70, 229, 0.06)"
                             : "transparent",
@@ -1717,7 +1717,7 @@ export default function TrackingPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="bg-surface-card rounded-lg-header">
                 <h3 className="bg-surface-card rounded-lg-title">
@@ -1843,7 +1843,7 @@ export default function TrackingPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="bg-surface-card rounded-lg-header">
                 <h3 className="bg-surface-card rounded-lg-title">

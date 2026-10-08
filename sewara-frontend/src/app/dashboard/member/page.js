@@ -57,9 +57,9 @@ function DurasiTierEditor({ value, onChange }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-secondary)]">
           <tr>
             <th className="px-4 py-2 text-left">Durasi (≥ hari)</th>
             <th className="px-4 py-2 text-left">Diskon %</th>
@@ -68,14 +68,14 @@ function DurasiTierEditor({ value, onChange }) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-t border-gray-100">
+            <tr key={i} className="border-t border-[var(--border-color)]">
               <td className="px-4 py-2">
                 <input
                   type="number"
                   min="1"
                   value={r.min_hari}
                   onChange={(e) => ubahField(i, "min_hari", e.target.value)}
-                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                  className="w-24 rounded border border-[var(--border-color)] px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
                 />
               </td>
               <td className="px-4 py-2">
@@ -85,9 +85,9 @@ function DurasiTierEditor({ value, onChange }) {
                   max="100"
                   value={r.persentase}
                   onChange={(e) => ubahField(i, "persentase", e.target.value)}
-                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                  className="w-24 rounded border border-[var(--border-color)] px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
                 />
-                <span className="ml-1 text-xs text-gray-400">%</span>
+                <span className="ml-1 text-xs text-[var(--text-muted)]">%</span>
               </td>
               <td className="px-4 py-2 text-center">
                 <button
@@ -103,7 +103,7 @@ function DurasiTierEditor({ value, onChange }) {
           ))}
         </tbody>
       </table>
-      <div className="border-t border-gray-100 px-4 py-2">
+      <div className="border-t border-[var(--border-color)] px-4 py-2">
         <button
           type="button"
           onClick={tambah}
@@ -405,14 +405,14 @@ export default function MemberPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Member</h2>
-            <p className="text-slate-600">
+            <p className="text-[var(--text-secondary)]">
               Kelola profil member, tingkatan, dan diskon.
             </p>
           </div>
           <div className="flex gap-3">
             <button
               type="button"
-              className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 transition-colors"
+              className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
               onClick={() => setSettingsModal(true)}
             >
               Pengaturan
@@ -432,19 +432,19 @@ export default function MemberPage() {
         </div>
 
         {/* Tabel */}
-        <div className="rounded-lg border border-solid border-slate-200 bg-white p-0">
+        <div className="rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-0">
           <div className="flex items-center justify-between px-6 pb-4 pt-6">
             <b>Data Member</b>
             <input
-              className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+              className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
               placeholder="Cari nama, HP, atau email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+          <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
             <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-              <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+              <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                 <tr>
                   <th className="px-4 py-3 text-left">Nama</th>
                   <th className="px-4 py-3 text-left">HP</th>
@@ -456,7 +456,7 @@ export default function MemberPage() {
               <tbody>
                 {filteredMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-[var(--text-muted)]">
                       {members.length === 0
                         ? "Belum ada member."
                         : "Tidak ada member yang cocok dengan pencarian."}
@@ -464,7 +464,7 @@ export default function MemberPage() {
                   </tr>
                 ) : (
                 filteredMembers.map((m) => (
-                  <tr key={m.id} className="odd:bg-white even:bg-slate-50">
+                  <tr key={m.id} className="odd:bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]">
                     <td className="px-4 py-3">{m.nama}</td>
                     <td className="px-4 py-3">{m.hp || "-"}</td>
                     <td className="px-4 py-3">{m.email || "-"}</td>
@@ -472,14 +472,14 @@ export default function MemberPage() {
                     <td className="px-4 py-3">
                       <button
                         type="button"
-                        className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-300"
+                        className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                         onClick={() => openMemberDetail(m)}
                       >
                         Cek Data
                       </button>{" "}
                       <button
                         type="button"
-                        className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-300"
+                        className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                         onClick={() => {
                           setEditing(m);
                           setForm({
@@ -525,7 +525,7 @@ export default function MemberPage() {
               onClick={() => setSettingsModal(false)}
             >
               <div
-                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-6 pb-4 pt-6">
@@ -534,14 +534,14 @@ export default function MemberPage() {
                   </h3>
                   <button
                     type="button"
-                    className="rounded-lg border-0 bg-transparent px-2 py-2 text-xl text-slate-600 hover:bg-gray-100 transition-colors"
+                    className="rounded-lg border-0 bg-transparent px-2 py-2 text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] transition-colors"
                     onClick={() => setSettingsModal(false)}
                   >
                     ×
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 pb-6">
-                  <div className="rounded-lg border border-solid border-slate-200 bg-white p-0">
+                  <div className="rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-0">
                     <div className="flex items-center justify-between px-6 pb-4 pt-6">
                       <b>Tipe Member</b>
                       <button
@@ -556,9 +556,9 @@ export default function MemberPage() {
                         Tambah Tipe
                       </button>
                     </div>
-                    <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+                    <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
                       <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-                        <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                        <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                           <tr>
                             <th className="px-4 py-3 text-left">Nama</th>
                             <th className="px-4 py-3 text-left">Diskon</th>
@@ -570,7 +570,7 @@ export default function MemberPage() {
                           {templates.map((t) => (
                             <tr
                               key={t.id}
-                              className="odd:bg-white even:bg-slate-50"
+                              className="odd:bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]"
                             >
                               <td className="px-4 py-3">{t.nama}</td>
                               <td className="px-4 py-3">
@@ -586,7 +586,7 @@ export default function MemberPage() {
                                   const lo = Math.min(...ps);
                                   const hi = Math.max(...ps);
                                   return (
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-[var(--text-secondary)]">
                                       {lo === hi ? lo : `${lo}–${hi}`}% (durasi)
                                     </div>
                                   );
@@ -596,7 +596,7 @@ export default function MemberPage() {
                               <td className="px-4 py-3">
                                 <button
                                   type="button"
-                                  className="rounded-md bg-transparent px-3 py-1.5 text-xs text-slate-700 hover:bg-gray-200"
+                                  className="rounded-md bg-transparent px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                                   onClick={() => {
                                     setTierEditing(t);
                                     setTierForm({
@@ -636,12 +636,12 @@ export default function MemberPage() {
                       </table>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-lg border border-solid border-slate-200 bg-white p-4">
+                  <div className="mt-4 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
                     <h3>Setting Diskon Member</h3>
                     <label className="mb-3 block text-sm font-semibold">
                       Cara diskon berpadu promo
                       <select
-                        className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={stack}
                         onChange={(e) => {
                           setStack(e.target.value);
@@ -656,7 +656,7 @@ export default function MemberPage() {
                     <label className="mb-3 block text-sm font-semibold">
                       Batas maksimal diskon (%)
                       <input
-                        className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={maks}
                         onChange={(e) => setMaks(e.target.value)}
                         onBlur={() =>
@@ -670,7 +670,7 @@ export default function MemberPage() {
                     <label className="mb-3 block text-sm font-semibold">
                       Minimal transaksi promo (Rp)
                       <input
-                        className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={min}
                         onChange={(e) => setMin(e.target.value)}
                         onBlur={() =>
@@ -706,7 +706,7 @@ export default function MemberPage() {
               onClick={closeDetail}
             >
               <div
-                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="member-detail-title"
@@ -821,7 +821,7 @@ export default function MemberPage() {
                 <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-4">
                   <button
                     type="button"
-                    className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 transition-colors"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
                     onClick={closeDetail}
                   >
                     Tutup
@@ -875,7 +875,7 @@ export default function MemberPage() {
               onClick={() => setModal(false)}
             >
               <div
-                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-start justify-between px-6 pb-4 pt-6">
@@ -883,7 +883,7 @@ export default function MemberPage() {
                     <h3 className="mb-0.5 text-lg font-bold">
                       {editing ? "Edit" : "Tambah"} Member
                     </h3>
-                    <p className="mt-0.5 text-xs text-gray-400">
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                       {editing?.nama || form.nama || "Member baru"} ·{" "}
                       {editing?.tipeNama || "Tanpa tipe"}
                     </p>
@@ -892,7 +892,7 @@ export default function MemberPage() {
                     type="button"
                     aria-label="Tutup"
                     onClick={() => setModal(false)}
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-0 bg-gray-100 text-xl text-gray-600 hover:bg-gray-200 transition-colors"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-0 bg-[var(--bg-subtle)] text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] transition-colors"
                   >
                     ×
                   </button>
@@ -900,11 +900,11 @@ export default function MemberPage() {
                 <div className="flex-1 overflow-y-auto px-6 pb-6">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
                         Nama
                       </label>
                       <input
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={form.nama || ""}
                         onChange={(e) =>
                           setForm({ ...form, nama: e.target.value })
@@ -912,11 +912,11 @@ export default function MemberPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
                         No HP
                       </label>
                       <input
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={form.hp || ""}
                         onChange={(e) =>
                           setForm({ ...form, hp: e.target.value })
@@ -924,11 +924,11 @@ export default function MemberPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
                         Email
                       </label>
                       <input
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={form.email || ""}
                         onChange={(e) =>
                           setForm({ ...form, email: e.target.value })
@@ -936,11 +936,11 @@ export default function MemberPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
                         Alamat
                       </label>
                       <input
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         value={form.alamat || ""}
                         onChange={(e) =>
                           setForm({ ...form, alamat: e.target.value })
@@ -949,7 +949,7 @@ export default function MemberPage() {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
                       Tipe Member
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -960,7 +960,7 @@ export default function MemberPage() {
                           className={
                             form.tipe_id == t.id
                               ? "rounded-full border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] transition-colors"
-                              : "rounded-full border border-solid border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-100 transition-colors"
+                              : "rounded-full border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
                           }
                           onClick={() => setForm({ ...form, tipe_id: t.id })}
                         >
@@ -972,7 +972,7 @@ export default function MemberPage() {
                         className={
                           !form.tipe_id
                             ? "rounded-full border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] transition-colors"
-                            : "rounded-full border border-solid border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-100 transition-colors"
+                            : "rounded-full border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
                         }
                         onClick={() => setForm({ ...form, tipe_id: "" })}
                       >
@@ -981,12 +981,12 @@ export default function MemberPage() {
                     </div>
                   </div>
                   <div className="mb-4 mt-6 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gray-200" />
-                    <span className="whitespace-nowrap text-xs font-semibold text-gray-400">
+                    <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
+                    <span className="whitespace-nowrap text-xs font-semibold text-[var(--text-muted)]">
                       Dokumen Jaminan (Opsional ·{" "}
                       {form.foto_jaminan.filter((item) => item?.path).length}/5)
                     </span>
-                    <div className="h-px flex-1 bg-gray-200" />
+                    <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
                   </div>
                   <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
                     {DOCUMENT_SLOTS.map((slot, index) => {
@@ -998,7 +998,7 @@ export default function MemberPage() {
                       return (
                         <div
                           key={slot.key}
-                          className={`relative flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors hover:border-[#7181E0] hover:bg-[#EEF2FF] ${filled ? "border-solid border-emerald-500 bg-green-50" : "border-dashed border-gray-200"}`}
+                          className={`relative flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors hover:border-[#7181E0] hover:bg-[#EEF2FF] ${filled ? "border-solid border-emerald-500 bg-green-50" : "border-dashed border-[var(--border-color)]"}`}
                           onClick={() =>
                             document.getElementById(`doc-${slot.key}`)?.click()
                           }
@@ -1006,7 +1006,7 @@ export default function MemberPage() {
                           onDrop={(e) => handleDrop(e, slot)}
                         >
                           <div
-                            className={`text-xl leading-none ${filled ? "text-emerald-500" : "text-gray-400"}`}
+                            className={`text-xl leading-none ${filled ? "text-emerald-500" : "text-[var(--text-muted)]"}`}
                           >
                             {preview?.type === "image" ? (
                               <img
@@ -1021,7 +1021,7 @@ export default function MemberPage() {
                             )}
                           </div>
                           <div
-                            className={`text-[11px] font-semibold ${filled ? "text-emerald-800" : "text-gray-400"}`}
+                            className={`text-[11px] font-semibold ${filled ? "text-emerald-800" : "text-[var(--text-muted)]"}`}
                           >
                             {slot.label}
                           </div>
@@ -1047,7 +1047,7 @@ export default function MemberPage() {
                             }
                           />
                           {documentLoading[slot.key] && (
-                            <div className="absolute inset-0 flex items-center justify-center rounded bg-white/80">
+                            <div className="absolute inset-0 flex items-center justify-center rounded bg-[var(--bg-surface)]/80">
                               Mengunggah...
                             </div>
                           )}
@@ -1059,7 +1059,7 @@ export default function MemberPage() {
                 <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-4">
                   <button
                     type="button"
-                    className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 transition-colors"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
                     onClick={() => setModal(false)}
                   >
                     Batal
@@ -1087,7 +1087,7 @@ export default function MemberPage() {
               onClick={() => setTierModal(false)}
             >
               <div
-                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-6 pb-4 pt-6">
@@ -1096,7 +1096,7 @@ export default function MemberPage() {
                   </h3>
                   <button
                     type="button"
-                    className="rounded-lg border-0 bg-transparent px-2 py-2 text-xl text-slate-600 hover:bg-gray-100 transition-colors"
+                    className="rounded-lg border-0 bg-transparent px-2 py-2 text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] transition-colors"
                     onClick={() => setTierModal(false)}
                   >
                     ×
@@ -1106,7 +1106,7 @@ export default function MemberPage() {
                   <label className="mb-3 block text-sm font-semibold">
                     Nama Tipe
                     <input
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                       value={tierForm.nama}
                       onChange={(e) =>
                         setTierForm({ ...tierForm, nama: e.target.value })
@@ -1116,7 +1116,7 @@ export default function MemberPage() {
                   <label className="mb-3 block text-sm font-semibold">
                     Diskon (%)
                     <input
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                       value={tierForm.diskon_persen}
                       onChange={(e) =>
                         setTierForm({
@@ -1130,7 +1130,7 @@ export default function MemberPage() {
                     <div className="mb-1 text-sm font-semibold">
                       Diskon Berdasarkan Durasi Sewa (opsional)
                     </div>
-                    <p className="mb-2 text-xs leading-relaxed text-gray-500">
+                    <p className="mb-2 text-xs leading-relaxed text-[var(--text-secondary)]">
                       Jika diisi, persentase ini menggantikan Diskon (%) biasa
                       selama durasi sewa memenuhi syarat. Semakin lama sewa,
                       semakin besar diskon. Contoh: ≥1 hari 10%, ≥2 hari 15%.
@@ -1145,7 +1145,7 @@ export default function MemberPage() {
                   <label className="mb-3 block text-sm font-semibold">
                     Status
                     <select
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                       value={tierForm.status}
                       onChange={(e) =>
                         setTierForm({ ...tierForm, status: e.target.value })
@@ -1159,7 +1159,7 @@ export default function MemberPage() {
                 <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-4">
                   <button
                     type="button"
-                    className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 transition-colors"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
                     onClick={() => setTierModal(false)}
                   >
                     Batal

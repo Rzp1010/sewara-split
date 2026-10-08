@@ -41,11 +41,11 @@ export default function BlacklistFotoSlot({ items, onChange, allowRemoveSnapshot
   return (
     <div>
       <div className="mb-2 flex items-center gap-3">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="whitespace-nowrap text-xs font-semibold text-gray-400">
+        <div className="h-px flex-1 bg-[var(--border-color)]" />
+        <span className="whitespace-nowrap text-xs font-semibold text-[var(--text-muted)]">
           Foto Jaminan (Opsional · {jml}/5)
         </span>
-        <div className="h-px flex-1 bg-gray-200" />
+        <div className="h-px flex-1 bg-[var(--border-color)]" />
       </div>
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
         {FOTO_SLOTS.map((label, index) => {
@@ -54,14 +54,14 @@ export default function BlacklistFotoSlot({ items, onChange, allowRemoveSnapshot
           return (
             <div
               key={label}
-              className={`relative flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors ${terisi ? "border-solid border-emerald-500 bg-green-50" : "cursor-pointer border-dashed border-gray-200 hover:border-[#7181E0] hover:bg-[#EEF2FF]"}`}
+              className={`relative flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors ${terisi ? "border-solid border-emerald-500 bg-green-50" : "cursor-pointer border-dashed border-[var(--border-color)] hover:border-[#7181E0] hover:bg-[var(--bg-subtle)]"}`}
               onClick={() =>
                 !terisi &&
                 document.getElementById(`blf-${index}`)?.click()
               }
             >
               <div
-                className={`text-xl leading-none ${terisi ? "text-emerald-500" : "text-gray-400"}`}
+                className={`text-xl leading-none ${terisi ? "text-emerald-500" : "text-[var(--text-muted)]"}`}
               >
                 {it?.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -86,12 +86,12 @@ export default function BlacklistFotoSlot({ items, onChange, allowRemoveSnapshot
                 )}
               </div>
               <div
-                className={`text-[11px] font-semibold ${terisi ? "text-emerald-800" : "text-gray-400"}`}
+                className={`text-[11px] font-semibold ${terisi ? "text-emerald-800" : "text-[var(--text-muted)]"}`}
               >
                 {it?.label || label}
               </div>
               {it?.snapshot && (
-                <span className="text-[9px] leading-tight text-gray-400">
+                <span className="text-[9px] leading-tight text-[var(--text-muted)]">
                   Dokumen dari member — akan disalin saat disimpan.
                 </span>
               )}

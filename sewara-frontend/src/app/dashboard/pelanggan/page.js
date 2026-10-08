@@ -181,7 +181,7 @@ export default function PelangganPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Data Pelanggan</h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-secondary)]">
             Riwayat pelanggan dari transaksi.
           </p>
         </div>
@@ -195,20 +195,20 @@ export default function PelangganPage() {
             </button>
           )}
           <button
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:opacity-80"
             onClick={load}
           >
             Muat ulang
           </button>
         </div>
       </div>
-      <div className="overflow-hidden rounded-xl bg-white shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-4">
-          <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+      <div className="overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-subtle)] p-4">
+          <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Daftar Pelanggan ({filtered.length})
           </span>
           <input
-            className="w-full appearance-none rounded-lg border border-solid border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 sm:max-w-md"
+            className="w-full appearance-none rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm outline-none transition placeholder:text-[var(--text-muted)] focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 sm:max-w-md"
             placeholder="Cari nama, HP, atau alamat..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -216,7 +216,7 @@ export default function PelangganPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Nama</th>
                 <th className="px-4 py-3 text-left">HP</th>
@@ -238,7 +238,7 @@ export default function PelangganPage() {
                 filtered.map((row) => (
                   <tr
                     key={`${row.sumber}-${row.id}`}
-                    className="hover:bg-slate-50"
+                    className="hover:bg-[var(--bg-subtle)]"
                   >
                     <td className="px-4 py-3 text-left">
                       {row.nama}
@@ -256,7 +256,7 @@ export default function PelangganPage() {
                           Member{row.tipeNama ? ` · ${row.tipeNama}` : ""}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                        <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-xs font-medium text-[var(--text-secondary)]">
                           Riwayat
                         </span>
                       )}
@@ -272,7 +272,7 @@ export default function PelangganPage() {
                       )}
                       {bolehBlacklist && !isBlacklisted(row) && (
                         <button
-                          className="ml-2 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                          className="ml-2 rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:opacity-80"
                           onClick={() =>
                             setBlRow({
                               nama: row.nama || "",
@@ -304,23 +304,23 @@ export default function PelangganPage() {
             onClick={() => setExportModal(false)}
           >
             <div
-              className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+              className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] p-4">
                 <h3 className="text-lg font-semibold">Export Data Pelanggan</h3>
                 <button
-                  className="text-2xl leading-none text-gray-500 hover:text-gray-700"
+                  className="text-2xl leading-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   onClick={() => setExportModal(false)}
                 >
                   ×
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 p-4">
-                <label className="block text-xs font-bold text-gray-600">
+                <label className="block text-xs font-bold text-[var(--text-secondary)]">
                   Periode Bulan
                   <select
-                    className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     value={exportBulan}
                     onChange={(e) => setExportBulan(e.target.value)}
                   >
@@ -332,10 +332,10 @@ export default function PelangganPage() {
                     ))}
                   </select>
                 </label>
-                <label className="block text-xs font-bold text-gray-600">
+                <label className="block text-xs font-bold text-[var(--text-secondary)]">
                   Tipe Data
                   <select
-                    className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     value={exportTipe}
                     onChange={(e) => setExportTipe(e.target.value)}
                   >
@@ -344,9 +344,9 @@ export default function PelangganPage() {
                   </select>
                 </label>
               </div>
-              <div className="flex justify-end gap-3 border-t border-gray-200 p-4">
+              <div className="flex justify-end gap-3 border-t border-[var(--border-color)] p-4">
                 <button
-                  className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                  className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:opacity-80"
                   onClick={() => setExportModal(false)}
                 >
                   Batal
@@ -363,7 +363,7 @@ export default function PelangganPage() {
           document.body,
         )}
       {rows.length > 0 && (
-        <p className="text-sm text-gray-500 mt-4">
+        <p className="text-sm text-[var(--text-secondary)] mt-4">
           {filtered.length} pelanggan ditampilkan.
         </p>
       )}

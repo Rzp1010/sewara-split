@@ -237,9 +237,9 @@ export default function InventarisPage() {
       h6.value = "";
       h12.value = "";
       h6.className =
-        "w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold";
+        "w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold";
       h12.className =
-        "w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold";
+        "w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold";
       if (deskripsi)
         deskripsi.textContent = "Harian Saja: durasi tetap 24 Jam (mutlak).";
     } else {
@@ -248,9 +248,9 @@ export default function InventarisPage() {
       h6.required = true;
       h12.required = true;
       h6.className =
-        "w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold";
+        "w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold";
       h12.className =
-        "w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold";
+        "w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold";
       if (deskripsi)
         deskripsi.textContent =
           "Fleksibel: tersedia pilihan 6 Jam, 12 Jam, dan 24 Jam.";
@@ -277,7 +277,7 @@ export default function InventarisPage() {
     ul.textContent = "";
     if (tempKomponenRef.current.length === 0) {
       const li = document.createElement("li");
-      li.className = "text-gray-500";
+      li.className = "text-[var(--text-muted)]";
       li.style.fontStyle = "italic";
       li.textContent = "Belum ada alat.";
       ul.appendChild(li);
@@ -814,7 +814,7 @@ export default function InventarisPage() {
   if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
-    <div className="min-h-full bg-gray-100">
+    <div className="min-h-full bg-[var(--bg-subtle)]">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Daftar Katalog Produk</h2>
         <div className="flex items-center gap-3">
@@ -831,14 +831,14 @@ export default function InventarisPage() {
           <button
             type="button"
             onClick={() => setShowExport(true)}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
           >
             Export Katalog
           </button>
           <button
             type="button"
             onClick={() => setTampilkanKosong((v) => !v)}
-            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors ${tampilkanKosong ? "bg-slate-600 text-white hover:bg-slate-700" : "bg-gray-200 text-slate-700 hover:bg-gray-300"}`}
+            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors ${tampilkanKosong ? "bg-slate-600 text-white hover:bg-slate-700" : "bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"}`}
             title="Tampilkan/sembunyikan produk dengan total stok 0"
           >
             Tampilkan yang kosong
@@ -855,21 +855,21 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => setTabTambah("manual")}
-                    className={`rounded-lg border-0 px-3 py-2 text-sm font-semibold transition-colors ${tabTambah === "manual" ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "bg-gray-100 hover:bg-gray-200 text-slate-600"}`}
+                    className={`rounded-lg border-0 px-3 py-2 text-sm font-semibold transition-colors ${tabTambah === "manual" ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}
                   >
                     Tambah Manual
                   </button>
                   <button
                     type="button"
                     onClick={() => setTabTambah("import")}
-                    className={`rounded-lg border-0 px-3 py-2 text-sm font-semibold transition-colors ${tabTambah === "import" ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "bg-gray-100 hover:bg-gray-200 text-slate-600"}`}
+                    className={`rounded-lg border-0 px-3 py-2 text-sm font-semibold transition-colors ${tabTambah === "import" ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}
                   >
                     Import CSV
                   </button>
@@ -878,7 +878,7 @@ export default function InventarisPage() {
                   type="button"
                   onClick={() => setShowTambah(false)}
                   aria-label="Tutup"
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>
@@ -920,20 +920,20 @@ export default function InventarisPage() {
                       <input
                         name="nama_barang"
                         required
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 mt-2"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 mt-2"
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary">
                         Tag Kategori{" "}
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-[var(--text-muted)]">
                           (opsional)
                         </span>
                       </label>
                       <input
                         name="tag_barang"
                         list="tag_saran"
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 mt-2"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 mt-2"
                         placeholder="Cth: Kamera Sony"
                       />
                       <datalist id="tag_saran">
@@ -952,19 +952,19 @@ export default function InventarisPage() {
                     </div>
                     <div
                       id="area_satuan"
-                      className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-slate-200 bg-slate-50 p-4 sm:grid-cols-2"
+                      className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-4 sm:grid-cols-2"
                     >
                       <div>
                         <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#7181E0]">
                           Nomor Seri
                         </label>
-                        <p className="text-xs text-gray-500 mb-2">
+                        <p className="text-xs text-[var(--text-muted)] mb-2">
                           Pisahkan dgn koma.
                         </p>
                         <textarea
                           name="sn_barang"
                           rows={3}
-                          className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                          className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                           placeholder="SN-01, SN-02..."
                         />
                       </div>
@@ -978,7 +978,7 @@ export default function InventarisPage() {
                           </label>
                           <select
                             name="kondisi_barang"
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 mt-2"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 mt-2"
                           >
                             <option value="Sangat Baik">Sangat Baik</option>
                             <option value="Baik">Baik</option>
@@ -991,7 +991,7 @@ export default function InventarisPage() {
                           </label>
                           <input
                             name="keterangan_barang"
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 mt-2"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 mt-2"
                             placeholder="Cth: Tas lengkap"
                           />
                         </div>
@@ -1026,7 +1026,7 @@ export default function InventarisPage() {
                         <input
                           type="number"
                           id="komp_qty"
-                          className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                          className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                           style={{ width: 80 }}
                           placeholder="Qty"
                           min="1"
@@ -1042,7 +1042,7 @@ export default function InventarisPage() {
                       </div>
                       <ul
                         id="list_komponen_temp"
-                        className="flex flex-col gap-1 rounded-md border border-solid border-slate-200 bg-white p-2 text-sm"
+                        className="flex flex-col gap-1 rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-2 text-sm"
                         style={{ minHeight: 50 }}
                       />
                     </div>
@@ -1054,14 +1054,14 @@ export default function InventarisPage() {
                         name="tipe_sewa"
                         id="tipe_sewa"
                         onChange={toggleTipeSewa}
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 mb-3 font-semibold"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 mb-3 font-semibold"
                       >
                         <option value="fleksibel">Fleksibel</option>
                         <option value="harian">Harian Saja</option>
                       </select>
                       <p
                         id="deskripsi_tipe_sewa"
-                        className="text-xs text-gray-500 mb-3"
+                        className="text-xs text-[var(--text-muted)] mb-3"
                       >
                         Fleksibel: tersedia pilihan 6 Jam, 12 Jam, dan 24 Jam.
                       </p>
@@ -1075,7 +1075,7 @@ export default function InventarisPage() {
                             name="harga_6"
                             id="harga_6"
                             required
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold"
                           />
                         </div>
                         <div>
@@ -1087,7 +1087,7 @@ export default function InventarisPage() {
                             name="harga_12"
                             id="harga_12"
                             required
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold"
                           />
                         </div>
                         <div>
@@ -1099,7 +1099,7 @@ export default function InventarisPage() {
                             name="harga_24"
                             id="harga_24"
                             required
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold"
                           />
                         </div>
                         <div>
@@ -1114,7 +1114,7 @@ export default function InventarisPage() {
                             name="denda_jam"
                             id="denda_jam"
                             required
-                            className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-lg font-bold"
+                            className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-lg font-bold"
                           />
                         </div>
                       </div>
@@ -1128,7 +1128,7 @@ export default function InventarisPage() {
                   </form>
                 ) : (
                   <div className="space-y-3">
-                    <div className="rounded-md border border-solid border-slate-300 bg-slate-50 p-3 text-xs font-mono overflow-x-auto whitespace-nowrap mb-3">
+                    <div className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-3 text-xs font-mono overflow-x-auto whitespace-nowrap mb-3">
                       <strong>10 Kolom:</strong> NamaAlat, TipeSewa, Harga6J,
                       Harga12J, Harga24J, Denda/Jam, NomorSeri(/), Kondisi,
                       Keterangan, Tag Kategori
@@ -1138,7 +1138,7 @@ export default function InventarisPage() {
                         type="file"
                         id="file_csv"
                         accept=".csv"
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm flex-1 min-w-0"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm flex-1 min-w-0"
                       />
                       <button
                         type="button"
@@ -1173,7 +1173,7 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Export Data</h3>
@@ -1181,13 +1181,13 @@ export default function InventarisPage() {
                   type="button"
                   onClick={() => setShowExport(false)}
                   aria-label="Tutup"
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--text-secondary)]">
                   Unduh daftar inventaris (semua produk) ke file CSV.
                 </p>
                 <button
@@ -1208,7 +1208,7 @@ export default function InventarisPage() {
           className="w-full min-w-[720px] border-collapse text-left text-sm text-text-primary"
           style={{ whiteSpace: "nowrap" }}
         >
-          <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
               <th className="border-b border-border px-4 py-3">Jenis</th>
               <th className="border-b border-border px-4 py-3">Produk</th>
@@ -1234,7 +1234,7 @@ export default function InventarisPage() {
               <tr>
                 <td
                   colSpan={5}
-                  className="text-gray-500"
+                  className="text-[var(--text-muted)]"
                   style={{
                     textAlign: "center",
                     padding: "48px 16px",
@@ -1257,7 +1257,7 @@ export default function InventarisPage() {
                       <tr key="kosong-semua">
                         <td
                           colSpan={5}
-                          className="text-gray-500"
+                          className="text-[var(--text-muted)]"
                           style={{
                             textAlign: "center",
                             padding: "48px 16px",
@@ -1293,10 +1293,10 @@ export default function InventarisPage() {
               return kelompok
                 .filter((k) => k.items.length > 0)
                 .flatMap((kel) => [
-                  <tr key={`${kel.tag}-hdr`} className="bg-slate-200">
+                  <tr key={`${kel.tag}-hdr`} className="bg-[var(--bg-subtle)]">
                     <td
                       colSpan={5}
-                      className="px-4 py-3 text-sm font-bold text-gray-900"
+                      className="px-4 py-3 text-sm font-bold text-[var(--text-primary)]"
                     >
                       <Image
                         src="/icons/tag.png"
@@ -1306,7 +1306,7 @@ export default function InventarisPage() {
                         className="mr-1 inline-block align-middle"
                       />{" "}
                       {kel.tag}{" "}
-                      <span className="ml-1 inline-flex items-center rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">
+                      <span className="ml-1 inline-flex items-center rounded-md bg-[var(--bg-subtle)] px-2 py-1 text-xs font-medium text-[var(--text-secondary)]">
                         {kel.items.length}
                       </span>
                     </td>
@@ -1318,15 +1318,15 @@ export default function InventarisPage() {
                       item.jenis === "satuan" ? "Satuan" : "Bundling";
                     const badgeKelas =
                       item.jenis === "satuan"
-                        ? "inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700"
+                        ? "inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
                         : "inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800";
                     const isEven = currentIdx % 2 === 0;
                     return (
                       <tr
                         key={item.id}
-                        className="transition-colors hover:bg-slate-100"
+                        className="transition-colors hover:bg-[var(--bg-subtle)]"
                         style={{
-                          backgroundColor: isEven ? "#ffffff" : "#f8fafc",
+                          backgroundColor: isEven ? "var(--bg-surface)" : "var(--bg-subtle)",
                         }}
                       >
                         <td style={{ padding: "8px 12px" }}>
@@ -1338,7 +1338,7 @@ export default function InventarisPage() {
                         >
                           <strong>{item.nama}</strong>
                           <br />
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-[var(--text-muted)]">
                             {item.keterangan || "-"}
                           </span>
                         </td>
@@ -1360,7 +1360,7 @@ export default function InventarisPage() {
                                 }}
                               >
                                 Tarif:{" "}
-                                <strong className="text-sm font-bold text-gray-900">
+                                <strong className="text-sm font-bold text-[var(--text-primary)]">
                                   {formatRupiah(item.h24)}
                                 </strong>
                               </span>
@@ -1374,17 +1374,17 @@ export default function InventarisPage() {
                               }}
                             >
                               6J:{" "}
-                              <strong className="text-sm text-gray-900">
+                              <strong className="text-sm text-[var(--text-primary)]">
                                 {formatRupiah(item.h6)}
                               </strong>
                               <br />
                               12J:{" "}
-                              <strong className="text-sm font-bold text-gray-900">
+                              <strong className="text-sm font-bold text-[var(--text-primary)]">
                                 {formatRupiah(item.h12)}
                               </strong>
                               <br />
                               24J:{" "}
-                              <strong className="text-sm font-bold text-gray-900">
+                              <strong className="text-sm font-bold text-[var(--text-primary)]">
                                 {formatRupiah(item.h24)}
                               </strong>
                             </span>
@@ -1537,7 +1537,7 @@ export default function InventarisPage() {
           >
             <div onClick={(e) => e.stopPropagation()}>
               {dupModal.stage === "intro" ? (
-                <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-slate-200 bg-white p-6 shadow-2xl">
+                <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-2xl">
                   <p className="text-center text-base font-semibold mb-2">
                     Ditemukan {dupModal.detail.length} produk dengan Serial
                     Number duplikat.
@@ -1559,15 +1559,15 @@ export default function InventarisPage() {
                         dupModal.resolve(null);
                         setDupModal(null);
                       }}
-                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                     >
                       Batal
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-solid border-slate-200 px-6 pb-4 pt-6">
+                <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-solid border-[var(--border-color)] px-6 pb-4 pt-6">
                     <h3 className="text-lg font-semibold">
                       Detail S/N Duplikat
                     </h3>
@@ -1577,37 +1577,37 @@ export default function InventarisPage() {
                         dupModal.resolve(null);
                         setDupModal(null);
                       }}
-                      className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                      className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                     >
                       &times;
                     </button>
                   </div>
                   <div className="flex-1 overflow-y-auto px-6 pb-6">
-                    <div className="rounded-xl border-2 border-solid border-slate-200 overflow-x-auto mb-4">
+                    <div className="rounded-xl border-2 border-solid border-[var(--border-color)] overflow-x-auto mb-4">
                       <table className="w-full min-w-[640px] border-collapse text-sm">
-                        <thead className="bg-slate-100">
+                        <thead className="bg-[var(--bg-subtle)]">
                           <tr>
-                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-600 text-left">
+                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] text-left">
                               Produk (CSV)
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-600 text-left">
+                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] text-left">
                               S/N Duplikat
                             </th>
-                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-600 text-left">
+                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] text-left">
                               Sudah Ada di
                             </th>
                           </tr>
                         </thead>
                         <tbody>
                           {dupModal.detail.map((d, i) => (
-                            <tr key={i} className="bg-white even:bg-slate-50">
+                            <tr key={i} className="bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]">
                               <td className="px-4 py-3 font-semibold">
                                 {d.produk}
                               </td>
                               <td className="px-4 py-3 text-xs text-red-600">
                                 {d.sn.join(", ")}
                               </td>
-                              <td className="px-4 py-3 text-xs text-gray-500">
+                              <td className="px-4 py-3 text-xs text-[var(--text-muted)]">
                                 {d.adaDi}
                               </td>
                             </tr>
@@ -1642,7 +1642,7 @@ export default function InventarisPage() {
                           dupModal.resolve(null);
                           setDupModal(null);
                         }}
-                        className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors"
+                        className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors"
                       >
                         Batal
                       </button>
@@ -1665,7 +1665,7 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">
@@ -1674,20 +1674,20 @@ export default function InventarisPage() {
                 <button
                   type="button"
                   onClick={() => setSnDelModal(null)}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>
               </div>
               <div className="p-6">
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-[var(--text-secondary)] mb-3">
                   Centang S/N yang ingin dihapus:
                 </p>
                 <div className="max-h-60 overflow-y-auto">
                   {snDelModal.sns.map((s) => (
                     <label
                       key={s}
-                      className="flex items-center gap-3 border-b border-solid border-slate-200 py-2.5 px-4 text-sm cursor-pointer"
+                      className="flex items-center gap-3 border-b border-solid border-[var(--border-color)] py-2.5 px-4 text-sm cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -1729,7 +1729,7 @@ export default function InventarisPage() {
                   <button
                     type="button"
                     onClick={() => setSnDelModal(null)}
-                    className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
                   >
                     Batal
                   </button>
@@ -1750,21 +1750,21 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] p-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                     Kondisi Unit
                   </h2>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">
                     {kondisiModal.nama}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setKondisiModal(null)}
-                  className="border-0 bg-transparent text-gray-400 transition-colors hover:text-gray-600"
+                  className="border-0 bg-transparent text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
                   aria-label="Tutup"
                 >
                   <svg
@@ -1783,7 +1783,7 @@ export default function InventarisPage() {
                 </button>
               </div>
               <div className="max-h-[60vh] flex-1 overflow-y-auto p-6">
-                <p className="mb-6 text-sm text-gray-600">
+                <p className="mb-6 text-sm text-[var(--text-secondary)]">
                   Pilih kondisi unit sebelum dikembalikan oleh penyewa:
                 </p>
                 <div className="space-y-4">
@@ -1795,7 +1795,7 @@ export default function InventarisPage() {
                     return (
                       <div
                         key={s}
-                        className="rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50"
+                        className="rounded-lg border border-[var(--border-color)] p-4 transition hover:bg-[var(--bg-subtle)]"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex flex-1 items-center gap-3">
@@ -1805,10 +1805,10 @@ export default function InventarisPage() {
                               </span>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-[var(--text-primary)]">
                                 Unit {s}
                               </p>
-                              <p className="text-xs text-gray-500">Serial: {s}</p>
+                              <p className="text-xs text-[var(--text-muted)]">Serial: {s}</p>
                             </div>
                           </div>
                           <div className="w-32">
@@ -1823,7 +1823,7 @@ export default function InventarisPage() {
                                   },
                                 })
                               }
-                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                               {opsiKondisi(userRole).map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -1846,7 +1846,7 @@ export default function InventarisPage() {
                               })
                             }
                             placeholder="Catatan masalah (wajib)..."
-                            className="mt-2 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         )}
                       </div>
@@ -1892,11 +1892,11 @@ export default function InventarisPage() {
                   );
                 })()}
               </div>
-              <div className="flex gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+              <div className="flex gap-3 border-t border-[var(--border-color)] bg-[var(--bg-subtle)] px-6 py-4">
                 <button
                   type="button"
                   onClick={() => setKondisiModal(null)}
-                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                  className="flex-1 rounded-lg border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-subtle)]"
                 >
                   Batal
                 </button>
@@ -1918,7 +1918,7 @@ export default function InventarisPage() {
         editItem &&
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
-            <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl">
+            <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Edit Produk</h3>
                 <button
@@ -1926,7 +1926,7 @@ export default function InventarisPage() {
                   onClick={() => {
                     setEditItem(null);
                   }}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>
@@ -1942,7 +1942,7 @@ export default function InventarisPage() {
                   <input
                     value={editItem.nama}
                     readOnly
-                    className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-60 font-bold mt-2"
+                    className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 font-bold mt-2"
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-4 sm:grid-cols-2">
@@ -1962,7 +1962,7 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, tag: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                       placeholder="Cth: Kamera Sony"
                     />
                   </div>
@@ -1975,7 +1975,7 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, tipeSewa: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                     >
                       <option value="fleksibel">Fleksibel</option>
                       <option value="harian">Harian</option>
@@ -1992,7 +1992,7 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, h6: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                     />
                   </div>
                   <div>
@@ -2006,7 +2006,7 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, h12: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                     />
                   </div>
                   <div>
@@ -2020,7 +2020,7 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, h24: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                     />
                   </div>
                   <div>
@@ -2034,16 +2034,16 @@ export default function InventarisPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, denda: e.target.value })
                       }
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 text-sm"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
                     />
                   </div>
                 </div>
                 {editItem.jenis === "satuan" && (
-                  <div className="rounded-lg border-2 border-solid border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-lg border-2 border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-4">
                     <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#7181E0]">
                       Tambah S/N Baru
                     </label>
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">
                       Pisahkan dengan koma.
                     </p>
                     <textarea
@@ -2052,7 +2052,7 @@ export default function InventarisPage() {
                         setEditForm({ ...editForm, snBaru: e.target.value })
                       }
                       rows={2}
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                       placeholder="S/N Tambahan..."
                     />
                   </div>
@@ -2082,7 +2082,7 @@ export default function InventarisPage() {
                         min="1"
                         value={editKompQty}
                         onChange={(e) => setEditKompQty(e.target.value)}
-                        className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                        className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                         style={{ width: 80 }}
                       />
                       <button
@@ -2093,16 +2093,16 @@ export default function InventarisPage() {
                         Tambah
                       </button>
                     </div>
-                    <ul className="flex flex-col gap-1 rounded-md border border-solid border-slate-200 bg-white p-2 text-sm">
+                    <ul className="flex flex-col gap-1 rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-2 text-sm">
                       {editKomponen.length === 0 && (
-                        <li className="text-gray-500 italic">
+                        <li className="text-[var(--text-muted)] italic">
                           Belum ada alat.
                         </li>
                       )}
                       {editKomponen.map((k, idx) => (
                         <li
                           key={idx}
-                          className="flex items-center justify-between gap-3 rounded-md border border-solid border-slate-200 bg-slate-50 px-2 py-1"
+                          className="flex items-center justify-between gap-3 rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-2 py-1"
                         >
                           <span className="truncate">{k.nama}</span>
                           <span className="flex items-center gap-2">
@@ -2119,7 +2119,7 @@ export default function InventarisPage() {
                                   ),
                                 )
                               }
-                              className="rounded-md border border-solid border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:border-[#7181E0]"
+                              className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0]"
                               style={{ width: 64 }}
                             />
                             <button
@@ -2138,7 +2138,7 @@ export default function InventarisPage() {
                         </li>
                       ))}
                     </ul>
-                    <p className="text-xs text-gray-500 mt-2 mb-0">
+                    <p className="text-xs text-[var(--text-muted)] mt-2 mb-0">
                       Perubahan isi paket hanya berlaku untuk booking baru.
                       Booking lama menyimpan salinan isinya sendiri.
                     </p>
@@ -2165,7 +2165,7 @@ export default function InventarisPage() {
                   <button
                     type="button"
                     onClick={tutupEdit}
-                    className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
                   >
                     Batal
                   </button>
