@@ -726,7 +726,7 @@ function SidebarContent({ children }) {
 
       {/* MAIN CONTENT */}
       <main
-        className={`mt-16 min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-auto bg-gray-100 px-4 py-6 sm:px-6 lg:px-7 lg:py-7 transition-[margin-left] ${
+        className={`mt-16 min-h-[calc(100vh-4rem)] overflow-x-hidden overflow-y-auto bg-[var(--bg-body)] px-4 py-6 sm:px-6 lg:px-7 lg:py-7 transition-[margin-left] ${
           isFullscreen
             ? "ml-0"
             : hoverGrup || aktifGrup
