@@ -665,7 +665,7 @@ function SidebarContent({ children }) {
                   toggleSubmenu(g.id);
                 }
               }}
-              className={`sidebar-icon-btn flex h-12 w-12 items-center justify-center rounded-lg border-0 ring-0 shadow-none transition-colors cursor-pointer ${aktifGrup === g.id ? "bg-[#7181E0] text-white" : "text-text-muted hover:bg-gray-700 hover:text-white"}`}
+              className={`sidebar-icon-btn flex h-12 w-12 items-center justify-center rounded-lg border-0 ring-0 shadow-none transition-colors cursor-pointer ${aktifGrup === g.id ? "bg-[#7181E0] text-white" : "text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] dark:text-[var(--text-muted)] dark:hover:bg-gray-700 dark:hover:text-white"}`}
             >
               <span className="flex h-6 w-6 items-center justify-center [&>svg]:h-6 [&>svg]:w-6">
                 <g.icon />

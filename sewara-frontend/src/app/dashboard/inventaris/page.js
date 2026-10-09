@@ -857,7 +857,7 @@ export default function InventarisPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-6">
                 <div className="flex gap-1">
                   <button
                     type="button"
@@ -1175,7 +1175,7 @@ export default function InventarisPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Export Data</h3>
                 <button
                   type="button"
@@ -1203,26 +1203,26 @@ export default function InventarisPage() {
           document.body,
         )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
         <table
           className="w-full min-w-[720px] border-collapse text-left text-sm text-[var(--text-primary)]"
           style={{ whiteSpace: "nowrap" }}
         >
           <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
-              <th className="border-b border-border px-4 py-3">Jenis</th>
-              <th className="border-b border-border px-4 py-3">Produk</th>
-              <th className="border-b border-border px-4 py-3">
+              <th className="border-b border-[var(--border-color)] px-4 py-3">Jenis</th>
+              <th className="border-b border-[var(--border-color)] px-4 py-3">Produk</th>
+              <th className="border-b border-[var(--border-color)] px-4 py-3">
                 Tarif & Denda
               </th>
               <th
-                className="border-b border-border px-4 py-3"
+                className="border-b border-[var(--border-color)] px-4 py-3"
                 style={{ textAlign: "center" }}
               >
                 Stok (Tersedia/Total)
               </th>
               <th
-                className="border-b border-border px-4 py-3"
+                className="border-b border-[var(--border-color)] px-4 py-3"
                 style={{ textAlign: "center" }}
               >
                 Opsi
@@ -1324,7 +1324,7 @@ export default function InventarisPage() {
                     return (
                       <tr
                         key={item.id}
-                        className="transition-colors hover:bg-[var(--bg-subtle)]"
+                        className="border-b border-[var(--border-color)] transition-colors hover:bg-[var(--bg-subtle)]"
                         style={{
                           backgroundColor: isEven ? "var(--bg-surface)" : "var(--bg-subtle)",
                         }}
@@ -1667,7 +1667,7 @@ export default function InventarisPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">
                   Hapus S/N - {snDelModal.nama}
                 </h3>
@@ -1919,7 +1919,7 @@ export default function InventarisPage() {
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
             <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Edit Produk</h3>
                 <button
                   type="button"
