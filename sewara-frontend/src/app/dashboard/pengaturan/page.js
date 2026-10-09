@@ -353,7 +353,7 @@ function DpHangusAturanEditor({ value, onChange }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
       <table className="w-full text-sm">
-        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-muted)]">
+        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-secondary)]">
           <tr>
             <th className="px-4 py-2 text-left">Hari Sebelum Jadwal (≥)</th>
             <th className="px-4 py-2 text-left">DP Hangus (%)</th>
@@ -1220,7 +1220,7 @@ export default function PengaturanPage() {
                 <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                   Tabel Aturan (berdasarkan hari sebelum jadwal ambil)
                 </label>
-                <p className="mb-3 text-xs text-[var(--text-muted)]">
+                <p className="mb-3 text-xs text-[var(--text-secondary)]">
                   Aturan diterapkan dari tier terbesar ke terkecil. Persentase = bagian DP yang hangus (tidak dikembalikan).
                 </p>
                 <DpHangusAturanEditor
@@ -1631,7 +1631,7 @@ export default function PengaturanPage() {
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                 Aplikasi
               </p>
               <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
@@ -1639,7 +1639,7 @@ export default function PengaturanPage() {
               </p>
             </div>
             <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                 Lingkungan
               </p>
               <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
@@ -1651,7 +1651,7 @@ export default function PengaturanPage() {
               </p>
             </div>
             <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                 Tanggal Rilis
               </p>
               <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">

@@ -178,7 +178,7 @@ function RiwayatPageInner() {
           <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             Riwayat Invoice
           </h2>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Daftar transaksi yang sudah selesai.
           </p>
         </div>
@@ -227,7 +227,7 @@ function RiwayatPageInner() {
             {trxHal.map((t) => (
               <tr key={t.id} className="hover:bg-[var(--bg-subtle)]">
                 <td className="px-4 py-3">
-                  <span className="text-xs text-text-muted">
+                  <span className="text-xs text-[var(--text-secondary)]">
                     {t.no_invoice}
                   </span>
                   <br />

@@ -1409,7 +1409,7 @@ export default function StatusPage() {
                   value={cariQ}
                   onChange={(e) => setCariQ(e.target.value)}
                   placeholder="Cari penyewa..."
-                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                 />
               </div>
               <button
@@ -1442,7 +1442,7 @@ export default function StatusPage() {
                 <select
                   value={filterWaktuAmbil}
                   onChange={(e) => setFilterWaktuAmbil(e.target.value)}
-                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   style={{ width: 190, maxWidth: "100%" }}
                   aria-label="Filter waktu ambil"
                 >
@@ -1459,7 +1459,7 @@ export default function StatusPage() {
                 <select
                   value={urutkan}
                   onChange={(e) => setUrutkan(e.target.value)}
-                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   style={{ width: 190, maxWidth: "100%" }}
                   aria-label="Urutkan transaksi"
                 >
@@ -1701,43 +1701,43 @@ export default function StatusPage() {
                             Identitas Penyewa
                           </p>
                           <p
-                            className="text-13 text-[var(--text-secondary)] mb-0"
+                            className="text-13 text-[var(--text-primary)] mb-0"
                             style={{ wordBreak: "break-word" }}
                           >
                             Nama: <strong>{t.penyewa}</strong>
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             HP: {t.hp_penyewa || "-"}
                           </p>
                           <p
-                            className="text-13 text-[var(--text-secondary)] mb-0"
+                            className="text-13 text-[var(--text-primary)] mb-0"
                             style={{ wordBreak: "break-word" }}
                           >
                             Alamat: {t.alamat_penyewa || "-"}
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Jaminan: {formatJaminan(t.jaminan_sewa)}
                           </p>
                         </div>
                         <div className="bg-[var(--bg-subtle)] rounded-lg p-3">
                           <p className="font-semibold mb-2">Jadwal</p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Ambil (rencana):{" "}
                             {formatTanggal(t.waktu_ambil_rencana)}
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Kembali (rencana):{" "}
                             {formatTanggal(t.waktu_kembali_rencana)}
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Ambil (aktual):{" "}
                             {formatTanggal(t.waktu_ambil_aktual)}
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Kembali (aktual):{" "}
                             {formatTanggal(t.waktu_kembali_aktual)}
                           </p>
-                          <p className="text-13 text-[var(--text-secondary)] mb-0">
+                          <p className="text-13 text-[var(--text-primary)] mb-0">
                             Durasi: {t.durasi_teks || "-"}
                           </p>
                         </div>
@@ -1765,10 +1765,10 @@ export default function StatusPage() {
                                 <td className="px-4 py-3 align-middle font-semibold">
                                   {i.ref.nama}
                                 </td>
-                                <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
+                                <td className="px-4 py-3 align-middle text-center text-[var(--text-primary)]">
                                   {i.qty}x
                                 </td>
-                                <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
+                                <td className="px-4 py-3 align-middle text-[var(--text-primary)]">
                                   {i.ref.jenis === "satuan" ? (
                                     <span
                                       className="text-xs"

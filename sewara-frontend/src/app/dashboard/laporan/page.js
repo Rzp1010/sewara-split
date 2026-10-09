@@ -346,7 +346,7 @@ export default function LaporanPage() {
         <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
-          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
             Total Biaya Dasar
           </p>
           <p className="text-[22px] font-bold mb-0">
@@ -354,7 +354,7 @@ export default function LaporanPage() {
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-red-500 p-4">
-          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
             Total Denda
           </p>
           <p className="text-[22px] font-bold text-danger mb-0">
@@ -362,7 +362,7 @@ export default function LaporanPage() {
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
-          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
             Total Akhir
           </p>
           <p className="text-[22px] font-bold mb-0 text-emerald-700">
@@ -371,7 +371,7 @@ export default function LaporanPage() {
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4 md:col-span-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+            <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
               Total Diterima
             </p>
             <p className="text-[22px] font-bold mb-0">
@@ -400,7 +400,7 @@ export default function LaporanPage() {
               </p>
             </div>
           </div>
-          <p className="text-xs text-[var(--text-muted)] mt-3">
+          <p className="text-xs text-[var(--text-secondary)] mt-3">
             Sisa piutang:{" "}
             {formatRupiah(Math.max(0, total_akhir - totalDiterima))}
           </p>
@@ -430,7 +430,7 @@ export default function LaporanPage() {
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-12 text-center italic text-[var(--text-muted)]"
+                  className="px-4 py-12 text-center italic text-[var(--text-secondary)]"
                 >
                   Belum ada transaksi selesai.
                 </td>
@@ -488,13 +488,13 @@ export default function LaporanPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
-              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
                 Total Unit Keluar
               </p>
               <p className="text-[22px] font-bold mb-0">{totalUnitAlat}</p>
             </div>
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
-              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
                 Jenis Alat
               </p>
               <p className="text-[22px] font-bold mb-0 text-emerald-700">
@@ -502,7 +502,7 @@ export default function LaporanPage() {
               </p>
             </div>
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-amber-500 p-4">
-              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
                 Alat Terpopuler
               </p>
               <p className="text-lg font-bold mb-0 break-words">
@@ -527,7 +527,7 @@ export default function LaporanPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-4 py-12 text-center italic text-[var(--text-muted)]"
+                      className="px-4 py-12 text-center italic text-[var(--text-secondary)]"
                     >
                       Belum ada data alat pada periode ini.
                     </td>
