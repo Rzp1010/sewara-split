@@ -1205,7 +1205,7 @@ export default function InventarisPage() {
 
       <div className="overflow-x-auto">
         <table
-          className="w-full min-w-[720px] border-collapse text-left text-sm text-text-primary"
+          className="w-full min-w-[720px] border-collapse text-left text-sm text-[var(--text-primary)]"
           style={{ whiteSpace: "nowrap" }}
         >
           <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">

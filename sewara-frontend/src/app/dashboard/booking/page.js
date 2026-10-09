@@ -2691,8 +2691,8 @@ export default function BookingPage() {
           <div
             className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6 border-2 mt-4"
             style={{
-              background: "#fffbeb",
-              borderColor: "rgba(245, 158, 11, 0.3)",
+              background: "var(--bg-surface)",
+              borderColor: "var(--border-color)",
             }}
           >
             <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">

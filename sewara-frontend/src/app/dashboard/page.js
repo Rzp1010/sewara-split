@@ -328,7 +328,7 @@ export default function DashboardPage() {
               setRentangKey(o.k);
               window.localStorage.setItem("rentalpro_dashboard_rentang", o.k);
             }}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKey === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKey === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)]"}`}
           >
             {o.l}
           </button>
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                 color: "red",
                 dotColor: "bg-[#F04438]",
                 barColor: "bg-[#F04438]",
-                bgClass: "bg-red-50",
+                bgClass: "bg-red-50 dark:bg-red-950/40",
               },
               {
                 label: "Belum Selesai",
@@ -497,7 +497,7 @@ export default function DashboardPage() {
                       className={`w-2 h-2 rounded-full ${item.dotColor}`}
                     ></div>
                     <span
-                      className={`text-sm ${item.bgClass ? "font-medium text-red-700" : "text-[var(--text-secondary)]"}`}
+                      className={`text-sm ${item.bgClass ? "font-medium text-red-700 dark:text-red-300" : "text-[var(--text-secondary)]"}`}
                     >
                       {item.label}
                     </span>
@@ -510,7 +510,7 @@ export default function DashboardPage() {
                       ></div>
                     </div>
                     <span
-                      className={`text-sm w-4 text-right ${item.bgClass ? "font-bold text-red-600" : "font-semibold text-[var(--text-primary)]"}`}
+                      className={`text-sm w-4 text-right ${item.bgClass ? "font-bold text-red-600 dark:text-red-300" : "font-semibold text-[var(--text-primary)]"}`}
                     >
                       {item.value}
                     </span>

@@ -379,22 +379,22 @@ export default function LaporanPage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-            <div className="rounded-lg bg-amber-50 p-3">
-              <p className="text-xs font-semibold mb-0 text-amber-700">
+            <div className="rounded-lg bg-[var(--bg-subtle)] p-3">
+              <p className="text-xs font-semibold mb-0 text-[var(--text-secondary)]">
                 Diterima Tunai
               </p>
               <p className="text-lg font-bold mb-0">
                 {formatRupiah(diterimaTunai)}
               </p>
             </div>
-            <div className="rounded-lg bg-blue-50 p-3">
-              <p className="text-xs font-semibold mb-0">Diterima Transfer</p>
+            <div className="rounded-lg bg-[var(--bg-subtle)] p-3">
+              <p className="text-xs font-semibold mb-0 text-[var(--text-secondary)]">Diterima Transfer</p>
               <p className="text-lg font-bold mb-0">
                 {formatRupiah(diterimaTransfer)}
               </p>
             </div>
-            <div className="rounded-lg bg-emerald-50 p-3">
-              <p className="text-xs font-semibold mb-0">Diterima QRIS</p>
+            <div className="rounded-lg bg-[var(--bg-subtle)] p-3">
+              <p className="text-xs font-semibold mb-0 text-[var(--text-secondary)]">Diterima QRIS</p>
               <p className="text-lg font-bold mb-0">
                 {formatRupiah(diterimaQris)}
               </p>

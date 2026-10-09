@@ -1535,19 +1535,8 @@ export default function StatusPage() {
                   onDrop={(e) => handleDrop(e, col.status)}
                   className=""
                   style={{
-                    background: col.bg,
-                    borderColor:
-                      col.status === "Booking"
-                        ? "#eab308"
-                        : col.status === "Disewa"
-                          ? "#3b82f6"
-                          : col.status === "Mendekati"
-                            ? "#f97316"
-                            : col.status === "Telat"
-                              ? "#F04438"
-                              : col.status === "Belum Selesai"
-                                ? "#9333ea"
-                                : "#579171",
+                    background: "var(--bg-surface)",
+                    borderColor: "var(--border-color)",
                     borderWidth: 2,
                     borderStyle: "dashed",
                     borderRadius: "0.75rem",
