@@ -1349,7 +1349,7 @@ export default function StatusPage() {
 
   return (
     <>
-      <div className="min-h-full bg-[var(--bg-subtle)]">
+      <div className="min-h-full bg-[var(--bg-body)]">
         <h2 className="mb-6 text-2xl font-bold">Status Sewa</h2>
 
         <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg mb-4">
@@ -1535,7 +1535,7 @@ export default function StatusPage() {
                   onDrop={(e) => handleDrop(e, col.status)}
                   className=""
                   style={{
-                    background: "var(--bg-surface)",
+                    background: "var(--bg-body)",
                     borderColor: "var(--border-color)",
                     borderWidth: 2,
                     borderStyle: "dashed",

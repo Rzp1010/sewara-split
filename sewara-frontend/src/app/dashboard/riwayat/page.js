@@ -171,7 +171,7 @@ function RiwayatPageInner() {
   if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
-    <div className="min-h-full bg-[var(--bg-subtle)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
+    <div className="min-h-full bg-[var(--bg-body)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <BannerBackupBukti />
       <div className="mt-4 mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -182,7 +182,7 @@ function RiwayatPageInner() {
             Daftar transaksi yang sudah selesai.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-3 shadow-lg">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-body)] p-3 shadow-lg">
           <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Ekspor Bukti Bayar
           </span>
@@ -206,7 +206,7 @@ function RiwayatPageInner() {
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
+      <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-body)] shadow-lg">
         <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
           <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
