@@ -814,7 +814,7 @@ export default function InventarisPage() {
   if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
-    <div className="min-h-full bg-[var(--bg-subtle)]">
+    <div className="min-h-full bg-[var(--bg-body)]">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Daftar Katalog Produk</h2>
         <div className="flex items-center gap-3">
