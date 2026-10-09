@@ -1368,7 +1368,7 @@ export default function StatusPage() {
                   key={o.k}
                   type="button"
                   onClick={() => setRentangKunci(o.k)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] hover:bg-[#d1d5db] dark:hover:bg-[var(--border-color)] text-[var(--text-secondary)]"}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] hover:bg-[#d1d5db] dark:hover:bg-[var(--border-color)] text-[var(--text-primary)]"}`}
                 >
                   {o.label}
                 </button>
@@ -1806,14 +1806,14 @@ export default function StatusPage() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 mt-3 gap-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                         <p
-                          className="text-13 text-[var(--text-secondary)] mb-0"
+                          className="text-13 text-[var(--text-primary)] mb-0"
                           style={{ wordBreak: "break-word" }}
                         >
                           Biaya Dasar:{" "}
                           <strong>{formatRupiah(t.biaya || 0)}</strong>
                         </p>
                         <p
-                          className="text-13 text-[var(--text-secondary)] mb-0"
+                          className="text-13 text-[var(--text-primary)] mb-0"
                           style={{ wordBreak: "break-word" }}
                         >
                           Denda: <strong>{formatRupiah(t.denda || 0)}</strong>
@@ -1848,7 +1848,7 @@ export default function StatusPage() {
                               style={{ minWidth: 0 }}
                             >
                               <p
-                                className="text-[var(--text-secondary)] mb-0"
+                                className="text-[var(--text-primary)] mb-0"
                                 style={{ wordBreak: "break-word" }}
                               >
                                 Dibayar:{" "}
@@ -1857,7 +1857,7 @@ export default function StatusPage() {
                                 </strong>
                               </p>
                               <p
-                                className="text-[var(--text-secondary)] mb-0"
+                                className="text-[var(--text-primary)] mb-0"
                                 style={{ wordBreak: "break-word" }}
                               >
                                 Sisa:{" "}
@@ -2190,7 +2190,7 @@ export default function StatusPage() {
             <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[var(--border-color)] p-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-secondary)]">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                     Kondisi Unit
                   </h2>
                   <p className="mt-1 text-sm text-[var(--text-secondary)]">

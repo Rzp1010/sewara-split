@@ -758,11 +758,11 @@ export default function TrackingPage() {
         <>
           <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
-              <p className="text-sm text-[var(--text-muted)] mb-2">Total Alat</p>
+              <p className="text-sm text-[var(--text-primary)] mb-2">Total Alat</p>
               <p className="text-4xl font-bold text-[var(--text-primary)]">{inv.length}</p>
             </div>
             <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
-              <p className="text-sm text-[var(--text-muted)] mb-2">
+              <p className="text-sm text-[var(--text-primary)] mb-2">
                 Tersedia · {labelTgl}
               </p>
               <p className="text-4xl font-bold text-[#579171]">
@@ -770,11 +770,11 @@ export default function TrackingPage() {
               </p>
             </div>
             <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
-              <p className="text-sm text-[var(--text-muted)] mb-2">Disewa · {labelTgl}</p>
+              <p className="text-sm text-[var(--text-primary)] mb-2">Disewa · {labelTgl}</p>
               <p className="text-4xl font-bold text-blue-500">{disewaCount}</p>
             </div>
             <div className="rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-lg">
-              <p className="text-sm text-[var(--text-muted)] mb-2">Habis · {labelTgl}</p>
+              <p className="text-sm text-[var(--text-primary)] mb-2">Habis · {labelTgl}</p>
               <p className="text-4xl font-bold text-[#F04438]">{habisCount}</p>
             </div>
           </div>
@@ -809,21 +809,21 @@ export default function TrackingPage() {
                   {["Nama Alat", "Jenis"].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-secondary)]"
+                      className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]"
                     >
                       {h}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)]">
                     Total Unit
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)]">
                     Terpakai {tglStr}
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)]">
                     S/N Terpakai
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-secondary)]">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-[var(--text-primary)]">
                     Status
                   </th>
                 </tr>
@@ -853,7 +853,7 @@ export default function TrackingPage() {
                       <td className="px-4 py-3 font-semibold text-[var(--text-primary)]">
                         {item.nama}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
+                      <td className="px-4 py-3 text-sm text-[var(--text-primary)]">
                         {item.jenis === "satuan" ? "Satuan" : "Bundling"}
                       </td>
                       <td className="px-4 py-3 text-center font-bold">
@@ -993,7 +993,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={() => geserHari(-RENTANG_HARI)}
-                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 &larr; Sebelum
               </button>
@@ -1005,7 +1005,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={() => geserHari(RENTANG_HARI)}
-                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 Berikut &rarr;
               </button>
@@ -1101,7 +1101,7 @@ export default function TrackingPage() {
               <button
                 type="button"
                 onClick={bersihkanPrefill}
-                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-color)]"
+                className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-color)]"
               >
                 Bersihkan
               </button>

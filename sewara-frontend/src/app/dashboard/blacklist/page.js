@@ -218,7 +218,7 @@ export default function BlacklistPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Nama</th>
                 <th className="px-4 py-3 text-left">HP</th>
@@ -245,7 +245,7 @@ export default function BlacklistPage() {
                       {row.nama}
                     </td>
                     <td className="px-4 py-3">{row.hp || "-"}</td>
-                    <td className="max-w-[16rem] whitespace-normal break-words px-4 py-3 text-[var(--text-secondary)]">
+                    <td className="max-w-[16rem] whitespace-normal break-words px-4 py-3 text-[var(--text-primary)]">
                       {row.alasan || "-"}
                     </td>
                     <td className="px-4 py-3">

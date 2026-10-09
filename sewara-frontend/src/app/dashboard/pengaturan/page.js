@@ -353,7 +353,7 @@ function DpHangusAturanEditor({ value, onChange }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
       <table className="w-full text-sm">
-        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-secondary)]">
+        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-primary)]">
           <tr>
             <th className="px-4 py-2 text-left">Hari Sebelum Jadwal (≥)</th>
             <th className="px-4 py-2 text-left">DP Hangus (%)</th>
@@ -857,7 +857,7 @@ export default function PengaturanPage() {
           </div>
 
           <div className="rounded-lg border border-dashed border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
-            <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-primary)]">
               Contoh nomor berikutnya
             </p>
             <p className="m-0 mt-1 font-mono text-lg font-bold tracking-wide text-[#7181E0]">
@@ -933,7 +933,7 @@ export default function PengaturanPage() {
                   <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">
                     Susunan custom aktif
                   </p>
-                  <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
+                  <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-primary)]">
                     {Object.entries({
                       B: "atas",
                       C: "kiri",
@@ -1220,7 +1220,7 @@ export default function PengaturanPage() {
                 <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                   Tabel Aturan (berdasarkan hari sebelum jadwal ambil)
                 </label>
-                <p className="mb-3 text-xs text-[var(--text-secondary)]">
+                <p className="mb-3 text-xs text-[var(--text-primary)]">
                   Aturan diterapkan dari tier terbesar ke terkecil. Persentase = bagian DP yang hangus (tidak dikembalikan).
                 </p>
                 <DpHangusAturanEditor

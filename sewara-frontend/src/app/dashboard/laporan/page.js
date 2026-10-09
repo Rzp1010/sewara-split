@@ -346,7 +346,7 @@ export default function LaporanPage() {
         <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
-          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
             Total Biaya Dasar
           </p>
           <p className="text-[22px] font-bold mb-0">
@@ -354,7 +354,7 @@ export default function LaporanPage() {
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-red-500 p-4">
-          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
             Total Denda
           </p>
           <p className="text-[22px] font-bold text-danger mb-0">
@@ -362,7 +362,7 @@ export default function LaporanPage() {
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
-          <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
             Total Akhir
           </p>
           <p className="text-[22px] font-bold mb-0 text-emerald-700">
@@ -371,7 +371,7 @@ export default function LaporanPage() {
         </div>
         <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4 md:col-span-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+            <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
               Total Diterima
             </p>
             <p className="text-[22px] font-bold mb-0">
@@ -415,7 +415,7 @@ export default function LaporanPage() {
 
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
         <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
             <tr>
               <th className="px-4 py-3 text-left">Invoice</th>
               <th className="px-4 py-3 text-left">Penyewa</th>
@@ -488,13 +488,13 @@ export default function LaporanPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
-              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
                 Total Unit Keluar
               </p>
               <p className="text-[22px] font-bold mb-0">{totalUnitAlat}</p>
             </div>
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
-              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
                 Jenis Alat
               </p>
               <p className="text-[22px] font-bold mb-0 text-emerald-700">
@@ -502,7 +502,7 @@ export default function LaporanPage() {
               </p>
             </div>
             <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-amber-500 p-4">
-              <p className="text-xs font-semibold text-[var(--text-secondary)] mb-0">
+              <p className="text-xs font-semibold text-[var(--text-primary)] mb-0">
                 Alat Terpopuler
               </p>
               <p className="text-lg font-bold mb-0 break-words">
@@ -513,7 +513,7 @@ export default function LaporanPage() {
 
           <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
             <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-              <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+              <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
                 <tr>
                   <th className="w-12 px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Nama Alat</th>

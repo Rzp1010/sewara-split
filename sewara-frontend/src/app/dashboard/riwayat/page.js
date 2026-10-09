@@ -208,7 +208,7 @@ function RiwayatPageInner() {
       </div>
       <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-body)] shadow-lg">
         <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
             <tr>
               <th className="px-4 py-3 text-left">Invoice / Penyewa</th>
               <th className="px-4 py-3 text-left">Status Akhir</th>
@@ -227,7 +227,7 @@ function RiwayatPageInner() {
             {trxHal.map((t) => (
               <tr key={t.id} className="hover:bg-[var(--bg-subtle)]">
                 <td className="px-4 py-3">
-                  <span className="text-xs text-[var(--text-secondary)]">
+                  <span className="text-xs text-[var(--text-primary)]">
                     {t.no_invoice}
                   </span>
                   <br />

@@ -2032,7 +2032,7 @@ export default function BookingPage() {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
                   Penyewa
                 </label>
                 <div className="relative">
@@ -2133,7 +2133,7 @@ export default function BookingPage() {
                 )}
               </div>
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
                   No. HP
                 </label>
                 <input
@@ -2150,7 +2150,7 @@ export default function BookingPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
                   Jaminan
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -2164,7 +2164,7 @@ export default function BookingPage() {
                         type="button"
                         disabled={nonaktif}
                         onClick={() => setJaminanTerpilih((p) => toggleJaminan(p, o))}
-                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-primary)] border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
                       >
                         {aktif ? "✓ " : ""}
                         {o}
@@ -2345,19 +2345,19 @@ export default function BookingPage() {
                 </colgroup>
                 <thead className="bg-[var(--bg-subtle)]">
                   <tr className="border-b-2 border-[var(--border-color)]">
-                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
+                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-primary)] border-r border-[var(--border-color)]">
                       Produk
                     </th>
-                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
+                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-primary)] border-r border-[var(--border-color)]">
                       S/N
                     </th>
-                    <th className="text-center py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
+                    <th className="text-center py-3 px-2 font-semibold text-[var(--text-primary)] border-r border-[var(--border-color)]">
                       Qty
                     </th>
-                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
+                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-primary)] border-r border-[var(--border-color)]">
                       Harga
                     </th>
-                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
+                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-primary)] border-r border-[var(--border-color)]">
                       Total
                     </th>
                     <th className="py-3 px-2"></th>
@@ -2437,7 +2437,7 @@ export default function BookingPage() {
                       <td className="text-center py-3 px-2 border-r border-[var(--border-color)]">
                         {c.qty}
                       </td>
-                      <td className="text-right text-[var(--text-secondary)] py-3 px-2 border-r border-[var(--border-color)]">
+                      <td className="text-right text-[var(--text-primary)] py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.hargaSatuan || 0)}
                       </td>
                       <td className="text-right font-semibold py-3 px-2 border-r border-[var(--border-color)]">
