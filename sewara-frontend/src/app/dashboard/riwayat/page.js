@@ -249,7 +249,7 @@ function RiwayatPageInner() {
                       type="button"
                       onClick={() => bukaBukti(t.id)}
                       disabled={loadingBuktiId === t.id}
-                      className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loadingBuktiId === t.id ? "Memuat..." : "Bukti"}
                     </button>

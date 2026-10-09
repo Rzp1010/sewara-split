@@ -328,7 +328,7 @@ export default function DashboardPage() {
               setRentangKey(o.k);
               window.localStorage.setItem("rentalpro_dashboard_rentang", o.k);
             }}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKey === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)]"}`}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKey === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-color)]"}`}
           >
             {o.l}
           </button>

@@ -30,7 +30,7 @@ const BTN_UTAMA =
   "rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-secondary)] disabled:hover:bg-[var(--border-color)]";
 
 const BTN_SEKUNDER =
-  "rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-60";
 
 const TABS = [
   { id: "invoice", label: "Invoice & Dokumen" },
@@ -190,7 +190,7 @@ function Seg({ value, onChange, options }) {
           className={`rounded-md border-0 px-3.5 py-1.5 text-sm font-medium transition-colors ${
             value === o.value
               ? "bg-[#7181E0] text-white shadow-sm"
-              : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
+              : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
           }`}
         >
           {o.label}

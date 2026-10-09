@@ -100,7 +100,7 @@ const BTN_SUCCESS =
 const BTN_DANGER =
   "inline-flex items-center justify-center rounded-lg bg-[#F04438] hover:bg-[#d03a2f] px-4 py-2 text-sm font-medium text-white transition-colors border-0 focus:outline-none focus:ring-2 focus:ring-[#F04438]/40";
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border-0 focus:outline-none";
+  "inline-flex items-center justify-center rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border border-[var(--border-color)] focus:outline-none";
 const BTN_GHOST =
   "inline-flex items-center justify-center rounded-lg bg-transparent hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border-0 focus:outline-none";
 
@@ -1368,7 +1368,7 @@ export default function StatusPage() {
                   key={o.k}
                   type="button"
                   onClick={() => setRentangKunci(o.k)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}
                 >
                   {o.label}
                 </button>
