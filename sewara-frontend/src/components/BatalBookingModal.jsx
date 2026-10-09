@@ -58,15 +58,15 @@ export default function BatalBookingModal({ transaction, onConfirm, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[10001] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
-      <div className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
+      <div className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-xl">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
-          <h3 className="text-lg font-bold text-gray-900">Batalkan Booking</h3>
+        <div className="mb-4 flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+          <h3 className="text-lg font-bold text-[var(--text-primary)]">Batalkan Booking</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+            className="rounded p-2 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
           >
             &times;
           </button>
@@ -75,25 +75,25 @@ export default function BatalBookingModal({ transaction, onConfirm, onClose }) {
         {/* Info transaksi */}
         <div className="mb-4 space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Invoice</span>
+            <span className="text-[var(--text-secondary)]">Invoice</span>
             <span className="font-mono font-semibold">{transaction.no_invoice}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Penyewa</span>
+            <span className="text-[var(--text-secondary)]">Penyewa</span>
             <span className="font-semibold">{transaction.penyewa}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Total Akhir</span>
+            <span className="text-[var(--text-secondary)]">Total Akhir</span>
             <span className="font-semibold">{formatRupiah(transaction.total_akhir || 0)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Sudah Dibayar</span>
+            <span className="text-[var(--text-secondary)]">Sudah Dibayar</span>
             <span className="font-semibold">{formatRupiah(dpBayar)}</span>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="mb-4 border-t border-dashed border-gray-300" />
+        <div className="mb-4 border-t border-dashed border-[var(--border-color)]" />
 
         {/* DP Hangus */}
         <div className="mb-4 rounded-lg bg-red-50 p-4">
@@ -106,7 +106,7 @@ export default function BatalBookingModal({ transaction, onConfirm, onClose }) {
 
           {manualMode ? (
             <div className="mt-3">
-              <label className="mb-1 block text-xs text-gray-500">
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">
                 Masukkan jumlah DP hangus:
               </label>
               <input
@@ -114,7 +114,7 @@ export default function BatalBookingModal({ transaction, onConfirm, onClose }) {
                 min="0"
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                className="w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
               />
             </div>
           ) : (
@@ -127,7 +127,7 @@ export default function BatalBookingModal({ transaction, onConfirm, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)]"
           >
             Batal
           </button>

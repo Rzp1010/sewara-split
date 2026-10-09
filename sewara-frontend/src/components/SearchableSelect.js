@@ -73,11 +73,11 @@ export default function SearchableSelect({
   return (
     <div ref={ref} className="relative w-full">
       <div
-        className="flex min-h-12 w-full items-center justify-between rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 leading-[1.6] cursor-pointer transition-colors focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 hover:border-gray-400"
+        className="flex min-h-12 w-full items-center justify-between rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 leading-[1.6] text-[var(--text-primary)] cursor-pointer transition-colors focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 hover:border-[var(--text-muted)]"
         onClick={() => bukaDropdown()}
       >
         <span
-          className={selected ? "truncate" : "truncate text-gray-500"}
+          className={selected ? "truncate" : "truncate text-[var(--text-muted)]"}
           title={selected?.title}
         >
           {selected ? selected.label : placeholder}
@@ -86,7 +86,7 @@ export default function SearchableSelect({
 
       {open && (
         <div
-          className={`absolute z-50 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl ${posesi.arah === "atas" ? "bottom-full mb-2" : "top-full mt-2"}`}
+          className={`absolute z-50 max-h-60 w-full overflow-y-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-xl ${posesi.arah === "atas" ? "bottom-full mb-2" : "top-full mt-2"}`}
         >
           {!noSearch && (
             <div>
@@ -95,24 +95,24 @@ export default function SearchableSelect({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari barang..."
-                className="w-full px-3 py-2 border-b focus:outline-none"
+                className="w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
               />
             </div>
           )}
           {Object.keys(grouped).length === 0 && (
-            <div className="px-3 py-2 text-gray-500">Tidak ditemukan</div>
+            <div className="px-3 py-2 text-[var(--text-muted)]">Tidak ditemukan</div>
           )}
           {Object.entries(grouped).map(([group, items]) => (
             <div key={group || "__nogroup"}>
               {group && (
-                <div className="sticky top-0 bg-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-700">
+                <div className="sticky top-0 bg-[var(--bg-subtle)] px-3 py-2 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                   {group}
                 </div>
               )}
               {items.map((o) => (
                 <div
                   key={o.value}
-                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${o.value === value ? "bg-blue-50 text-blue-700" : ""}`}
+                  className={`px-3 py-2 cursor-pointer hover:bg-[var(--bg-subtle)] ${o.value === value ? "bg-blue-50 text-blue-700" : ""}`}
                   title={o.title}
                   onClick={() => {
                     onChange(o.value);

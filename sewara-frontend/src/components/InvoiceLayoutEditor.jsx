@@ -72,21 +72,21 @@ function ZonaCard({
   className = "",
 }) {
   return (
-    <div className={`rounded-lg border border-gray-200 bg-gray-50 p-3 ${className}`}>
+    <div className={`rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] p-3 ${className}`}>
       <div className="mb-2">
-        <p className="m-0 text-sm font-semibold text-gray-800">{label}</p>
-        {sub && <p className="m-0 mt-0.5 text-[11px] text-gray-400">{sub}</p>}
+        <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+        {sub && <p className="m-0 mt-0.5 text-[11px] text-[var(--text-muted)]">{sub}</p>}
       </div>
       {daftar.length === 0 ? (
-        <p className="m-0 mb-2 text-xs text-gray-400">Belum ada field.</p>
+        <p className="m-0 mb-2 text-xs text-[var(--text-muted)]">Belum ada field.</p>
       ) : (
         <ul className="m-0 mb-2 list-none space-y-1.5 p-0">
           {daftar.map((fkey, idx) => (
             <li
               key={`${fkey}-${idx}`}
-              className="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5"
+              className="flex items-center justify-between gap-2 rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-1.5"
             >
-              <span className="truncate text-sm text-gray-700">
+              <span className="truncate text-sm text-[var(--text-primary)]">
                 {FIELD_LABELS[fkey] || fkey}
               </span>
               <span className="flex shrink-0 items-center gap-1">
@@ -94,7 +94,7 @@ function ZonaCard({
                   type="button"
                   aria-label="Naik"
                   onClick={() => onGeser(idx, -1)}
-                  className="rounded border-0 bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-200"
+                  className="rounded border-0 bg-[var(--bg-subtle)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
                 >
                   ↑
                 </button>
@@ -102,7 +102,7 @@ function ZonaCard({
                   type="button"
                   aria-label="Turun"
                   onClick={() => onGeser(idx, 1)}
-                  className="rounded border-0 bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-200"
+                  className="rounded border-0 bg-[var(--bg-subtle)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
                 >
                   ↓
                 </button>
@@ -110,7 +110,7 @@ function ZonaCard({
                   type="button"
                   aria-label="Hapus"
                   onClick={() => onHapus(idx)}
-                  className="rounded border-0 bg-gray-100 px-1.5 py-0.5 text-xs text-[#F04438] hover:bg-gray-200"
+                  className="rounded border-0 bg-[var(--bg-subtle)] px-1.5 py-0.5 text-xs text-[#F04438] hover:bg-[var(--border-color)]"
                 >
                   ✕
                 </button>
@@ -122,7 +122,7 @@ function ZonaCard({
       <select
         value=""
         onChange={(e) => onTambah(e.target.value)}
-        className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 outline-none focus:border-[#7181E0]"
+        className="w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0]"
       >
         <option value="">+ tambah field</option>
         {tersedia.map((f) => (
@@ -208,17 +208,17 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-[min(1200px,calc(100vw-1rem))] max-w-none flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex max-h-[92vh] w-[min(1200px,calc(100vw-1rem))] max-w-none flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <h3 className="m-0 text-base font-semibold text-gray-900">
+        <div className="flex items-center justify-between border-b border-[var(--border-color)] px-5 py-4">
+          <h3 className="m-0 text-base font-semibold text-[var(--text-primary)]">
             Atur Tata Letak Invoice
           </h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="rounded-md border-0 bg-transparent px-2 py-1 text-lg text-gray-500 hover:bg-gray-100"
+            className="rounded-md border-0 bg-transparent px-2 py-1 text-lg text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
           >
             ✕
           </button>
@@ -229,11 +229,11 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
             {/* Editor — susunan kartu mencerminkan kertas invoice */}
             <div className="flex flex-col gap-4">
               {/* Header Invoice (hanya berlaku di mode custom) */}
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                <p className="m-0 text-sm font-semibold text-gray-800">
+              <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] p-3">
+                <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">
                   A · Header Invoice
                 </p>
-                <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                <p className="m-0 mt-0.5 text-[11px] text-[var(--text-muted)]">
                   Menggantikan tulisan INVOICE (hanya mode custom).
                 </p>
                 <input
@@ -249,14 +249,14 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
                     <img
                       src={`${API_BASE}/api/invoice/header?v=${encodeURIComponent(draftHeader)}`}
                       alt="Header invoice"
-                      className="w-full rounded-md border border-gray-200 bg-white object-contain p-1"
+                      className="w-full rounded-md border border-[var(--border-color)] bg-white object-contain p-1"
                     />
                     <div className="flex gap-2">
                       <button
                         type="button"
                         disabled={sedangUpload}
                         onClick={() => fileRef.current?.click()}
-                        className="flex-1 rounded-md border-0 bg-gray-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex-1 rounded-md border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {sedangUpload ? "Mengunggah..." : "Ganti"}
                       </button>
@@ -279,7 +279,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
                     {sedangUpload ? "Mengunggah..." : "Pilih gambar"}
                   </button>
                 )}
-                <p className="m-0 mt-1.5 text-[11px] leading-relaxed text-gray-400">
+                <p className="m-0 mt-1.5 text-[11px] leading-relaxed text-[var(--text-muted)]">
                   Gambar melebar (rasio 4:1–8:1), lebar ideal 1600px, maks 5MB.
                   JPG/PNG/WebP.
                 </p>
@@ -318,11 +318,11 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               </div>
 
               {/* Kartu terkunci: Daftar Alat — selalu tampil, tidak bisa diedit */}
-              <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
-                <p className="m-0 text-sm font-semibold text-gray-500">
+              <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] p-3">
+                <p className="m-0 text-sm font-semibold text-[var(--text-secondary)]">
                   E · Daftar Alat
                 </p>
-                <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                <p className="m-0 mt-0.5 text-[11px] text-[var(--text-muted)]">
                   Bagian ini selalu tampil
                 </p>
               </div>
@@ -338,11 +338,11 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
                   onHapus={(i) => hapus("tengah", i)}
                   onGeser={(i, d) => geser("tengah", i, d)}
                 />
-                <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
-                  <p className="m-0 text-sm font-semibold text-gray-500">
+                <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] p-3">
+                  <p className="m-0 text-sm font-semibold text-[var(--text-secondary)]">
                     G · Total
                   </p>
-                  <p className="m-0 mt-0.5 text-[11px] text-gray-400">
+                  <p className="m-0 mt-0.5 text-[11px] text-[var(--text-muted)]">
                     Bagian ini selalu tampil
                   </p>
                 </div>
@@ -361,7 +361,7 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
               <button
                 type="button"
                 onClick={() => setDraft(klonLayout(DEFAULT_LAYOUT))}
-                className="self-start rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                className="self-start rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
               >
                 Pulihkan default
               </button>
@@ -369,10 +369,10 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
 
             {/* Preview */}
             <div>
-              <p className="m-0 mb-2 text-sm font-semibold text-gray-800">
+              <p className="m-0 mb-2 text-sm font-semibold text-[var(--text-primary)]">
                 Pratinjau
               </p>
-              <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
+              <div className="max-h-[60vh] overflow-auto rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] p-4">
                 {/* Lebar = A4 sungguhan (794px @96dpi) lalu zoom seragam,
                     supaya proporsi preview identik dengan hasil cetak/PDF. */}
                 <div
@@ -399,11 +399,11 @@ export default function InvoiceLayoutEditor({ open, onClose, value, header, onAp
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--border-color)] px-5 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
           >
             Batal
           </button>

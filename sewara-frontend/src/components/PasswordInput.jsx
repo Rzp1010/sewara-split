@@ -11,7 +11,7 @@ export default function PasswordInput({ value, onChange, placeholder, className 
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none ${className}`}
+        className={`block w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 pr-12 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-blue-600 focus:outline-none ${className}`}
         autoComplete={autoComplete}
         name={name}
         required={required}
@@ -20,7 +20,7 @@ export default function PasswordInput({ value, onChange, placeholder, className 
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-0 bg-transparent border-0 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-0 bg-transparent border-0 text-[var(--text-muted)] hover:text-[var(--text-primary)] focus:outline-none transition-colors"
         aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
       >
         {show ? (

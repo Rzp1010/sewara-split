@@ -98,7 +98,7 @@ export default function InvoiceView({ data, onClose }) {
       <div
         id="invoice_kartu"
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white p-6 shadow-xl animate-scaleIn"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] p-6 shadow-xl animate-scaleIn"
       >
         <div
           id="invoice_isi"
@@ -125,10 +125,10 @@ export default function InvoiceView({ data, onClose }) {
           )}
         </div>
 
-        <div className="no-print flex shrink-0 items-center justify-center gap-2 border-t border-solid border-gray-200 p-4">
+        <div className="no-print flex shrink-0 items-center justify-center gap-2 border-t border-solid border-[var(--border-color)] p-4">
           <button
             onClick={cetak}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
           >
             Cetak
           </button>

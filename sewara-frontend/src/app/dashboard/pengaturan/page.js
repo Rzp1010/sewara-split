@@ -24,13 +24,13 @@ import { DEFAULT_LAYOUT } from "@/components/invoiceFields";
 /* ===== Konstanta UI ===== */
 
 const INPUT_CLS =
-  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20";
+  "w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20";
 
 const BTN_UTAMA =
-  "rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:bg-gray-300";
+  "rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:hover:bg-[var(--border-color)]";
 
 const BTN_SEKUNDER =
-  "rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60";
+  "rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-60";
 
 const TABS = [
   { id: "invoice", label: "Invoice & Dokumen" },
@@ -166,12 +166,12 @@ const IKON_TAB = {
 function Field({ label, hint, children }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+      <label className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
         {label}
       </label>
       {children}
       {hint && (
-        <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{hint}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-muted)]">{hint}</p>
       )}
     </div>
   );
@@ -180,7 +180,7 @@ function Field({ label, hint, children }) {
 /* Kontrol segmented (pengganti 2 tombol terpisah di SettingsModal) */
 function Seg({ value, onChange, options }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-[var(--bg-subtle)] p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -190,7 +190,7 @@ function Seg({ value, onChange, options }) {
           className={`rounded-md border-0 px-3.5 py-1.5 text-sm font-medium transition-colors ${
             value === o.value
               ? "bg-[#7181E0] text-white shadow-sm"
-              : "text-gray-600 hover:bg-white hover:text-gray-900"
+              : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
           }`}
         >
           {o.label}
@@ -202,10 +202,10 @@ function Seg({ value, onChange, options }) {
 
 function ToggleBaris({ checked, onChange, label, hint }) {
   return (
-    <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="grid grid-cols-1 items-center gap-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto]">
       <div>
-        <p className="m-0 text-sm font-semibold text-gray-800">{label}</p>
-        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">{hint}</p>}
+        <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">{hint}</p>}
       </div>
       <button
         type="button"
@@ -213,10 +213,10 @@ function ToggleBaris({ checked, onChange, label, hint }) {
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full border-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7181E0] focus-visible:ring-offset-2 ${checked ? "bg-[#7181E0]" : "bg-gray-300"}`}
+        className={`relative h-6 w-11 shrink-0 rounded-full border-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7181E0] focus-visible:ring-offset-2 ${checked ? "bg-[#7181E0]" : "bg-[var(--bg-subtle)]"}`}
       >
         <span
-          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0"}`}
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-[var(--bg-surface)] shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0"}`}
         />
       </button>
     </div>
@@ -227,8 +227,8 @@ function BarisKontrol({ label, hint, control }) {
   return (
     <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
       <div>
-        <p className="m-0 text-sm font-semibold text-gray-800">{label}</p>
-        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">{hint}</p>}
+        <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+        {hint && <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">{hint}</p>}
       </div>
       <div className="md:justify-self-end">{control}</div>
     </div>
@@ -252,13 +252,13 @@ function DaftarChips({
         {(items || []).map((item, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+            className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-subtle)] px-3 py-1 text-sm font-medium text-[var(--text-primary)]"
           >
             {item}
             <button
               type="button"
               onClick={() => hapus(i)}
-              className="border-0 bg-transparent px-0.5 text-gray-400 hover:text-red-500"
+              className="border-0 bg-transparent px-0.5 text-[var(--text-muted)] hover:text-red-500"
               title={hapusTitle}
             >
               &times;
@@ -266,7 +266,7 @@ function DaftarChips({
           </span>
         ))}
         {!(items || []).length && (
-          <span className="text-xs text-gray-400">{kosongLabel}</span>
+          <span className="text-xs text-[var(--text-muted)]">{kosongLabel}</span>
         )}
       </div>
       <div className="flex gap-2">
@@ -297,17 +297,17 @@ function DaftarChips({
 
 function KartuSeksi({ ikon, judul, deskripsi, children }) {
   return (
-    <section className="pengaturan-in rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className={`flex items-start gap-3 border-b border-gray-100 px-6 py-5 ${ikon ? "" : "pl-6"}`}>
+    <section className="pengaturan-in rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-sm">
+      <div className={`flex items-start gap-3 border-b border-[var(--border-color)] px-6 py-5 ${ikon ? "" : "pl-6"}`}>
         {ikon && (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#7181E0]/10 text-[#7181E0] [&>svg]:h-5 [&>svg]:w-5">
             {ikon}
           </span>
         )}
         <div>
-          <h3 className="m-0 text-base font-semibold text-gray-900">{judul}</h3>
+          <h3 className="m-0 text-base font-semibold text-[var(--text-primary)]">{judul}</h3>
           {deskripsi && (
-            <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
+            <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
               {deskripsi}
             </p>
           )}
@@ -351,9 +351,9 @@ function DpHangusAturanEditor({ value, onChange }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+        <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-muted)]">
           <tr>
             <th className="px-4 py-2 text-left">Hari Sebelum Jadwal (≥)</th>
             <th className="px-4 py-2 text-left">DP Hangus (%)</th>
@@ -362,14 +362,14 @@ function DpHangusAturanEditor({ value, onChange }) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-t border-gray-100">
+            <tr key={i} className="border-t border-[var(--border-color)]">
               <td className="px-4 py-2">
                 <input
                   type="number"
                   min="0"
                   value={r.min_hari}
                   onChange={(e) => ubahField(i, "min_hari", e.target.value)}
-                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                  className="w-24 rounded border border-[var(--border-color)] px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
                 />
               </td>
               <td className="px-4 py-2">
@@ -379,9 +379,9 @@ function DpHangusAturanEditor({ value, onChange }) {
                   max="100"
                   value={r.persentase}
                   onChange={(e) => ubahField(i, "persentase", e.target.value)}
-                  className="w-24 rounded border border-gray-200 px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
+                  className="w-24 rounded border border-[var(--border-color)] px-2 py-1 text-sm outline-none focus:border-[#7181E0]"
                 />
-                <span className="ml-1 text-xs text-gray-400">%</span>
+                <span className="ml-1 text-xs text-[var(--text-muted)]">%</span>
               </td>
               <td className="px-4 py-2 text-center">
                 <button
@@ -397,7 +397,7 @@ function DpHangusAturanEditor({ value, onChange }) {
           ))}
         </tbody>
       </table>
-      <div className="border-t border-gray-100 px-4 py-2">
+      <div className="border-t border-[var(--border-color)] px-4 py-2">
         <button
           type="button"
           onClick={tambah}
@@ -418,7 +418,7 @@ function BarisSimpan({ dirty, saving, onSimpan, label = "Simpan Perubahan" }) {
           Ada perubahan belum disimpan
         </span>
       )}
-      {saving && <span className="text-xs text-gray-500">Menyimpan…</span>}
+      {saving && <span className="text-xs text-[var(--text-muted)]">Menyimpan…</span>}
       <button
         type="button"
         onClick={onSimpan}
@@ -801,7 +801,7 @@ export default function PengaturanPage() {
                 className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border-0 px-3.5 py-2 text-sm font-semibold transition-colors lg:w-full lg:justify-start ${
                   tab === t.id
                     ? "bg-[#7181E0] text-white"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                 }`}
               >
                 <span className="h-4 w-4 shrink-0 [&>svg]:h-4 [&>svg]:w-4">
@@ -856,8 +856,8 @@ export default function PengaturanPage() {
             </Field>
           </div>
 
-          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
-            <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div className="rounded-lg border border-dashed border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               Contoh nomor berikutnya
             </p>
             <p className="m-0 mt-1 font-mono text-lg font-bold tracking-wide text-[#7181E0]">
@@ -927,13 +927,13 @@ export default function PengaturanPage() {
           />
 
           {f.invoice_layout?.mode === "custom" && (
-            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="rounded-lg border border-dashed border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="m-0 text-sm font-semibold text-gray-800">
+                  <p className="m-0 text-sm font-semibold text-[var(--text-primary)]">
                     Susunan custom aktif
                   </p>
-                  <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
+                  <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
                     {Object.entries({
                       B: "atas",
                       C: "kiri",
@@ -987,11 +987,11 @@ export default function PengaturanPage() {
         userRole === ROLE_OWNER ? (
           <div className="space-y-6">
           <KartuSeksi judul="Informasi Langganan">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Langganan
               </p>
-              <p className="m-0 mt-1 text-sm font-medium text-gray-800">
+              <p className="m-0 mt-1 text-sm font-medium text-[var(--text-primary)]">
                 {profilSubscribed ? (
                   new Date(profilSubscribed).getTime() > kini ? (
                     <>
@@ -1009,7 +1009,7 @@ export default function PengaturanPage() {
                   "Tanpa batas"
                 )}
               </p>
-              <p className="m-0 mt-1 text-xs leading-relaxed text-gray-500">
+              <p className="m-0 mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
                 Masa aktif langganan bisnis Anda. Hubungi admin untuk perpanjang.
               </p>
             </div>
@@ -1026,7 +1026,7 @@ export default function PengaturanPage() {
                   onChange={(e) => setProfilUsername(e.target.value)}
                   disabled={profilLocks.username}
                   placeholder="nama tampil di aplikasi"
-                  className={`${INPUT_CLS} disabled:bg-gray-100 disabled:text-gray-500`}
+                  className={`${INPUT_CLS} disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-muted)]`}
                 />
                 {profilLocks.username && (
                   <button
@@ -1052,7 +1052,7 @@ export default function PengaturanPage() {
                   onChange={(e) => setProfilNama(e.target.value)}
                   disabled={profilLocks.nama}
                   placeholder="nama tampil di aplikasi & nota"
-                  className={`${INPUT_CLS} disabled:bg-gray-100 disabled:text-gray-500`}
+                  className={`${INPUT_CLS} disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-muted)]`}
                 />
                 {profilLocks.nama && (
                   <button
@@ -1070,7 +1070,7 @@ export default function PengaturanPage() {
 
             <div className="flex items-center justify-end gap-3 pt-1">
               {simpanProfilLoading && (
-                <span className="text-xs text-gray-500">Menyimpan...</span>
+                <span className="text-xs text-[var(--text-muted)]">Menyimpan...</span>
               )}
               <button
                 type="button"
@@ -1085,7 +1085,7 @@ export default function PengaturanPage() {
           </div>
         ) : (
           <KartuSeksi ikon={Ikon.user} judul="Profil">
-            <p className="text-sm leading-relaxed text-gray-600">
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
               Tab ini tidak tersedia untuk role Anda.
             </p>
           </KartuSeksi>
@@ -1129,14 +1129,14 @@ export default function PengaturanPage() {
             </div>
           )}
           {f.jam_mode === "buka_tutup" ? (
-            <p className="-mt-2 text-xs leading-relaxed text-gray-500">
+            <p className="-mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
               Di form booking, waktu ambil di luar rentang jam{" "}
               <strong>{f.jam_buka || "6"}:00</strong> s/d{" "}
               <strong>{f.jam_tutup || "22"}:00</strong> tidak bisa dipilih.
               Waktu kembali tetap bebas.
             </p>
           ) : (
-            <p className="-mt-2 text-xs leading-relaxed text-gray-500">
+            <p className="-mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
               Waktu ambil bisa dipilih kapan saja (24 jam) di form booking.
             </p>
           )}
@@ -1217,10 +1217,10 @@ export default function PengaturanPage() {
             />
             {f.dp_hangus_aktif === "1" && (
               <div className="mt-4">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                   Tabel Aturan (berdasarkan hari sebelum jadwal ambil)
                 </label>
-                <p className="mb-3 text-xs text-gray-500">
+                <p className="mb-3 text-xs text-[var(--text-muted)]">
                   Aturan diterapkan dari tier terbesar ke terkecil. Persentase = bagian DP yang hangus (tidak dikembalikan).
                 </p>
                 <DpHangusAturanEditor
@@ -1559,7 +1559,7 @@ export default function PengaturanPage() {
           </KartuSeksi>
         ) : (
           <KartuSeksi ikon={Ikon.alert} judul="Pengembangan">
-            <p className="text-sm leading-relaxed text-gray-600">
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
               Tab ini tidak tersedia untuk role Anda.
             </p>
           </KartuSeksi>
@@ -1630,19 +1630,19 @@ export default function PengaturanPage() {
           deskripsi="Versi, lingkungan, dan riwayat pembaruan aplikasi."
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Aplikasi
               </p>
-              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+              <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
                 {VERSI_APLIKASI.nama} — {VERSI_APLIKASI.versi}
               </p>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Lingkungan
               </p>
-              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+              <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
                 {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(
                   "srgmeoipuybrkhsxmtsf",
                 )
@@ -1650,33 +1650,33 @@ export default function PengaturanPage() {
                   : "Pribadi (Produksi)"}
               </p>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Tanggal Rilis
               </p>
-              <p className="m-0 mt-1 text-sm font-semibold text-gray-800">
+              <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
                 {VERSI_APLIKASI.tanggal}
               </p>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-5">
-            <p className="mb-3 text-sm font-semibold text-gray-800">
+          <div className="border-t border-[var(--border-color)] pt-5">
+            <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
               Riwayat Versi
             </p>
             <div className="space-y-4">
               {VERSI_APLIKASI.riwayat.map((r) => (
                 <div
                   key={r.versi}
-                  className="rounded-lg border border-gray-100 px-4 py-3"
+                  className="rounded-lg border border-[var(--border-color)] px-4 py-3"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="m-0 text-sm font-semibold text-[#7181E0]">
                       {r.versi}
                     </p>
-                    <span className="text-xs text-gray-400">{r.tanggal}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{r.tanggal}</span>
                   </div>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-gray-600">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-[var(--text-secondary)]">
                     {r.perubahan.map((p, i) => (
                       <li key={i}>{p}</li>
                     ))}

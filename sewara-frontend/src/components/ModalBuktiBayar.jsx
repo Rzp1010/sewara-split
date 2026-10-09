@@ -14,7 +14,7 @@ function ThumbBukti({ path, onOpen }) {
       type="button"
       onClick={() => onOpen(url)}
       title="Lihat bukti"
-      className="overflow-hidden rounded border border-solid border-slate-300 bg-white p-0"
+      className="overflow-hidden rounded border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-0"
       style={{ width: 40, height: 40, lineHeight: 0 }}
     >
       <img
@@ -46,12 +46,12 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-solid border-slate-200 bg-white shadow-xl"
+        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-solid border-gray-100 p-5">
-          <h3 className="text-base font-semibold text-gray-900">
+        <div className="flex items-center justify-between border-b border-solid border-[var(--border-color)] p-5">
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">
             Bukti Pembayaran
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">
               {transaksi.no_invoice} · {transaksi.penyewa}
             </span>
           </h3>
@@ -59,7 +59,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="border-0 bg-transparent text-xl leading-none text-gray-400 hover:text-gray-600"
+            className="border-0 bg-transparent text-xl leading-none text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           >
             &times;
           </button>
@@ -67,7 +67,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
 
         <div className="max-h-[70vh] flex-1 overflow-y-auto p-5">
           {!adaBukti ? (
-            <p className="py-6 text-center text-sm text-gray-500">
+            <p className="py-6 text-center text-sm text-[var(--text-secondary)]">
               Belum ada bukti pembayaran untuk transaksi ini.
             </p>
           ) : (
@@ -77,7 +77,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
                 .map((b, i) => (
                   <div
                     key={b.id || i}
-                    className="flex items-center gap-3 rounded-lg border border-solid border-slate-200 bg-white px-3 py-2"
+                    className="flex items-center gap-3 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2"
                   >
                     <ThumbBukti
                       path={b.bukti}
@@ -86,7 +86,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
                         setViewer(url);
                       }}
                     />
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-[var(--text-secondary)]">
                       {formatTanggal(b.tgl)}
                     </span>
                   </div>
@@ -95,7 +95,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
           )}
         </div>
 
-        <div className="flex justify-end border-t border-solid border-gray-100 p-4">
+        <div className="flex justify-end border-t border-solid border-[var(--border-color)] p-4">
           <button
             type="button"
             onClick={onClose}
@@ -128,7 +128,7 @@ export default function ModalBuktiBayar({ transaksi, onClose }) {
             <button
               type="button"
               onClick={() => setViewer(null)}
-              className="mt-4 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+              className="mt-4 rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
             >
               Tutup
             </button>

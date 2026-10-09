@@ -147,31 +147,31 @@ export default function DatePicker({
         onKeyDown={(e) => {
           if (e.key === "Escape") setOpen(false);
         }}
-        className="w-full cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+        className="w-full cursor-pointer rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
       />
       {open && (
         <div
-          className={`absolute z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg ${
+          className={`absolute z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg ${
             posisi.arah === "atas" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
-          <div className="flex items-center justify-between border-b border-solid border-slate-200 p-3">
+          <div className="flex items-center justify-between border-b border-solid border-[var(--border-color)] p-3">
             <button
               type="button"
               onClick={() => nav(-1)}
               aria-label="Bulan sebelumnya"
-              className="rounded-lg border-0 bg-transparent px-3 py-1.5 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg border-0 bg-transparent px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
             >
               ‹
             </button>
-            <div className="text-sm font-semibold text-slate-900">
+            <div className="text-sm font-semibold text-[var(--text-primary)]">
               {BULAN[bulan]} {tahun}
             </div>
             <button
               type="button"
               onClick={() => nav(1)}
               aria-label="Bulan berikutnya"
-              className="rounded-lg border-0 bg-transparent px-3 py-1.5 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg border-0 bg-transparent px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
             >
               ›
             </button>
@@ -182,7 +182,7 @@ export default function DatePicker({
               {HARI.map((h) => (
                 <div
                   key={h}
-                  className="flex h-8 w-8 items-center justify-center text-xs font-semibold text-slate-600"
+                  className="flex h-8 w-8 items-center justify-center text-xs font-semibold text-[var(--text-secondary)]"
                 >
                   {h}
                 </div>
@@ -204,9 +204,9 @@ export default function DatePicker({
                     disabled={disabled}
                     onClick={() => pilihTanggal(tgl)}
                     className={`flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-transparent text-sm transition-colors
-                      ${luar ? "text-gray-400" : "text-slate-900"}
+                      ${luar ? "text-[var(--text-muted)]" : "text-[var(--text-primary)]"}
                       ${hariIni && !dipilih ? "ring-1 ring-[#7181E0] text-[#7181E0] font-semibold" : ""}
-                      ${dipilih ? "date-picker-day-selected font-semibold" : "hover:bg-slate-100"}
+                      ${dipilih ? "date-picker-day-selected font-semibold" : "hover:bg-[var(--bg-subtle)]"}
                       ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
                     `}
                   >

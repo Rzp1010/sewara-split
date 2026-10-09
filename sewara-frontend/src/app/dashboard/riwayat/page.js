@@ -171,25 +171,25 @@ function RiwayatPageInner() {
   if (gagal) return <ErrorMuat onRetry={muat} />;
 
   return (
-    <div className="min-h-full bg-gray-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+    <div className="min-h-full bg-[var(--bg-subtle)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <BannerBackupBukti />
       <div className="mt-4 mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             Riwayat Invoice
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
             Daftar transaksi yang sudah selesai.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-solid border-slate-200 bg-white p-3 shadow-lg">
-          <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-3 shadow-lg">
+          <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Ekspor Bukti Bayar
           </span>
           <select
             value={bulanEkspor}
             onChange={(e) => setBulanEkspor(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-600"
+            className="rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-blue-600"
           >
             {pilihanBulan.map((b) => (
               <option key={b} value={b}>
@@ -206,9 +206,9 @@ function RiwayatPageInner() {
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+      <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
         <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-          <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
               <th className="px-4 py-3 text-left">Invoice / Penyewa</th>
               <th className="px-4 py-3 text-left">Status Akhir</th>
@@ -225,7 +225,7 @@ function RiwayatPageInner() {
               </tr>
             )}
             {trxHal.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
+              <tr key={t.id} className="hover:bg-[var(--bg-subtle)]">
                 <td className="px-4 py-3">
                   <span className="text-xs text-text-muted">
                     {t.no_invoice}
@@ -249,7 +249,7 @@ function RiwayatPageInner() {
                       type="button"
                       onClick={() => bukaBukti(t.id)}
                       disabled={loadingBuktiId === t.id}
-                      className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loadingBuktiId === t.id ? "Memuat..." : "Bukti"}
                     </button>
@@ -269,7 +269,7 @@ function RiwayatPageInner() {
                         <button
                           type="button"
                           onClick={() => bukaBlacklist(t)}
-                          className="rounded-lg border-0 bg-gray-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                          className="rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)]"
                         >
                           Blacklist
                         </button>

@@ -208,7 +208,7 @@ export default function DateTimePicker({
         value={teks}
         placeholder={placeholder}
         onClick={buka}
-        className="w-full cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+        className="w-full cursor-pointer rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
       />
       {open && (
         <div
@@ -220,7 +220,7 @@ export default function DateTimePicker({
             width: showTime ? PANEL_W : PANEL_W_DATE_ONLY,
             zIndex: 50,
           }}
-          className="rounded-xl border border-gray-200 bg-white shadow-xl"
+          className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-xl"
         >
           {/* Body */}
           <div
@@ -233,7 +233,7 @@ export default function DateTimePicker({
                   type="button"
                   onClick={() => nav(-1)}
                   aria-label="Bulan sebelumnya"
-                  className="border-0 bg-transparent px-2 py-1 rounded hover:bg-gray-100"
+                  className="border-0 bg-transparent px-2 py-1 rounded hover:bg-[var(--bg-subtle)]"
                 >
                   ‹
                 </button>
@@ -244,7 +244,7 @@ export default function DateTimePicker({
                   type="button"
                   onClick={() => nav(1)}
                   aria-label="Bulan berikutnya"
-                  className="border-0 bg-transparent px-2 py-1 rounded hover:bg-gray-100"
+                  className="border-0 bg-transparent px-2 py-1 rounded hover:bg-[var(--bg-subtle)]"
                 >
                   ›
                 </button>
@@ -267,8 +267,8 @@ export default function DateTimePicker({
                     samaTanggal(tgl, value) ||
                     (showTime && draft && samaTanggal(tgl, draft));
                   const cls = [
-                    "w-8 h-8 flex items-center justify-center rounded border-0 bg-transparent cursor-pointer hover:bg-gray-100",
-                    luar && "text-gray-400",
+                    "w-8 h-8 flex items-center justify-center rounded border-0 bg-transparent cursor-pointer hover:bg-[var(--bg-subtle)]",
+                    luar && "text-[var(--text-muted)]",
                     hariIni &&
                       !dipilih &&
                       "ring-1 ring-[#7181E0] text-[#7181E0] font-semibold",
@@ -294,13 +294,13 @@ export default function DateTimePicker({
 
             {/* Panel waktu: grid slot 5 menit */}
             {showTime && (
-              <div className="flex flex-col border-t border-gray-200 pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-6">
-                <div className="mb-2 text-sm font-medium text-gray-900">
+              <div className="flex flex-col border-t border-[var(--border-color)] pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-6">
+                <div className="mb-2 text-sm font-medium text-[var(--text-primary)]">
                   Pilih Waktu
                 </div>
                 <div
                   ref={waktuBoxRef}
-                  className="relative max-h-[280px] overflow-y-auto rounded-lg border border-gray-200 p-2"
+                  className="relative max-h-[280px] overflow-y-auto rounded-lg border border-[var(--border-color)] p-2"
                 >
                   <div className="grid grid-cols-3 gap-2">
                     {slot.map((it) => (
@@ -316,7 +316,7 @@ export default function DateTimePicker({
                         "rounded border px-2 py-1.5 text-center text-xs font-medium transition",
                         it.aktif
                           ? "bg-[#7181E0] border-[#7181E0] text-white"
-                          : "bg-white border-gray-200 text-[#1e40af] hover:bg-[#7181E0] hover:text-white hover:border-[#7181E0]",
+                          : "bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[#7181E0] hover:text-white hover:border-[#7181E0]",
                         it.dis && "opacity-40 cursor-not-allowed",
                       ]
                         .filter(Boolean)
@@ -333,19 +333,19 @@ export default function DateTimePicker({
 
           {/* Footer */}
           {showTime && (
-            <div className="grid grid-cols-2 gap-2 border-t border-gray-200 p-3">
+            <div className="grid grid-cols-2 gap-2 border-t border-[var(--border-color)] p-3">
               <button
                 type="button"
                 onClick={konfirmasi}
                 disabled={!draft}
-                className="rounded bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="rounded bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc] disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed"
               >
                 Simpan
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-300"
+                className="rounded bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
               >
                 Batal
               </button>

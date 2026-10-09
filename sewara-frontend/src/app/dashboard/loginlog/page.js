@@ -132,7 +132,7 @@ export default function LoginLogPage() {
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Log Login</h2>
-          <p className="mb-0 text-sm text-gray-500">
+          <p className="mb-0 text-sm text-[var(--text-muted)]">
             Riwayat login, logout, dan percobaan gagal di bisnis Anda.
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function LoginLogPage() {
           )}
           <button
             onClick={muat}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--border-color)]"
           >
             ↻ Muat Ulang
           </button>
@@ -177,7 +177,7 @@ export default function LoginLogPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="modal-header">
                 <h3 className="modal-title">Notifikasi Telegram</h3>
@@ -285,14 +285,14 @@ export default function LoginLogPage() {
               <div className="modal-footer">
                 <button
                   onClick={() => setShowTgModal(false)}
-                  className="min-w-0 flex-1 rounded-lg border border-solid border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="min-w-0 flex-1 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                 >
                   Tutup
                 </button>
                 <button
                   onClick={tesTg}
                   disabled={tgTesting || !tgAktif}
-                  className="min-w-0 flex-1 rounded-lg border border-solid border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="min-w-0 flex-1 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                 >
                   {tgTesting ? "Mengirim..." : "Kirim Pesan Uji"}
                 </button>
@@ -315,9 +315,9 @@ export default function LoginLogPage() {
             Riwayat Login ({logs.length})
           </span>
         </div>
-        <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+        <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
           <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Waktu</th>
                 <th className="px-4 py-3 text-left">Email</th>
@@ -331,14 +331,14 @@ export default function LoginLogPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="text-center text-gray-500 py-8 px-4"
+                    className="text-center text-[var(--text-muted)] py-8 px-4"
                   >
                     Belum ada log login.
                   </td>
                 </tr>
               )}
               {logs.map((l) => (
-                <tr key={l.id} className="hover:bg-slate-50">
+                <tr key={l.id} className="hover:bg-[var(--bg-subtle)]">
                   <td className="px-4 py-3 text-xs text-muted">
                     {formatTanggal(l.created_at)}
                   </td>

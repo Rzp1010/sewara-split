@@ -145,7 +145,7 @@ export default function PromoPage() {
         <h2 className="mb-6 text-2xl font-bold tracking-tight leading-tight">
           Kode Promo
         </h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
           Atur kode promo dan diskonnya.
         </p>
         <div className="rounded-lg border border-solid border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
@@ -175,7 +175,7 @@ export default function PromoPage() {
           <h2 className="mb-6 text-2xl font-bold tracking-tight leading-tight">
             Kode Promo
           </h2>
-          <p className="text-sm text-gray-600 mb-0">
+          <p className="text-sm text-[var(--text-secondary)] mb-0">
             Atur kode promo dan diskonnya.
           </p>
         </div>
@@ -192,21 +192,21 @@ export default function PromoPage() {
 
       <div>
         <div className="flex items-center justify-between p-4">
-          <span className="text-xs font-bold text-slate-600">
+          <span className="text-xs font-bold text-[var(--text-secondary)]">
             Daftar Kode Promo ({promos.length})
           </span>
           <button
             type="button"
             onClick={muat}
             disabled={loading}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--border-color)]"
           >
             ↻ Muat Ulang
           </button>
         </div>
-        <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+        <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
           <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Kode</th>
                 <th className="px-4 py-3 text-center">Diskon</th>
@@ -230,7 +230,7 @@ export default function PromoPage() {
                 <tr
                   key={p.id}
                   className={
-                    promos.indexOf(p) % 2 === 0 ? "bg-white" : "bg-slate-50"
+                    promos.indexOf(p) % 2 === 0 ? "bg-[var(--bg-surface)]" : "bg-[var(--bg-subtle)]"
                   }
                 >
                   <td className="px-4 py-3">
@@ -248,7 +248,7 @@ export default function PromoPage() {
                         {formatTanggal(p.berlaku_sampai)}
                       </span>
                     ) : (
-                      <span className="text-sm text-slate-600">
+                      <span className="text-sm text-[var(--text-secondary)]">
                         Tanpa batas
                       </span>
                     )}
@@ -258,7 +258,7 @@ export default function PromoPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {p.status === "expired" ? (
-                      <span className="rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-slate-700">
+                      <span className="rounded-full px-3 py-1 text-xs font-semibold bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                         Expired
                       </span>
                     ) : p.status === "aktif" ? (
@@ -266,7 +266,7 @@ export default function PromoPage() {
                         Aktif
                       </span>
                     ) : (
-                      <span className="rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-slate-700">
+                      <span className="rounded-full px-3 py-1 text-xs font-semibold bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                         Nonaktif
                       </span>
                     )}
@@ -309,17 +309,17 @@ export default function PromoPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-solid border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800">
+              <div className="flex items-center justify-between border-b border-solid border-[var(--border-color)] p-6">
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">
                   {editPromo ? "Edit Kode Promo" : "Tambah Kode Promo"}
                 </h3>
                 <button
                   type="button"
                   aria-label="Tutup modal"
                   onClick={() => setShowTambah(false)}
-                  className="text-2xl text-slate-600 hover:text-slate-900"
+                  className="text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 >
                   &times;
                 </button>
@@ -327,7 +327,7 @@ export default function PromoPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div className="space-y-2">
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                       Kode
                     </label>
                     <input
@@ -336,14 +336,14 @@ export default function PromoPage() {
                         setForm({ ...form, kode: e.target.value.toUpperCase() })
                       }
                       placeholder="mis. HEMAT50"
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Disimpan otomatis dalam huruf besar (uppercase).
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                       Diskon (%)
                     </label>
                     <input
@@ -356,15 +356,15 @@ export default function PromoPage() {
                         setForm({ ...form, diskon_persen: v });
                       }}
                       placeholder="mis. 25"
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Potongan harga, 0–100%.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-2">
+                      <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                         Berlaku dari
                       </label>
                       <div className="flex items-center gap-2">
@@ -384,7 +384,7 @@ export default function PromoPage() {
                             onClick={() =>
                               setForm({ ...form, berlaku_dari: null })
                             }
-                            className="shrink-0 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                            className="shrink-0 rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                           >
                             Hapus
                           </button>
@@ -392,7 +392,7 @@ export default function PromoPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-2">
+                      <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                         Berlaku sampai
                       </label>
                       <div className="flex items-center gap-2">
@@ -413,7 +413,7 @@ export default function PromoPage() {
                             onClick={() =>
                               setForm({ ...form, berlaku_sampai: null })
                             }
-                            className="shrink-0 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                            className="shrink-0 rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                           >
                             Hapus
                           </button>
@@ -421,11 +421,11 @@ export default function PromoPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-600 mb-0 -mt-2">
+                  <p className="text-xs text-[var(--text-secondary)] mb-0 -mt-2">
                     Kosongkan tanggal = berlaku tanpa batas waktu.
                   </p>
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                       Kuota Pemakaian
                     </label>
                     <input
@@ -439,14 +439,14 @@ export default function PromoPage() {
                         })
                       }
                       placeholder="mis. 100"
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Batas maksimal pemakaian. Kosongkan = tanpa batas (∞).
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-primary)] mb-2">
                       Status
                     </label>
                     <select
@@ -454,7 +454,7 @@ export default function PromoPage() {
                       onChange={(e) =>
                         setForm({ ...form, status: e.target.value })
                       }
-                      className="rounded-md border border-solid border-gray-300 px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                      className="rounded-md border border-solid border-[var(--border-color)] px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                     >
                       <option value="aktif">Aktif</option>
                       <option value="nonaktif">Nonaktif</option>
@@ -462,11 +462,11 @@ export default function PromoPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-solid border-slate-200 p-6">
+              <div className="flex items-center justify-end gap-3 border-t border-solid border-[var(--border-color)] p-6">
                 <button
                   type="button"
                   onClick={() => setShowTambah(false)}
-                  className="flex-1 rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                  className="flex-1 rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
                 >
                   Batal
                 </button>

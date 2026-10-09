@@ -56,10 +56,10 @@ export default function LogPage() {
       {error ? (
         <ErrorMuat onRetry={() => muat(0, true)} />
       ) : memuat && logs.length === 0 ? (
-        <p role="status" className="py-12 text-center text-sm text-gray-500">Memuat log aktivitas...</p>
-      ) : <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+        <p role="status" className="py-12 text-center text-sm text-[var(--text-muted)]">Memuat log aktivitas...</p>
+      ) : <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
         <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-          <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
               <th className="px-4 py-3 text-left">Waktu</th>
               <th className="px-4 py-3 text-left">Aktivitas</th>
@@ -77,12 +77,12 @@ export default function LogPage() {
               </tr>
             )}
             {logs.map((log, idx) => (
-              <tr key={`${log.id}-${idx}`} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-xs text-gray-500">
+              <tr key={`${log.id}-${idx}`} className="hover:bg-[var(--bg-subtle)]">
+                <td className="px-4 py-3 text-xs text-[var(--text-muted)]">
                   {formatTanggal(log.waktu)}
                 </td>
                 <td
-                  className={`px-4 py-3 font-medium ${(log.aktivitas || "").includes("Keluar") ? "text-blue-700" : (log.aktivitas || "").includes("Masuk") || (log.aktivitas || "").includes("Selesai") ? "text-emerald-700" : (log.aktivitas || "").includes("Dibatalkan") ? "text-red-700" : (log.aktivitas || "").includes("Pembayaran") ? "text-[#7181E0]" : "text-gray-700"}`}
+                  className={`px-4 py-3 font-medium ${(log.aktivitas || "").includes("Keluar") ? "text-blue-700" : (log.aktivitas || "").includes("Masuk") || (log.aktivitas || "").includes("Selesai") ? "text-emerald-700" : (log.aktivitas || "").includes("Dibatalkan") ? "text-red-700" : (log.aktivitas || "").includes("Pembayaran") ? "text-[#7181E0]" : "text-[var(--text-primary)]"}`}
                 >
                   {log.aktivitas}
                 </td>
@@ -110,7 +110,7 @@ export default function LogPage() {
           }}
           disabled={habis || memuat}
           loading={memuat}
-          className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+          className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--border-color)]"
         >
           {habis ? "Semua log sudah dimuat" : "Muat Lagi"}
         </Button>
