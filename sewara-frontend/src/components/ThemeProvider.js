@@ -9,8 +9,8 @@ export function useTheme() {
 }
 
 function getStoredTheme() {
-  if (typeof window === "undefined") return "system";
-  return localStorage.getItem("rentalpro_theme") || "system";
+  if (typeof window === "undefined") return "light";
+  return localStorage.getItem("rentalpro_theme") || "light";
 }
 
 function subscribeTheme(cb) {
@@ -23,7 +23,7 @@ function subscribeTheme(cb) {
 }
 
 export default function ThemeProvider({ children }) {
-  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "system");
+  const theme = useSyncExternalStore(subscribeTheme, getStoredTheme, () => "light");
 
   const applyTheme = useCallback((t) => {
     const isDark = t === "dark" || (t === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
