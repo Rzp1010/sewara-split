@@ -838,7 +838,7 @@ export default function InventarisPage() {
           <button
             type="button"
             onClick={() => setTampilkanKosong((v) => !v)}
-            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors ${tampilkanKosong ? "bg-slate-600 text-white hover:bg-slate-700" : "bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"}`}
+            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors ${tampilkanKosong ? "bg-[var(--text-secondary)] text-white hover:opacity-90" : "bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"}`}
             title="Tampilkan/sembunyikan produk dengan total stok 0"
           >
             Tampilkan yang kosong
@@ -855,7 +855,7 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <div className="flex gap-1">
@@ -1173,7 +1173,7 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Export Data</h3>
@@ -1537,7 +1537,7 @@ export default function InventarisPage() {
           >
             <div onClick={(e) => e.stopPropagation()}>
               {dupModal.stage === "intro" ? (
-                <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-2xl">
+                <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-2xl">
                   <p className="text-center text-base font-semibold mb-2">
                     Ditemukan {dupModal.detail.length} produk dengan Serial
                     Number duplikat.
@@ -1566,7 +1566,7 @@ export default function InventarisPage() {
                   </div>
                 </div>
               ) : (
-                <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
+                <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
                   <div className="flex items-center justify-between border-b border-solid border-[var(--border-color)] px-6 pb-4 pt-6">
                     <h3 className="text-lg font-semibold">
                       Detail S/N Duplikat
@@ -1665,7 +1665,7 @@ export default function InventarisPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">
@@ -1918,7 +1918,7 @@ export default function InventarisPage() {
         editItem &&
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
-            <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
+            <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
               <div className="flex items-center justify-between border-b border-border px-6 pb-4 pt-6">
                 <h3 className="text-lg font-semibold">Edit Produk</h3>
                 <button

@@ -2006,7 +2006,7 @@ export default function BookingPage() {
               Identitas Penyewa
             </h3>
             {blacklistHit && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-solid border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-solid border-[var(--color-danger-text,#dc2626)] bg-[var(--color-danger-soft,#fef2f2)] px-4 py-3 text-sm text-[var(--color-danger-text,#dc2626)]">
                 <svg
                   className="mt-0.5 h-5 w-5 shrink-0"
                   viewBox="0 0 24 24"
@@ -2271,7 +2271,7 @@ export default function BookingPage() {
               </div>
             )}
             {kembaliWaktu && lewatJamTutup(kembaliWaktu) && (
-              <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--color-warning-text,#b45309)] bg-[var(--color-warning-soft,#fffbeb)] px-3 py-2 text-sm text-[var(--color-warning-text,#b45309)]">
                 <svg
                   className="mt-0.5 h-4 w-4 shrink-0"
                   viewBox="0 0 20 20"

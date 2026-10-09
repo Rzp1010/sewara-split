@@ -254,18 +254,18 @@ export default function DashboardPage() {
     return (
       <div className="space-y-4">
         <h2 className="text-xl font-bold">Dashboard Manajemen</h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[var(--text-muted)]">
           Rekap akun owner dan staf di seluruh sistem.
         </p>
         {isRefreshing && (
-          <div className="text-sm text-slate-500">Memuat ulang data...</div>
+          <div className="text-sm text-[var(--text-muted)]">Memuat ulang data...</div>
         )}
 
         <div className="grid grid-cols-4 gap-5 max-[1100px]:grid-cols-2 max-[700px]:grid-cols-1">
           {cards.map((c) => (
             <div
               key={c.label}
-              className={`rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-5 shadow-sm border-l-4 ${c.accent === "info" ? "border-blue-500" : c.accent === "success" ? "border-green-500" : c.accent === "warning" ? "border-yellow-500" : c.accent === "primary" ? "border-blue-500" : "border-gray-500"}`}
+              className={`rounded-lg border border-[var(--border-color)] border-l-4 bg-[var(--bg-surface)] p-5 shadow-sm ${c.accent === "info" ? "[border-left-color:#3b82f6]" : c.accent === "success" ? "[border-left-color:#22c55e]" : c.accent === "warning" ? "[border-left-color:#eab308]" : c.accent === "primary" ? "[border-left-color:#3b82f6]" : "[border-left-color:#6b7280]"}`}
             >
               <p className="text-sm text-[var(--text-secondary)]">{c.label}</p>
               <p className="text-2xl font-bold">{c.value}</p>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                 placeholder="dd/mm/yyyy"
               />
             </div>
-            <span className="text-xs text-slate-500 self-center">s.d.</span>
+            <span className="text-xs text-[var(--text-muted)] self-center">s.d.</span>
             <div className="w-[150px] max-w-full">
               <DateTimePicker
                 value={customAkhir ? new Date(`${customAkhir}T00:00:00`) : null}

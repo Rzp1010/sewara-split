@@ -608,7 +608,7 @@ export default function ManajemenPage() {
                         setForm({ ...form, nama: e.target.value })
                       }
                       placeholder="mis. Pemilik Bisnis"
-                      className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-border bg-[var(--bg-surface)] px-3 py-2 text-sm text-text-primary"
                     />
                     <p className="mt-2 text-xs leading-relaxed text-text-muted">
                       Nama ini juga akan tertulis di invoice &amp; riwayat
@@ -625,7 +625,7 @@ export default function ManajemenPage() {
                         setForm({ ...form, username: e.target.value })
                       }
                       placeholder="opsional, fallback email"
-                      className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-border bg-[var(--bg-surface)] px-3 py-2 text-sm text-text-primary"
                     />
                     <p className="mt-2 text-xs leading-relaxed text-text-muted">
                       Ditampilkan di navbar &amp; dropdown profil.
@@ -642,7 +642,7 @@ export default function ManajemenPage() {
                         setForm({ ...form, emailBaru: e.target.value })
                       }
                       placeholder="owner@bisnis.com"
-                      className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-border bg-[var(--bg-surface)] px-3 py-2 text-sm text-text-primary"
                     />
                   </div>
                   <div className="block">
@@ -725,7 +725,7 @@ export default function ManajemenPage() {
                     <input
                       value={editAkun.email}
                       disabled
-                      className="w-full rounded-md border border-border px-3 py-2 text-sm text-text-muted"
+                      className="w-full rounded-md border border-border bg-[var(--bg-subtle)] px-3 py-2 text-sm text-text-muted"
                     />
                   </div>
                   <div className="block">
@@ -739,7 +739,7 @@ export default function ManajemenPage() {
                           setEditForm({ ...editForm, nama: e.target.value })
                         }
                         disabled={editLocks.nama}
-                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.nama ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-slate-900"}`}
+                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.nama ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-[var(--text-primary)]"}`}
                       />
                       {editLocks.nama && (
                         <button
@@ -769,7 +769,7 @@ export default function ManajemenPage() {
                           setEditForm({ ...editForm, username: e.target.value })
                         }
                         disabled={editLocks.username}
-                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.username ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-slate-900"}`}
+                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.username ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-[var(--text-primary)]"}`}
                       />
                       {editLocks.username && (
                         <button

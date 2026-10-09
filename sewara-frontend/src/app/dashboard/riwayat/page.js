@@ -235,7 +235,7 @@ function RiwayatPageInner() {
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${t.status === "Selesai" ? "bg-green-100 text-green-700" : t.status === "Belum Selesai" ? "bg-indigo-100 text-indigo-700" : t.status === "Dibatalkan" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${t.status === "Selesai" ? "bg-[var(--color-success-soft,#ecfdf5)] text-[var(--color-success-text,#047857)]" : t.status === "Belum Selesai" ? "bg-[var(--color-primary-soft,rgba(79,70,229,0.1))] text-[var(--color-primary-soft-text,#4338ca)]" : t.status === "Dibatalkan" ? "bg-[var(--color-danger-soft,#fef2f2)] text-[var(--color-danger-text,#dc2626)]" : "bg-[var(--color-warning-soft,#fffbeb)] text-[var(--color-warning-text,#b45309)]"}`}
                   >
                     {t.status || "Booking"}
                   </span>
