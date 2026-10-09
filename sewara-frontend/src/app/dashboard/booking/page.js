@@ -2067,7 +2067,7 @@ export default function BookingPage() {
                             type="button"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => pilihMemberSaran(m)}
-                            className="px-4 py-2 rounded bg-transparent px-3 py-2 text-sm"
+                            className="px-4 py-2 rounded bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] px-3 py-2 text-sm"
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
