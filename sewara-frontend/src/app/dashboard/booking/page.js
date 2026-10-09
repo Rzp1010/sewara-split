@@ -27,7 +27,7 @@ const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
   loading: () => (
     <div className="flex items-center justify-center p-8">
       <div className="animate-spin"></div>
-      <span className="text-gray-500">Memuat invoice...</span>
+      <span className="text-[var(--text-secondary)]">Memuat invoice...</span>
     </div>
   ),
 });
@@ -149,7 +149,7 @@ const getStatusClass = (status) =>
     Telat: "bg-[#F04438] text-white",
     "Belum Selesai": "bg-indigo-500 text-white",
     Selesai: "bg-[#579171] text-white",
-  })[status] || "bg-gray-500 text-white";
+  })[status] || "bg-[var(--bg-subtle)] text-white";
 
 // Persentase member efektif: tier durasi (jika ada & durasi diketahui) menang;
 // fallback ke diskon_persen fixed. Non-member / 0 → { persen: 0, sumber: null }.
@@ -2001,7 +2001,7 @@ export default function BookingPage() {
       <h2 className="text-2xl font-bold mb-6">Buat Booking Baru</h2>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div ref={refKolomKiri} className="lg:col-span-3">
-          <div className="bg-white border rounded-xl shadow-lg border-slate-200 p-6 border-2 border-t-4 border-t-[#7181E0]">
+          <div className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6 border-2 border-t-4 border-t-[#7181E0]">
             <h3 className="text-base font-semibold mb-4 text-[#7181E0]">
               Identitas Penyewa
             </h3>
@@ -2032,13 +2032,13 @@ export default function BookingPage() {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Penyewa
                 </label>
                 <div className="relative">
                   <input
                     id="nama_penyewa"
-                    className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                    className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     value={namaPenyewa}
                     onChange={(e) => gantiNamaPenyewa(e.target.value)}
                     onBlur={() => setTimeout(() => setShowSaran(false), 150)}
@@ -2049,7 +2049,7 @@ export default function BookingPage() {
                     showSaran &&
                     saranMember.length > 0 && (
                       <div
-                        className="bg-white border rounded-xl shadow-lg border-slate-200 p-6"
+                        className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6"
                         style={{
                           position: "absolute",
                           top: "calc(100% + 4px)",
@@ -2100,7 +2100,7 @@ export default function BookingPage() {
                                 )}
                               </span>
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-[var(--text-secondary)]">
                               {m.hp || "-"}
                             </span>
                           </button>
@@ -2133,7 +2133,7 @@ export default function BookingPage() {
                 )}
               </div>
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   No. HP
                 </label>
                 <input
@@ -2144,13 +2144,13 @@ export default function BookingPage() {
                   onChange={(e) =>
                     setHpPenyewa(e.target.value.replace(/\D/g, ""))
                   }
-                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Jaminan
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -2164,7 +2164,7 @@ export default function BookingPage() {
                         type="button"
                         disabled={nonaktif}
                         onClick={() => setJaminanTerpilih((p) => toggleJaminan(p, o))}
-                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
                       >
                         {aktif ? "✓ " : ""}
                         {o}
@@ -2174,7 +2174,7 @@ export default function BookingPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Alamat
                 </label>
                 <textarea
@@ -2182,13 +2182,13 @@ export default function BookingPage() {
                   rows={2}
                   value={alamat_penyewa}
                   onChange={(e) => setAlamatPenyewa(e.target.value)}
-                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60 resize-y"
+                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 resize-y"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Waktu Ambil
                 </label>
                 <div className="flex items-center gap-2">
@@ -2230,7 +2230,7 @@ export default function BookingPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Durasi Sewa
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -2239,7 +2239,7 @@ export default function BookingPage() {
                       key={d.jam}
                       type="button"
                       onClick={() => isiDurasi(d.jam)}
-                      className={`${selectedDurasi === d.jam ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                      className={`${selectedDurasi === d.jam ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                     >
                       {d.label}
                     </button>
@@ -2247,7 +2247,7 @@ export default function BookingPage() {
                   <button
                     type="button"
                     onClick={pilihCustom}
-                    className={`${showCustom ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                    className={`${showCustom ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                   >
                     Custom
                   </button>
@@ -2257,7 +2257,7 @@ export default function BookingPage() {
             {showCustom && (
               <div className="grid grid-cols-1 sm:grid-cols-2 mt-4">
                 <div className="col-span-full">
-                  <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                  <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                     Waktu Kembali (Manual)
                   </label>
                   <DateTimePicker
@@ -2293,13 +2293,13 @@ export default function BookingPage() {
             )}
           </div>
 
-          <div className="bg-white border rounded-xl shadow-lg border-slate-200 p-6 border-2 mt-4 border-t-4 border-t-[#579171]">
+          <div className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6 border-2 mt-4 border-t-4 border-t-[#579171]">
             <h3 className="text-base font-semibold mb-4 text-[#579171]">
               Pilih Barang
             </h3>
             <div className="flex items-end gap-3 mb-3">
               <div className="flex-[3] min-w-0">
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Produk
                 </label>
                 <SearchableSelect
@@ -2313,7 +2313,7 @@ export default function BookingPage() {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Serial Number
                 </label>
                 <SearchableSelect
@@ -2333,7 +2333,7 @@ export default function BookingPage() {
               </button>
             </div>
 
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <div className="overflow-x-auto border border-[var(--border-color)] rounded-lg">
               <table className="w-full min-w-[640px] border-collapse">
                 <colgroup>
                   <col style={{ width: "30%" }} />
@@ -2343,21 +2343,21 @@ export default function BookingPage() {
                   <col style={{ width: "15%" }} />
                   <col style={{ width: "10%" }} />
                 </colgroup>
-                <thead className="bg-slate-100">
-                  <tr className="border-b-2 border-slate-200">
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 border-r border-slate-200">
+                <thead className="bg-[var(--bg-subtle)]">
+                  <tr className="border-b-2 border-[var(--border-color)]">
+                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       Produk
                     </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 border-r border-slate-200">
+                    <th className="text-left py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       S/N
                     </th>
-                    <th className="text-center py-3 px-2 font-semibold text-gray-700 border-r border-slate-200">
+                    <th className="text-center py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       Qty
                     </th>
-                    <th className="text-right py-3 px-2 font-semibold text-gray-700 border-r border-slate-200">
+                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       Harga
                     </th>
-                    <th className="text-right py-3 px-2 font-semibold text-gray-700 border-r border-slate-200">
+                    <th className="text-right py-3 px-2 font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       Total
                     </th>
                     <th className="py-3 px-2"></th>
@@ -2368,7 +2368,7 @@ export default function BookingPage() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="text-center text-gray-500 py-4 italic"
+                        className="text-center text-[var(--text-secondary)] py-4 italic"
                       >
                         Keranjang kosong.
                       </td>
@@ -2377,12 +2377,12 @@ export default function BookingPage() {
                   {cart.map((c, idx) => (
                     <tr
                       key={idx}
-                      className="border-b border-slate-100 hover:bg-slate-50"
+                      className="border-b border-[var(--border-color)] hover:bg-[var(--bg-subtle)]"
                     >
-                      <td className="font-semibold py-3 px-2 border-r border-slate-200 truncate">
+                      <td className="font-semibold py-3 px-2 border-r border-[var(--border-color)] truncate">
                         {c.ref.nama}
                       </td>
-                      <td className="text-xs py-3 px-2 border-r border-slate-200 text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
+                      <td className="text-xs py-3 px-2 border-r border-[var(--border-color)] text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
                         {c.ref.jenis === "satuan" ? (
                           <>
                             <div className="truncate">{c.sn}</div>
@@ -2424,7 +2424,7 @@ export default function BookingPage() {
                             {(c.ref.komponen || []).map((k, ki) => (
                               <div
                                 key={ki}
-                                className="text-[11px] leading-tight text-gray-600"
+                                className="text-[11px] leading-tight text-[var(--text-secondary)]"
                               >
                                 {k.qty}x {k.nama}
                               </div>
@@ -2434,13 +2434,13 @@ export default function BookingPage() {
                           "Paket Bundling"
                         )}
                       </td>
-                      <td className="text-center py-3 px-2 border-r border-slate-200">
+                      <td className="text-center py-3 px-2 border-r border-[var(--border-color)]">
                         {c.qty}
                       </td>
-                      <td className="text-right text-gray-600 py-3 px-2 border-r border-slate-200">
+                      <td className="text-right text-[var(--text-secondary)] py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.hargaSatuan || 0)}
                       </td>
-                      <td className="text-right font-semibold py-3 px-2 border-r border-slate-200">
+                      <td className="text-right font-semibold py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.subtotal || 0)}
                       </td>
                       <td className="text-right py-3 px-2">
@@ -2463,15 +2463,15 @@ export default function BookingPage() {
               </table>
             </div>
 
-            <div className="bg-slate-100 border rounded-xl border-slate-200 p-6 flex items-center justify-between mt-6">
+            <div className="bg-[var(--bg-subtle)] border rounded-xl border-[var(--border-color)] p-6 flex items-center justify-between mt-6">
               <div>
-                <p className="text-13 text-gray-500 mb-0">Durasi:</p>
+                <p className="text-13 text-[var(--text-secondary)] mb-0">Durasi:</p>
                 <p className="text-lg font-bold mb-0">
                   {kalkulasi.durasi_teks}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-13 text-gray-500 mb-0">Total Biaya</p>
+                <p className="text-13 text-[var(--text-secondary)] mb-0">Total Biaya</p>
                 <p className="text-2xl font-bold mb-0 text-[#579171]">
                   {formatRupiah(hitungDiskon(kalkulasi.biaya || 0).biayaAkhir)}
                 </p>
@@ -2487,7 +2487,7 @@ export default function BookingPage() {
                     <div className="mb-4 text-13">
                       {d.diskonMember > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-gray-500">
+                          <span className="flex items-center gap-2 text-[var(--text-secondary)]">
                             <span>
                               Diskon Member
                               {d.sumberDiskon?.startsWith("durasi") &&
@@ -2506,7 +2506,7 @@ export default function BookingPage() {
                       )}
                       {d.diskonPromo > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-500">Diskon Promo</span>
+                          <span className="text-[var(--text-secondary)]">Diskon Promo</span>
                           <span className="text-danger">
                             -{formatRupiah(d.diskonPromo)}
                           </span>
@@ -2514,7 +2514,7 @@ export default function BookingPage() {
                       )}
                       {d.diskonCustom > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-500">Discount Custom</span>
+                          <span className="text-[var(--text-secondary)]">Discount Custom</span>
                           <span className="text-danger">
                             -{formatRupiah(d.diskonCustom)}
                           </span>
@@ -2540,7 +2540,7 @@ export default function BookingPage() {
                 <button
                   type="button"
                   onClick={() => setShowPromoDiskon((v) => !v)}
-                  className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-slate-700 w-full text-sm font-medium transition-colors outline-none focus:outline-none border-0"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] w-full text-sm font-medium transition-colors outline-none focus:outline-none border-0"
                 >
                   {showPromoDiskon ? "− Promo & Diskon" : "+ Promo & Diskon"}
                 </button>
@@ -2548,7 +2548,7 @@ export default function BookingPage() {
                   <>
                     <div className="flex items-center gap-2 mt-3">
                       <div className="flex-1 min-w-0">
-                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                           Kode Promo
                         </label>
                         <input
@@ -2558,7 +2558,7 @@ export default function BookingPage() {
                             setKodePromoInput(e.target.value.toUpperCase())
                           }
                           placeholder="Masukkan kode promo"
-                          className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                          className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                           autoComplete="off"
                         />
                       </div>
@@ -2584,7 +2584,7 @@ export default function BookingPage() {
                     </div>
                     <div className="flex items-end gap-2 mt-3 flex-wrap">
                       <div className="flex-1 min-w-0">
-                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                           Discount Custom
                         </label>
                         <input
@@ -2597,17 +2597,17 @@ export default function BookingPage() {
                             )
                           }
                           placeholder="0"
-                          className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                          className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                         />
                       </div>
                       <div className="shrink-0">
-                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                        <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                           Tipe
                         </label>
                         <select
                           value={diskonCustomTipe}
                           onChange={(e) => setDiskonCustomTipe(e.target.value)}
-                          className="appearance-none border-solid rounded-md block w-[90px] px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                          className="appearance-none border-solid rounded-md block w-[90px] px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                         >
                           <option value="%">%</option>
                           <option value="Rp">Rp</option>
@@ -2615,7 +2615,7 @@ export default function BookingPage() {
                       </div>
                     </div>
                     {promoDipilih && (
-                      <p className="text-xs text-gray-500 mt-2 mb-0">
+                      <p className="text-xs text-[var(--text-secondary)] mt-2 mb-0">
                         Promo{" "}
                         <span className="font-bold">{promoDipilih.kode}</span>{" "}
                         aktif: diskon {promoDipilih.diskon_persen}%.
@@ -2628,14 +2628,14 @@ export default function BookingPage() {
                           <button
                             type="button"
                             onClick={() => setPilihSatu("member")}
-                            className={`${pilihSatu !== "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                            className={`${pilihSatu !== "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                           >
                             Diskon Member
                           </button>
                           <button
                             type="button"
                             onClick={() => setPilihSatu("promo")}
-                            className={`${pilihSatu === "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                            className={`${pilihSatu === "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                           >
                             Diskon Promo
                           </button>
@@ -2648,15 +2648,15 @@ export default function BookingPage() {
           </div>
 
           {printilanDaftar.length > 0 && (
-            <div className="mt-6 mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
-              <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+            <div className="mt-6 mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg">
+              <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                 Aksesoris
               </label>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {printilanDaftar.map((item) => (
                   <label
                     key={item}
-                    className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                    className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] cursor-pointer"
                   >
                     <input
                       type="checkbox"
@@ -2670,7 +2670,7 @@ export default function BookingPage() {
                           );
                         }
                       }}
-                      className="h-4 w-4 rounded border-gray-300 accent-[#7181E0]"
+                      className="h-4 w-4 rounded border-[var(--border-color)] accent-[#7181E0]"
                     />
                     {item}
                   </label>
@@ -2682,25 +2682,25 @@ export default function BookingPage() {
                   value={printilanCustom}
                   onChange={(e) => setPrintilanCustom(e.target.value)}
                       placeholder="Aksesoris lain (pisahkan dengan koma)..."
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                  className="w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
                 />
               </div>
             </div>
           )}
 
           <div
-            className="bg-white border rounded-xl shadow-lg border-slate-200 p-6 border-2 mt-4"
+            className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6 border-2 mt-4"
             style={{
               background: "#fffbeb",
               borderColor: "rgba(245, 158, 11, 0.3)",
             }}
           >
-            <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+            <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
               Uang Muka / DP (Opsional)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Jumlah DP
                 </label>
                 <input
@@ -2712,11 +2712,11 @@ export default function BookingPage() {
                     setDpJumlah(e.target.value.replace(/\D/g, ""))
                   }
                   placeholder="0"
-                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Metode Bayar
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -2725,7 +2725,7 @@ export default function BookingPage() {
                       key={m}
                       type="button"
                       onClick={() => setDpMetode(m)}
-                      className={`${dpMetode === m ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                      className={`${dpMetode === m ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                     >
                       {m}
                     </button>
@@ -2735,13 +2735,13 @@ export default function BookingPage() {
             </div>
             {parseFloat(dpJumlah) > 0 && (
               <div className="mt-3">
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-gray-600">
+                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Bukti Pembayaran (Opsional)
                 </label>
                 <BuktiDropzone value={buktiFile} onChange={setBuktiFile} />
               </div>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[var(--text-secondary)]">
               {getSetting("aturan_dp", "bebas") === "wajib"
                 ? "Aturan DP aktif: wajib diisi sebelum booking disimpan."
                 : "Booking tanpa DP tidak terkunci — bisa diambil penyewa lain yang DP lebih cepat."}
@@ -2766,7 +2766,7 @@ export default function BookingPage() {
           }}
         >
           <div
-            className="bg-white border rounded-xl shadow-lg border-slate-200 border-2 p-0"
+            className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] border-2 p-0"
             style={{
               flex: 1,
               minHeight: 0,
@@ -2785,7 +2785,7 @@ export default function BookingPage() {
                 value={cariJadwal}
                 onChange={(e) => setCariJadwal(e.target.value)}
                 placeholder="Cari penyewa..."
-                className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-gray-300 bg-white text-gray-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                 style={{ maxWidth: 190 }}
               />
             </div>
@@ -2802,7 +2802,7 @@ export default function BookingPage() {
                 if (total === 0) {
                   return (
                     <div
-                      className="text-center text-13 text-gray-500"
+                      className="text-center text-13 text-[var(--text-secondary)]"
                       style={{ padding: "24px 0", fontStyle: "italic" }}
                     >
                       Tidak ada jadwal aktif.
@@ -2814,7 +2814,7 @@ export default function BookingPage() {
                     {tampil.map((t) => (
                       <div
                         key={t.id}
-                        className="bg-white border-2 border-solid border-slate-200 rounded-xl shadow-sm p-4 mb-2 hover:border-slate-300 transition-colors"
+                        className="bg-[var(--bg-surface)] border-2 border-solid border-[var(--border-color)] rounded-xl shadow-sm p-4 mb-2 hover:border-[var(--border-color)] transition-colors"
                         style={{ cursor: "pointer" }}
                       >
                         <div
@@ -2823,7 +2823,7 @@ export default function BookingPage() {
                         >
                           <div>
                             <p
-                              className="text-gray-500 mb-0"
+                              className="text-[var(--text-secondary)] mb-0"
                               style={{
                                 fontFamily: "ui-monospace, monospace",
                                 fontSize: 10,
@@ -2832,7 +2832,7 @@ export default function BookingPage() {
                               {t.no_invoice}
                             </p>
                             <p className="font-bold mb-0">{t.penyewa}</p>
-                            <p className="text-xs text-gray-500 mb-0">
+                            <p className="text-xs text-[var(--text-secondary)] mb-0">
                               Hp : {t.hp_penyewa || "-"}
                             </p>
                           </div>
@@ -2843,7 +2843,7 @@ export default function BookingPage() {
                           </span>
                         </div>
                         <div
-                          className="flex flex-col gap-1 text-xs text-gray-600 mb-2"
+                          className="flex flex-col gap-1 text-xs text-[var(--text-secondary)] mb-2"
                           style={{ lineHeight: 1.6 }}
                         >
                           {(t.items || []).map((i, idx) => (
@@ -2860,7 +2860,7 @@ export default function BookingPage() {
                             </div>
                           ))}
                         </div>
-                        <div className="text-xs text-gray-500 mb-3">
+                        <div className="text-xs text-[var(--text-secondary)] mb-3">
                           <span className="text-[#7181E0]">
                             Ambil: {formatTanggal(t.waktu_ambil_rencana)}
                           </span>
@@ -2921,7 +2921,7 @@ export default function BookingPage() {
                     ))}
                     {!isCari && total > 50 && (
                       <div
-                        className="text-center text-xs font-semibold text-gray-500"
+                        className="text-center text-xs font-semibold text-[var(--text-secondary)]"
                         style={{
                           background: "#f8fafc",
                           padding: 12,
@@ -2949,12 +2949,12 @@ export default function BookingPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="mb-4 flex items-center justify-between px-6 pt-6">
                 <h3 className="text-lg font-semibold">
                   Edit Booking
-                  <span className="ml-2 text-sm font-normal text-gray-500">
+                  <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">
                     {editForm.penyewa || editModal.no_invoice}
                   </span>
                 </h3>
@@ -2962,28 +2962,28 @@ export default function BookingPage() {
                   type="button"
                   onClick={() => setEditModal(null)}
                   aria-label="Tutup"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-xl font-semibold text-gray-600 transition-colors hover:bg-surface-secondary focus:outline-none"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-xl font-semibold text-[var(--text-secondary)] transition-colors hover:bg-surface-secondary focus:outline-none"
                 >
                   &times;
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto px-6">
-                <div className="flex items-center gap-3 mb-3 bg-slate-50 rounded-lg p-3">
+                <div className="flex items-center gap-3 mb-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                   <span className="font-semibold">{editModal.no_invoice}</span>
-                  <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-slate-200 text-slate-700">
+                  <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
                     {editModal.status}
                   </span>
                 </div>
 
                 {/* Identitas Penyewa */}
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                <div className="bg-[var(--bg-subtle)] rounded-lg p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
                     Identitas Penyewa
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="col-span-full">
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                         Penyewa
                       </label>
                       <input
@@ -2995,7 +2995,7 @@ export default function BookingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                         No. HP
                       </label>
                       <input
@@ -3011,7 +3011,7 @@ export default function BookingPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                         Jaminan
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -3032,7 +3032,7 @@ export default function BookingPage() {
                                   jaminan_sewa: toggleJaminan(arr, o),
                                 })
                               }
-                              className={`${aktif ? "rounded-lg px-3 py-1.5 text-xs font-medium bg-[#7181E0] text-white border-0" : "rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-200 text-slate-700 border-0 hover:bg-gray-300"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+                              className={`${aktif ? "rounded-lg px-3 py-1.5 text-xs font-medium bg-[#7181E0] text-white border-0" : "rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0 hover:bg-[var(--bg-subtle)]"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
                             >
                               {aktif ? "✓ " : ""}
                               {o}
@@ -3042,7 +3042,7 @@ export default function BookingPage() {
                       </div>
                     </div>
                     <div className="col-span-full">
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                         Alamat
                       </label>
                       <textarea
@@ -3061,8 +3061,8 @@ export default function BookingPage() {
                 </div>
 
                 {/* Jadwal */}
-                <div className="mt-3 bg-slate-50 rounded-lg p-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                <div className="mt-3 bg-[var(--bg-subtle)] rounded-lg p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
                     Jadwal
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3100,15 +3100,15 @@ export default function BookingPage() {
 
                 {/* Aksesoris */}
                 {printilanDaftar.length > 0 && (
-                  <div className="mt-3 bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                  <div className="mt-3 bg-[var(--bg-subtle)] rounded-lg p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
                       Aksesoris
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
                       {printilanDaftar.map((item) => (
                         <label
                           key={item}
-                          className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                          className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] cursor-pointer"
                         >
                           <input
                             type="checkbox"
@@ -3125,7 +3125,7 @@ export default function BookingPage() {
                                 );
                               }
                             }}
-                            className="h-4 w-4 rounded border-gray-300 accent-[#7181E0]"
+                            className="h-4 w-4 rounded border-[var(--border-color)] accent-[#7181E0]"
                           />
                           {item}
                         </label>
@@ -3142,10 +3142,10 @@ export default function BookingPage() {
                 )}
 
                 {/* Barang */}
-                <div className="mt-3 rounded-xl border-2 border-solid border-slate-200 overflow-x-auto">
+                <div className="mt-3 rounded-xl border-2 border-solid border-[var(--border-color)] overflow-x-auto">
                   <p className="font-semibold mb-2 px-3 pt-3">Barang</p>
                   <table className="w-full min-w-[640px] border-collapse text-sm">
-                    <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                    <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                       <tr>
                         <th className="px-4 py-3 text-left">Nama Barang</th>
                         <th className="px-4 py-3 text-center">Qty</th>
@@ -3158,21 +3158,21 @@ export default function BookingPage() {
                         <tr>
                           <td
                             colSpan={4}
-                            className="px-4 py-6 text-center text-gray-500 italic"
+                            className="px-4 py-6 text-center text-[var(--text-secondary)] italic"
                           >
                             Belum ada barang.
                           </td>
                         </tr>
                       )}
                       {editItems.map((item, idx) => (
-                        <tr key={idx} className="bg-white even:bg-slate-50">
+                        <tr key={idx} className="bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]">
                           <td className="px-4 py-3 align-middle font-semibold">
                             {item.ref.nama}
                           </td>
-                          <td className="px-4 py-3 align-middle text-center text-gray-600">
+                          <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
                             {item.qty}x
                           </td>
-                          <td className="px-4 py-3 align-middle text-gray-600">
+                          <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
                             {item.ref.jenis === "satuan" ? (
                               <span
                                 className="text-xs"
@@ -3286,7 +3286,7 @@ export default function BookingPage() {
                 </details>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-solid border-slate-200 px-6 pb-6 pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-solid border-[var(--border-color)] px-6 pb-6 pt-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -3308,7 +3308,7 @@ export default function BookingPage() {
                   <button
                     type="button"
                     onClick={() => setEditModal(null)}
-                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary"
                   >
                     Tutup
                   </button>

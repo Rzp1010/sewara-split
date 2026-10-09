@@ -332,9 +332,9 @@ export default function ManajemenPage() {
                     Pendaftar Baru ({pendaftar.length})
                   </span>
                 </div>
-                <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+                <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
 <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-                    <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                    <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                       <tr>
                         <th className="px-4 py-3 text-left">Nama</th>
                         <th className="px-4 py-3 text-left">Terdaftar</th>
@@ -344,7 +344,7 @@ export default function ManajemenPage() {
                     </thead>
                     <tbody>
                       {pendaftar.map((u) => (
-                        <tr key={u.email} className="hover:bg-slate-50">
+                        <tr key={u.email} className="hover:bg-[var(--bg-subtle)]">
                           <td className="px-4 py-3">
                             <p className="font-bold mb-0">
                               {u.nama_lengkap || "-"}
@@ -396,14 +396,14 @@ export default function ManajemenPage() {
                 type="button"
                 onClick={muat}
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition bg-transparent text-text-secondary hover:bg-gray-100 px-3 py-1.5 text-xs"
+                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)] px-3 py-1.5 text-xs"
               >
                 ↻ Muat Ulang
               </button>
             </div>
-            <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+            <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
 <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-                <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                   <tr>
                     <th className="px-4 py-3 text-left">Owner</th>
                     <th className="px-4 py-3 text-left">Staf</th>
@@ -416,14 +416,14 @@ export default function ManajemenPage() {
                   {owners.length === 0 && (
                     <tr>
                       <td colSpan={5}>
-                        <div className="py-12 text-center text-sm text-slate-400 italic">
+                        <div className="py-12 text-center text-sm text-[var(--text-muted)] italic">
                           Belum ada owner.
                         </div>
                       </td>
                     </tr>
                   )}
                   {owners.map((u) => (
-                    <tr key={u.email} className="hover:bg-slate-50">
+                    <tr key={u.email} className="hover:bg-[var(--bg-subtle)]">
                       <td className="px-4 py-3">
                         <p className="font-bold mb-0">
                           {u.nama_lengkap || "-"}
@@ -445,7 +445,7 @@ export default function ManajemenPage() {
                             <button
                               type="button"
                               onClick={() => bukaPerpanjang(u.email)}
-                              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-gray-100"
+                              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)]"
                             >
                               Perpanjang
                             </button>
@@ -459,14 +459,14 @@ export default function ManajemenPage() {
                           <button
                             type="button"
                             onClick={() => bukaEdit(u)}
-                            className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-gray-100"
+                            className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)]"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => bukaGantiPassword(u)}
-                            className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-gray-100"
+                            className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)]"
                           >
                             Ganti Password
                           </button>
@@ -525,9 +525,9 @@ export default function ManajemenPage() {
               Log Aktivitas Admin ({logs.length})
             </span>
           </div>
-          <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+          <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
             <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-              <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+              <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                 <tr>
                   <th className="px-4 py-3 text-left">Waktu</th>
                   <th className="px-4 py-3 text-left">Pelaku</th>
@@ -540,14 +540,14 @@ export default function ManajemenPage() {
                 {logs.length === 0 && (
                   <tr>
                     <td colSpan={5}>
-                      <div className="py-12 text-center text-sm text-slate-400 italic">
+                      <div className="py-12 text-center text-sm text-[var(--text-muted)] italic">
                         Belum ada log.
                       </div>
                     </td>
                   </tr>
                 )}
                 {logs.map((l, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
+                  <tr key={i} className="hover:bg-[var(--bg-subtle)]">
                     <td className="px-4 py-3 text-text-muted">
                       {formatTanggal(l.created_at)}
                     </td>
@@ -580,14 +580,14 @@ export default function ManajemenPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <h3 className="text-lg font-bold">Tambah Owner</h3>
                 <button
                   type="button"
                   onClick={() => setShowTambah(false)}
-                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-gray-100"
+                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-[var(--bg-subtle)]"
                 >
                   &times;
                 </button>
@@ -704,14 +704,14 @@ export default function ManajemenPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <h3 className="text-lg font-bold">Edit Owner</h3>
                 <button
                   type="button"
                   onClick={() => setEditAkun(null)}
-                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-gray-100"
+                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-[var(--bg-subtle)]"
                 >
                   &times;
                 </button>
@@ -739,7 +739,7 @@ export default function ManajemenPage() {
                           setEditForm({ ...editForm, nama: e.target.value })
                         }
                         disabled={editLocks.nama}
-                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.nama ? "cursor-not-allowed bg-gray-100 text-gray-500" : "bg-white text-slate-900"}`}
+                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.nama ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-slate-900"}`}
                       />
                       {editLocks.nama && (
                         <button
@@ -747,7 +747,7 @@ export default function ManajemenPage() {
                           onClick={() =>
                             setEditLocks((l) => ({ ...l, nama: false }))
                           }
-                          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-gray-100"
+                          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)]"
                         >
                           Edit
                         </button>
@@ -769,7 +769,7 @@ export default function ManajemenPage() {
                           setEditForm({ ...editForm, username: e.target.value })
                         }
                         disabled={editLocks.username}
-                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.username ? "cursor-not-allowed bg-gray-100 text-gray-500" : "bg-white text-slate-900"}`}
+                        className={`min-w-0 flex-1 rounded-md border border-border px-3 py-2 text-sm ${editLocks.username ? "cursor-not-allowed bg-[var(--bg-subtle)] text-[var(--text-muted)]" : "bg-[var(--bg-surface)] text-slate-900"}`}
                       />
                       {editLocks.username && (
                         <button
@@ -777,7 +777,7 @@ export default function ManajemenPage() {
                           onClick={() =>
                             setEditLocks((l) => ({ ...l, username: false }))
                           }
-                          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-gray-100"
+                          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition px-3 py-1.5 text-xs bg-transparent text-text-secondary hover:bg-[var(--bg-subtle)]"
                         >
                           Edit
                         </button>
@@ -820,14 +820,14 @@ export default function ManajemenPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <h3 className="text-lg font-bold">Ganti Password</h3>
                 <button
                   type="button"
                   onClick={() => setPassAkun(null)}
-                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-gray-100"
+                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-[var(--bg-subtle)]"
                 >
                   &times;
                 </button>
@@ -896,7 +896,7 @@ export default function ManajemenPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <h3 className="text-lg font-bold">
@@ -908,7 +908,7 @@ export default function ManajemenPage() {
                   type="button"
                   onClick={() => setDurasiModal(null)}
                   aria-label="Tutup"
-                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-gray-100"
+                  className="rounded p-1 text-2xl leading-none text-text-muted hover:bg-[var(--bg-subtle)]"
                 >
                   &times;
                 </button>

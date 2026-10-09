@@ -100,9 +100,9 @@ const BTN_SUCCESS =
 const BTN_DANGER =
   "inline-flex items-center justify-center rounded-lg bg-[#F04438] hover:bg-[#d03a2f] px-4 py-2 text-sm font-medium text-white transition-colors border-0 focus:outline-none focus:ring-2 focus:ring-[#F04438]/40";
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors border-0 focus:outline-none";
+  "inline-flex items-center justify-center rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border-0 focus:outline-none";
 const BTN_GHOST =
-  "inline-flex items-center justify-center rounded-lg bg-transparent hover:bg-gray-100 px-4 py-2 text-sm font-medium text-slate-600 transition-colors border-0 focus:outline-none";
+  "inline-flex items-center justify-center rounded-lg bg-transparent hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border-0 focus:outline-none";
 
 const fmtYMD = (d) =>
   d
@@ -132,7 +132,7 @@ function formatJam(iso) {
 }
 
 function statusBadge(status) {
-  return STATUS_CONFIG[status]?.badge || "bg-gray-500 text-white";
+  return STATUS_CONFIG[status]?.badge || "bg-[var(--bg-subtle)] text-white";
 }
 
 const LABEL_AKSI = {
@@ -160,7 +160,7 @@ const KartuTrx = memo(function KartuTrx({
       draggable={t.status !== "Selesai" && t.status !== "Belum Selesai"}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="bg-white border-2 border-solid border-slate-200 rounded-xl shadow-sm p-4 mb-2 hover:border-slate-300 transition-colors"
+      className="bg-[var(--bg-surface)] border-2 border-solid border-[var(--border-color)] rounded-xl shadow-sm p-4 mb-2 hover:border-[var(--border-color)] transition-colors"
       style={{ cursor: "grab" }}
     >
       <div
@@ -168,11 +168,11 @@ const KartuTrx = memo(function KartuTrx({
         style={{ alignItems: "flex-start" }}
       >
         <div>
-          <p className="font-mono text-[10px] text-gray-500 mb-0">
+          <p className="font-mono text-[10px] text-[var(--text-secondary)] mb-0">
             {t.no_invoice}
           </p>
           <p className="font-bold mb-0">{t.penyewa}</p>
-          <p className="text-xs text-gray-500 mb-0">{t.hp_penyewa || "-"}</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-0">{t.hp_penyewa || "-"}</p>
         </div>
         <span
           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${statusBadge(t.status)}`}
@@ -180,7 +180,7 @@ const KartuTrx = memo(function KartuTrx({
           {t.status}
         </span>
       </div>
-      <div className="flex flex-col gap-1 text-xs text-gray-600 mb-2">
+      <div className="flex flex-col gap-1 text-xs text-[var(--text-secondary)] mb-2">
         {(t.items || []).map((i, idx) => (
           <div key={idx} className="truncate">
             • {i.qty}x {i.ref.nama}{" "}
@@ -188,7 +188,7 @@ const KartuTrx = memo(function KartuTrx({
           </div>
         ))}
       </div>
-      <div className="text-xs text-gray-500 mb-3">
+      <div className="text-xs text-[var(--text-secondary)] mb-3">
         <div className="flex flex-col gap-0.5 mb-1">
           <span style={{ color: "#7181E0" }}>
             Ambil: {formatJam(t.waktu_ambil_rencana)}
@@ -197,7 +197,7 @@ const KartuTrx = memo(function KartuTrx({
             Kembali: {formatJam(t.waktu_kembali_rencana)}
           </span>
         </div>
-        <span className="inline-block rounded-md bg-slate-50 px-1">
+        <span className="inline-block rounded-md bg-[var(--bg-subtle)] px-1">
           {t.durasi_teks}
         </span>
       </div>
@@ -215,7 +215,7 @@ const KartuTrx = memo(function KartuTrx({
         );
       })()}
       {t.dilayani_oleh && (
-        <div className="text-xs text-gray-500 mb-2">
+        <div className="text-xs text-[var(--text-secondary)] mb-2">
           Dilayani oleh: {t.dilayani_oleh}
         </div>
       )}
@@ -245,7 +245,7 @@ const KartuTrx = memo(function KartuTrx({
         </button>
         <button
           onClick={() => onDetail(t)}
-          className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 text-xs border-0"
+          className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs border-0"
           style={{ fontSize: 11 }}
         >
           Detail
@@ -861,7 +861,7 @@ export default function StatusPage() {
               {
                 label: "Tanpa Denda",
                 value: "tanpa",
-                bg: "bg-transparent text-gray-600 hover:bg-surface-secondary",
+                bg: "bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary",
               },
             ],
           );
@@ -1349,10 +1349,10 @@ export default function StatusPage() {
 
   return (
     <>
-      <div className="min-h-full bg-gray-100">
+      <div className="min-h-full bg-[var(--bg-subtle)]">
         <h2 className="mb-6 text-2xl font-bold">Status Sewa</h2>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg mb-4">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg mb-4">
           {/* Single row: Date range + Search + Toggle */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Date range buttons */}
@@ -1368,7 +1368,7 @@ export default function StatusPage() {
                   key={o.k}
                   type="button"
                   onClick={() => setRentangKunci(o.k)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-gray-200 hover:bg-gray-300 text-slate-700 border-0"}`}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
                 >
                   {o.label}
                 </button>
@@ -1385,7 +1385,7 @@ export default function StatusPage() {
                       placeholder="dd/mm/yyyy"
                     />
                   </div>
-                  <span className="text-xs text-slate-500 self-center">
+                  <span className="text-xs text-[var(--text-secondary)] self-center">
                     s.d.
                   </span>
                   <div className="w-[150px] max-w-full">
@@ -1409,13 +1409,13 @@ export default function StatusPage() {
                   value={cariQ}
                   onChange={(e) => setCariQ(e.target.value)}
                   placeholder="Cari penyewa..."
-                  className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setFilterPanelTerbuka((terbuka) => !terbuka)}
-                className="rounded-lg px-3 py-2 text-lg text-slate-600 transition-colors border-0 focus:outline-none"
+                className="rounded-lg px-3 py-2 text-lg text-[var(--text-secondary)] transition-colors border-0 focus:outline-none"
                 aria-label={
                   filterPanelTerbuka ? "Sembunyikan filter" : "Tampilkan filter"
                 }
@@ -1432,17 +1432,17 @@ export default function StatusPage() {
           {filterPanelTerbuka && (
             <div
               id="status-filter-panel"
-              className="flex flex-wrap items-center gap-3 pt-3 mt-3 border-t border-slate-200"
+              className="flex flex-wrap items-center gap-3 pt-3 mt-3 border-t border-[var(--border-color)]"
             >
               {/* Filter dropdown */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-600">
+                <label className="text-xs font-semibold text-[var(--text-secondary)]">
                   Filter
                 </label>
                 <select
                   value={filterWaktuAmbil}
                   onChange={(e) => setFilterWaktuAmbil(e.target.value)}
-                  className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   style={{ width: 190, maxWidth: "100%" }}
                   aria-label="Filter waktu ambil"
                 >
@@ -1453,13 +1453,13 @@ export default function StatusPage() {
               </div>
               {/* Sort by dropdown */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-gray-600">
+                <label className="text-xs font-semibold text-[var(--text-secondary)]">
                   Sort by
                 </label>
                 <select
                   value={urutkan}
                   onChange={(e) => setUrutkan(e.target.value)}
-                  className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                  className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   style={{ width: 190, maxWidth: "100%" }}
                   aria-label="Urutkan transaksi"
                 >
@@ -1473,13 +1473,13 @@ export default function StatusPage() {
               <button
                 type="button"
                 onClick={resetFilter}
-                className="rounded-lg bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors border-0 focus:outline-none self-end"
+                className="rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors border-0 focus:outline-none self-end"
               >
                 Reset Filter
               </button>
               {/* Checkbox */}
               <label
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 self-center"
+                className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] self-center"
                 style={{ cursor: "pointer", userSelect: "none" }}
               >
                 <input
@@ -1602,7 +1602,7 @@ export default function StatusPage() {
                       if (daftar.length === 0)
                         return (
                           <p
-                            className="text-center text-xs text-gray-500"
+                            className="text-center text-xs text-[var(--text-secondary)]"
                             style={{ padding: "32px 0", fontStyle: "italic" }}
                           >
                             Tidak ada transaksi
@@ -1641,7 +1641,7 @@ export default function StatusPage() {
               aria-label="Geser kanban ke kiri"
               title="Geser kanban ke kiri"
               disabled={boardScrollState.left}
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary status-kanban-nav status-kanban-nav-left"
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary status-kanban-nav status-kanban-nav-left"
               style={{
                 left: submenuOpen
                   ? "calc(16rem + 16rem + 8px)"
@@ -1653,7 +1653,7 @@ export default function StatusPage() {
             <button
               type="button"
               onClick={() => scrollBoard(360)}
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary status-kanban-nav status-kanban-nav-right"
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary status-kanban-nav status-kanban-nav-right"
               aria-label="Geser kanban ke kanan"
               title="Geser kanban ke kanan"
               disabled={boardScrollState.right}
@@ -1680,7 +1680,7 @@ export default function StatusPage() {
                 >
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border-2 border-solid border-slate-200 bg-white shadow-2xl"
+                    className="relative flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
                   >
                     <div className="mb-4 flex items-center justify-between px-6 pt-6">
                       <h3 className="text-lg font-semibold">
@@ -1695,7 +1695,7 @@ export default function StatusPage() {
                       </button>
                     </div>
                     <div className="flex-1 overflow-y-auto px-6">
-                      <div className="flex items-center gap-4 mb-3 bg-slate-50 rounded-lg p-3">
+                      <div className="flex items-center gap-4 mb-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                         <span className="font-semibold">{t.no_invoice}</span>
                         <span
                           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${statusBadge(t.status)}`}
@@ -1707,56 +1707,56 @@ export default function StatusPage() {
                         className="grid grid-cols-1 sm:grid-cols-2"
                         style={{ flexShrink: 0, minWidth: 0, gap: "0.75rem" }}
                       >
-                        <div className="bg-slate-50 rounded-lg p-3">
+                        <div className="bg-[var(--bg-subtle)] rounded-lg p-3">
                           <p className="font-semibold mb-2">
                             Identitas Penyewa
                           </p>
                           <p
-                            className="text-13 text-gray-600 mb-0"
+                            className="text-13 text-[var(--text-secondary)] mb-0"
                             style={{ wordBreak: "break-word" }}
                           >
                             Nama: <strong>{t.penyewa}</strong>
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             HP: {t.hp_penyewa || "-"}
                           </p>
                           <p
-                            className="text-13 text-gray-600 mb-0"
+                            className="text-13 text-[var(--text-secondary)] mb-0"
                             style={{ wordBreak: "break-word" }}
                           >
                             Alamat: {t.alamat_penyewa || "-"}
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Jaminan: {formatJaminan(t.jaminan_sewa)}
                           </p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
+                        <div className="bg-[var(--bg-subtle)] rounded-lg p-3">
                           <p className="font-semibold mb-2">Jadwal</p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Ambil (rencana):{" "}
                             {formatTanggal(t.waktu_ambil_rencana)}
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Kembali (rencana):{" "}
                             {formatTanggal(t.waktu_kembali_rencana)}
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Ambil (aktual):{" "}
                             {formatTanggal(t.waktu_ambil_aktual)}
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Kembali (aktual):{" "}
                             {formatTanggal(t.waktu_kembali_aktual)}
                           </p>
-                          <p className="text-13 text-gray-600 mb-0">
+                          <p className="text-13 text-[var(--text-secondary)] mb-0">
                             Durasi: {t.durasi_teks || "-"}
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 rounded-xl border-2 border-solid border-slate-200 overflow-x-auto">
+                      <div className="mt-3 rounded-xl border-2 border-solid border-[var(--border-color)] overflow-x-auto">
                         <p className="font-semibold mb-2 px-3 pt-3">Barang</p>
                         <table className="w-full min-w-[720px] border-collapse text-sm">
-                          <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                             <tr>
                               <th className="px-4 py-3 text-left">
                                 Nama Barang
@@ -1771,15 +1771,15 @@ export default function StatusPage() {
                             {(t.items || []).map((i, idx) => (
                               <tr
                                 key={idx}
-                                className="bg-white even:bg-slate-50"
+                                className="bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]"
                               >
                                 <td className="px-4 py-3 align-middle font-semibold">
                                   {i.ref.nama}
                                 </td>
-                                <td className="px-4 py-3 align-middle text-center text-gray-600">
+                                <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
                                   {i.qty}x
                                 </td>
-                                <td className="px-4 py-3 align-middle text-gray-600">
+                                <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
                                   {i.ref.jenis === "satuan" ? (
                                     <span
                                       className="text-xs"
@@ -1815,16 +1815,16 @@ export default function StatusPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 mt-3 gap-3 bg-slate-50 rounded-lg p-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 mt-3 gap-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                         <p
-                          className="text-13 text-gray-600 mb-0"
+                          className="text-13 text-[var(--text-secondary)] mb-0"
                           style={{ wordBreak: "break-word" }}
                         >
                           Biaya Dasar:{" "}
                           <strong>{formatRupiah(t.biaya || 0)}</strong>
                         </p>
                         <p
-                          className="text-13 text-gray-600 mb-0"
+                          className="text-13 text-[var(--text-secondary)] mb-0"
                           style={{ wordBreak: "break-word" }}
                         >
                           Denda: <strong>{formatRupiah(t.denda || 0)}</strong>
@@ -1845,7 +1845,7 @@ export default function StatusPage() {
                               ? "bg-blue-100 text-blue-800"
                               : "bg-[#F04438] text-white";
                         return (
-                          <div className="mt-3 bg-slate-50 rounded-lg p-3">
+                          <div className="mt-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                             <div className="flex items-center justify-between mb-2">
                               <p className="font-semibold mb-0">Pembayaran</p>
                               <span
@@ -1859,7 +1859,7 @@ export default function StatusPage() {
                               style={{ minWidth: 0 }}
                             >
                               <p
-                                className="text-gray-600 mb-0"
+                                className="text-[var(--text-secondary)] mb-0"
                                 style={{ wordBreak: "break-word" }}
                               >
                                 Dibayar:{" "}
@@ -1868,7 +1868,7 @@ export default function StatusPage() {
                                 </strong>
                               </p>
                               <p
-                                className="text-gray-600 mb-0"
+                                className="text-[var(--text-secondary)] mb-0"
                                 style={{ wordBreak: "break-word" }}
                               >
                                 Sisa:{" "}
@@ -1878,7 +1878,7 @@ export default function StatusPage() {
                               </p>
                               {pay.kembalian > 0 && (
                                 <p
-                                  className="text-gray-600 mb-0"
+                                  className="text-[var(--text-secondary)] mb-0"
                                   style={{ wordBreak: "break-word" }}
                                 >
                                   Kembalian:{" "}
@@ -1892,7 +1892,7 @@ export default function StatusPage() {
                               {(t.pembayaran?.riwayatBayar || []).length ===
                                 0 && (
                                 <p
-                                  className="text-xs text-gray-500 mb-0"
+                                  className="text-xs text-[var(--text-secondary)] mb-0"
                                   style={{ fontStyle: "italic" }}
                                 >
                                   Belum ada pembayaran dicatat.
@@ -1902,14 +1902,14 @@ export default function StatusPage() {
                                 (b, bi) => (
                                   <div
                                     key={bi}
-                                    className="flex items-center justify-between gap-2 rounded-lg border border-solid border-slate-200 bg-white px-3 py-2 text-xs"
+                                    className="flex items-center justify-between gap-2 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-xs"
                                   >
                                     <span style={{ wordBreak: "break-word" }}>
                                       <strong>{formatRupiah(b.jumlah)}</strong>{" "}
                                       • {b.metode}
                                     </span>
                                     <span
-                                      className="text-gray-500"
+                                      className="text-[var(--text-secondary)]"
                                       style={{ wordBreak: "break-word" }}
                                     >
                                       {formatTanggal(b.tgl)}
@@ -1955,11 +1955,11 @@ export default function StatusPage() {
                           </div>
                         );
                       })()}
-                      <div className="mt-3 bg-slate-50 rounded-lg p-3">
+                      <div className="mt-3 bg-[var(--bg-subtle)] rounded-lg p-3">
                         <p className="font-semibold mb-2">Riwayat Pelayan</p>
                         {(t.riwayatDilayani || []).length === 0 && (
                           <p
-                            className="text-xs text-gray-500 mb-0"
+                            className="text-xs text-[var(--text-secondary)] mb-0"
                             style={{ fontStyle: "italic" }}
                           >
                             Belum ada riwayat.
@@ -1969,14 +1969,14 @@ export default function StatusPage() {
                           {(t.riwayatDilayani || []).map((r, ri) => (
                             <div
                               key={ri}
-                              className="flex items-center justify-between gap-2 rounded-lg border border-solid border-slate-200 bg-white px-3 py-2 text-xs"
+                              className="flex items-center justify-between gap-2 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-xs"
                             >
                               <span style={{ wordBreak: "break-word" }}>
                                 <strong>{LABEL_AKSI[r.aksi] || r.aksi}</strong>{" "}
                                 • {r.nama}
                               </span>
                               <span
-                                className="text-gray-500"
+                                className="text-[var(--text-secondary)]"
                                 style={{ wordBreak: "break-word" }}
                               >
                                 {formatTanggal(r.tgl)}
@@ -1986,7 +1986,7 @@ export default function StatusPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-stretch gap-2 border-t border-slate-200 px-6 pb-6 pt-4">
+                    <div className="flex justify-stretch gap-2 border-t border-[var(--border-color)] px-6 pb-6 pt-4">
                       <button
                         onClick={() => {
                           setDetailTrx(null);
@@ -2031,7 +2031,7 @@ export default function StatusPage() {
                     </button>
                   </div>
                   <div className="p-6">
-                    <p className="text-13 text-gray-600 mb-3">
+                    <p className="text-13 text-[var(--text-secondary)] mb-3">
                       Invoice:{" "}
                       <strong style={{ fontFamily: "ui-monospace, monospace" }}>
                         {bayarTrx.no_invoice}
@@ -2052,7 +2052,7 @@ export default function StatusPage() {
                     >
                       <div>
                         <p
-                          className="text-gray-500 mb-0"
+                          className="text-[var(--text-secondary)] mb-0"
                           style={{ fontSize: 10 }}
                         >
                           Tagihan
@@ -2063,7 +2063,7 @@ export default function StatusPage() {
                       </div>
                       <div>
                         <p
-                          className="text-gray-500 mb-0"
+                          className="text-[var(--text-secondary)] mb-0"
                           style={{ fontSize: 10 }}
                         >
                           Dibayar
@@ -2077,7 +2077,7 @@ export default function StatusPage() {
                       </div>
                       <div>
                         <p
-                          className="text-gray-500 mb-0"
+                          className="text-[var(--text-secondary)] mb-0"
                           style={{ fontSize: 10 }}
                         >
                           Sisa
@@ -2173,7 +2173,7 @@ export default function StatusPage() {
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setBayarTrx(null)}
-                        className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary flex-1 min-w-0 text-13"
+                        className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary flex-1 min-w-0 text-13"
                       >
                         Batal
                       </button>
@@ -2198,13 +2198,13 @@ export default function StatusPage() {
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
           >
-            <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
-              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+            <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] p-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-[var(--text-secondary)]">
                     Kondisi Unit
                   </h2>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">
                     {kondisiModal.judul}
                   </p>
                 </div>
@@ -2214,7 +2214,7 @@ export default function StatusPage() {
                     kondisiModal.resolve(null);
                     setKondisiModal(null);
                   }}
-                  className="border-0 bg-transparent text-gray-400 transition-colors hover:text-gray-600"
+                  className="border-0 bg-transparent text-[var(--text-secondary)] transition-colors hover:text-[var(--text-secondary)]"
                   aria-label="Tutup"
                 >
                   <svg
@@ -2233,14 +2233,14 @@ export default function StatusPage() {
                 </button>
               </div>
               <div className="max-h-[60vh] flex-1 overflow-y-auto p-6">
-                <p className="mb-6 text-sm text-gray-600">
+                <p className="mb-6 text-sm text-[var(--text-secondary)]">
                   Catat kondisi tiap unit saat barang kembali.
                 </p>
                 <div className="space-y-4">
                   {kondisiModal.entries.map((e, i) => (
                     <div
                       key={`${e.idBarang}-${e.sn}`}
-                      className="rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50"
+                      className="rounded-lg border border-[var(--border-color)] p-4 transition hover:bg-[var(--bg-subtle)]"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex flex-1 items-center gap-3">
@@ -2250,10 +2250,10 @@ export default function StatusPage() {
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-[var(--text-secondary)]">
                               {e.nama}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[var(--text-secondary)]">
                               Serial: {e.sn}
                             </p>
                           </div>
@@ -2266,7 +2266,7 @@ export default function StatusPage() {
                               entries[i] = { ...e, kondisi: ev.target.value };
                               setKondisiModal({ ...kondisiModal, entries });
                             }}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           >
                             {opsiKondisi(userRole).map((o) => (
                               <option key={o.value} value={o.value}>
@@ -2285,7 +2285,7 @@ export default function StatusPage() {
                             setKondisiModal({ ...kondisiModal, entries });
                           }}
                           placeholder="Catatan masalah (wajib)..."
-                          className="mt-2 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       )}
                     </div>
@@ -2326,14 +2326,14 @@ export default function StatusPage() {
                   );
                 })()}
               </div>
-              <div className="flex gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+              <div className="flex gap-3 border-t border-[var(--border-color)] bg-[var(--bg-subtle)] px-6 py-4">
                 <button
                   type="button"
                   onClick={() => {
                     kondisiModal.resolve(null);
                     setKondisiModal(null);
                   }}
-                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                  className="flex-1 rounded-lg border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-subtle)]"
                 >
                   Batal
                 </button>
@@ -2379,7 +2379,7 @@ export default function StatusPage() {
                     </button>
                   </div>
                   <div className="p-6">
-                    <p className="text-13 text-gray-600 mb-3">
+                    <p className="text-13 text-[var(--text-secondary)] mb-3">
                       Invoice:{" "}
                       <strong style={{ fontFamily: "ui-monospace, monospace" }}>
                         {detailTrx.no_invoice}
@@ -2423,7 +2423,7 @@ export default function StatusPage() {
                       Bukti Bayar
                     </label>
                     {editBayarHapusBukti && (
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-xs text-[var(--text-secondary)] mb-2">
                         Bukti akan dihapus.{" "}
                         <button
                           type="button"
@@ -2435,7 +2435,7 @@ export default function StatusPage() {
                       </p>
                     )}
                     {!editBayarHapusBukti && !editBayarBuktiLama && entri.bukti && (
-                      <p className="text-xs text-gray-500 mb-2">Memuat pratinjau...</p>
+                      <p className="text-xs text-[var(--text-secondary)] mb-2">Memuat pratinjau...</p>
                     )}
                     <BuktiDropzone
                       value={editBayarBuktiBaru}
@@ -2455,7 +2455,7 @@ export default function StatusPage() {
                     <div className="flex items-center gap-2 mt-4">
                       <button
                         onClick={() => setEditBayarIdx(null)}
-                        className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-surface-secondary flex-1 min-w-0 text-13"
+                        className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary flex-1 min-w-0 text-13"
                       >
                         Batal
                       </button>

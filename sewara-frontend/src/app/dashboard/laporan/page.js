@@ -282,7 +282,7 @@ export default function LaporanPage() {
               setTab(t.key);
               setHalaman(1);
             }}
-            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${tab === t.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-gray-200 text-slate-700 hover:bg-gray-300"}`}
+            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${tab === t.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
           >
             {t.label}
           </button>
@@ -304,7 +304,7 @@ export default function LaporanPage() {
               setPeriode(p.key);
               setHalaman(1);
             }}
-            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${periode === p.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-gray-200 text-slate-700 hover:bg-gray-300"}`}
+            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${periode === p.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
           >
             {p.label}
           </button>
@@ -322,7 +322,7 @@ export default function LaporanPage() {
                 placeholder="dd/mm/yyyy"
               />
             </div>
-            <span className="text-13 text-gray-600">s/d</span>
+            <span className="text-13 text-[var(--text-secondary)]">s/d</span>
             <div className="w-[150px] max-w-full">
               <DateTimePicker
                 value={sampai ? new Date(`${sampai}T00:00:00`) : null}
@@ -341,37 +341,37 @@ export default function LaporanPage() {
       {loadError ? (
         <ErrorMuat onRetry={() => setVersi((v) => v + 1)} />
       ) : loading ? (
-        <p role="status" className="py-12 text-center text-sm text-gray-500">Memuat laporan...</p>
+        <p role="status" className="py-12 text-center text-sm text-[var(--text-muted)]">Memuat laporan...</p>
       ) : tab === "keuangan" && (
         <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-[#7181E0] p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-0">
+        <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
+          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
             Total Biaya Dasar
           </p>
           <p className="text-[22px] font-bold mb-0">
             {formatRupiah(totalBiaya)}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-red-500 p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-0">
+        <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-red-500 p-4">
+          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
             Total Denda
           </p>
           <p className="text-[22px] font-bold text-danger mb-0">
             {formatRupiah(total_denda)}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-emerald-500 p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-0">
+        <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
+          <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
             Total Akhir
           </p>
           <p className="text-[22px] font-bold mb-0 text-emerald-700">
             {formatRupiah(total_akhir)}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-[#7181E0] p-4 md:col-span-3">
+        <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4 md:col-span-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs font-semibold text-gray-500 mb-0">
+            <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
               Total Diterima
             </p>
             <p className="text-[22px] font-bold mb-0">
@@ -400,7 +400,7 @@ export default function LaporanPage() {
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
+          <p className="text-xs text-[var(--text-muted)] mt-3">
             Sisa piutang:{" "}
             {formatRupiah(Math.max(0, total_akhir - totalDiterima))}
           </p>
@@ -413,9 +413,9 @@ export default function LaporanPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+      <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
         <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-          <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+          <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
               <th className="px-4 py-3 text-left">Invoice</th>
               <th className="px-4 py-3 text-left">Penyewa</th>
@@ -430,14 +430,14 @@ export default function LaporanPage() {
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-12 text-center italic text-gray-500"
+                  className="px-4 py-12 text-center italic text-[var(--text-muted)]"
                 >
                   Belum ada transaksi selesai.
                 </td>
               </tr>
             )}
             {sortedHal.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
+              <tr key={t.id} className="hover:bg-[var(--bg-subtle)]">
                 <td className="border-b border-border px-4 py-3 text-xs text-text-muted font-mono">
                   {t.no_invoice}
                 </td>
@@ -487,22 +487,22 @@ export default function LaporanPage() {
       {!loadError && !loading && tab === "alat" && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-[#7181E0] p-4">
-              <p className="text-xs font-semibold text-gray-500 mb-0">
+            <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-[#7181E0] p-4">
+              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
                 Total Unit Keluar
               </p>
               <p className="text-[22px] font-bold mb-0">{totalUnitAlat}</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-emerald-500 p-4">
-              <p className="text-xs font-semibold text-gray-500 mb-0">
+            <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-emerald-500 p-4">
+              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
                 Jenis Alat
               </p>
               <p className="text-[22px] font-bold mb-0 text-emerald-700">
                 {dataAlat.length}
               </p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-amber-500 p-4">
-              <p className="text-xs font-semibold text-gray-500 mb-0">
+            <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-color)] border-l-4 border-amber-500 p-4">
+              <p className="text-xs font-semibold text-[var(--text-muted)] mb-0">
                 Alat Terpopuler
               </p>
               <p className="text-lg font-bold mb-0 break-words">
@@ -511,9 +511,9 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+          <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
             <table className="w-full min-w-[720px] border-collapse whitespace-nowrap text-sm">
-              <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+              <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
                 <tr>
                   <th className="w-12 px-4 py-3 text-left">#</th>
                   <th className="px-4 py-3 text-left">Nama Alat</th>
@@ -527,14 +527,14 @@ export default function LaporanPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-4 py-12 text-center italic text-gray-500"
+                      className="px-4 py-12 text-center italic text-[var(--text-muted)]"
                     >
                       Belum ada data alat pada periode ini.
                     </td>
                   </tr>
                 )}
                 {dataAlat.map((a, i) => (
-                  <tr key={a.nama} className="hover:bg-slate-50">
+                  <tr key={a.nama} className="hover:bg-[var(--bg-subtle)]">
                     <td className="border-b border-border px-4 py-3 text-xs text-text-muted font-mono">
                       {i + 1}
                     </td>

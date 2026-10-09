@@ -33,7 +33,7 @@ function getStatusInfo(t, batasJam) {
     return {
       label: "Selesai",
       bar: "#579171",
-      badge: "rounded-md px-2 py-1 text-xs bg-gray-100 px-2 py-1 text-xs",
+      badge: "rounded-md px-2 py-1 text-xs bg-[var(--bg-subtle)] px-2 py-1 text-xs",
     };
   if (t.status === "Belum Selesai")
     return {
@@ -68,7 +68,7 @@ function getStatusInfo(t, batasJam) {
   return {
     label: t.status || "-",
     bar: "#8b98a5",
-    badge: "rounded-md px-2 py-1 text-xs bg-gray-100 px-2 py-1 text-xs",
+    badge: "rounded-md px-2 py-1 text-xs bg-[var(--bg-subtle)] px-2 py-1 text-xs",
   };
 }
 
@@ -93,15 +93,15 @@ const DetailCard = memo(function DetailCard({ t }) {
         ? "rounded-md bg-blue-100 px-2 py-1 text-xs"
         : "rounded-md bg-red-100 px-2 py-1 text-xs";
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 text-[13px] shadow-lg">
+    <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 text-[13px] shadow-lg">
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="font-bold">{t.penyewa}</span>
         <span className={`rounded-md px-2 py-1 text-xs ${info.badge}`}>
           {info.label}
         </span>
       </div>
-      <div className="text-xs text-gray-500">Hp : {t.hp_penyewa || "-"}</div>
-      <div className="text-xs text-gray-600 mt-2">
+      <div className="text-xs text-[var(--text-muted)]">Hp : {t.hp_penyewa || "-"}</div>
+      <div className="text-xs text-[var(--text-secondary)] mt-2">
         <span className="text-[#579171]">Ambil:</span>{" "}
         {fmtWaktu(t.waktu_ambil_rencana)}
         <br />
@@ -112,13 +112,13 @@ const DetailCard = memo(function DetailCard({ t }) {
         {(t.items || []).slice(0, 3).map((i, idx) => (
           <span
             key={idx}
-            className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-600"
+            className="rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)]"
           >
             {i.qty}x {i.ref.nama}
           </span>
         ))}
         {(t.items || []).length > 3 && (
-          <span className="text-xs text-gray-500">+{t.items.length - 3}</span>
+          <span className="text-xs text-[var(--text-muted)]">+{t.items.length - 3}</span>
         )}
       </div>
       <div className="flex items-center justify-between gap-2 mt-2">
@@ -493,16 +493,16 @@ export default function KalenderPage() {
     };
   }, [visible, mingguDays]);
 
-  if (loading) return <div role="status" className="p-8 text-center text-sm text-gray-500">Memuat kalender...</div>;
+  if (loading) return <div role="status" className="p-8 text-center text-sm text-[var(--text-muted)]">Memuat kalender...</div>;
   if (loadError) return <ErrorMuat onRetry={muatData} />;
 
   return (
     <div className="w-full max-w-7xl mx-auto">
       <h2 className="text-xl font-bold mb-6">Kalender Jadwal</h2>
-      {visible.length === 0 && <p className="mb-4 rounded-lg border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">Belum ada jadwal pada rentang ini.</p>}
+      {visible.length === 0 && <p className="mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 text-center text-sm text-[var(--text-muted)]">Belum ada jadwal pada rentang ini.</p>}
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <div className="flex gap-2 rounded-xl bg-gray-100 p-1">
+        <div className="flex gap-2 rounded-xl bg-[var(--bg-subtle)] p-1">
           {[
             ["hari", "Hari"],
             ["minggu", "Minggu"],
@@ -512,14 +512,14 @@ export default function KalenderPage() {
               type="button"
               key={v}
               onClick={() => switchMode(v)}
-              className={`rounded-full border-0 px-4 py-2 text-sm font-semibold transition-colors ${modeView === v ? "bg-[#7181E0] text-white shadow-sm" : "bg-gray-200 text-slate-700 hover:bg-gray-300"}`}
+              className={`rounded-full border-0 px-4 py-2 text-sm font-semibold transition-colors ${modeView === v ? "bg-[#7181E0] text-white shadow-sm" : "bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
             >
               {lbl}
             </button>
           ))}
         </div>
         <div className="flex items-center flex-wrap gap-3">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-600">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">
             <input
               type="checkbox"
               checked={showSelesai}
@@ -545,12 +545,12 @@ export default function KalenderPage() {
             : "grid gap-5"
         }
       >
-        <div className="rounded-xl border-2 border-solid border-slate-200 border-t-4 border-t-[#7181E0] bg-white p-4 shadow-lg transition-all duration-300">
+        <div className="rounded-xl border-2 border-solid border-[var(--border-color)] border-t-4 border-t-[#7181E0] bg-[var(--bg-surface)] p-4 shadow-lg transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={prev}
-              className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300 focus:outline-none"
+              className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] focus:outline-none"
             >
               &larr; Sebelum
             </button>
@@ -560,7 +560,7 @@ export default function KalenderPage() {
             <button
               type="button"
               onClick={next}
-              className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300 focus:outline-none"
+              className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] focus:outline-none"
             >
               Berikut &rarr;
             </button>
@@ -568,7 +568,7 @@ export default function KalenderPage() {
 
           {modeView === "bulan" && (
             <>
-              <div className="grid grid-cols-7 gap-px text-center text-xs font-bold text-slate-500">
+              <div className="grid grid-cols-7 gap-px text-center text-xs font-bold text-[var(--text-muted)]">
                 {hariNama.map((h) => (
                   <div key={h} className="bg-[#7181E0]/10 px-1.5 py-1.5">
                     {h}
@@ -665,7 +665,7 @@ export default function KalenderPage() {
                         return (
                           <div
                             key={ci}
-                            className={`relative min-h-20 ${isWeekend ? "bg-slate-50" : "bg-white"}`}
+                            className={`relative min-h-20 ${isWeekend ? "bg-[var(--bg-subtle)]" : "bg-[var(--bg-surface)]"}`}
                           >
                             <button
                               type="button"
@@ -677,7 +677,7 @@ export default function KalenderPage() {
                                   className={
                                     isToday
                                       ? "flex h-5 w-5 items-center justify-center rounded-full bg-[#7181E0] text-xs font-bold text-white"
-                                      : "text-xs text-gray-600"
+                                      : "text-xs text-[var(--text-secondary)]"
                                   }
                                 >
                                   {d}
@@ -765,9 +765,9 @@ export default function KalenderPage() {
                         type="button"
                         key={d.getTime()}
                         onClick={() => pindahKeHari(d)}
-                        className={`border-0 border-b border-slate-200 bg-transparent px-2 py-1.5 text-center text-xs font-bold ${isToday ? "text-[#7181E0]" : "text-slate-600"}`}
+                        className={`border-0 border-b border-[var(--border-color)] bg-transparent px-2 py-1.5 text-center text-xs font-bold ${isToday ? "text-[#7181E0]" : "text-[var(--text-secondary)]"}`}
                       >
-                        <span className="block text-[10px] text-slate-500">
+                        <span className="block text-[10px] text-[var(--text-muted)]">
                           {hariNama[d.getDay()]}
                         </span>
                         <span
@@ -785,7 +785,7 @@ export default function KalenderPage() {
                 </div>
                 <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] gap-px">
                   <div
-                    className="relative border-r border-slate-200"
+                    className="relative border-r border-[var(--border-color)]"
                     style={{ height: tinggiMinggu }}
                   >
                     {jamList.map((h) => (
@@ -809,7 +809,7 @@ export default function KalenderPage() {
                     return (
                       <div
                         key={di}
-                        className="relative border-r border-slate-200"
+                        className="relative border-r border-[var(--border-color)]"
                         style={{ height: tinggiMinggu }}
                       >
                         {jamList.map((h) => (
@@ -932,11 +932,11 @@ export default function KalenderPage() {
 
           {modeView === "hari" && (
             <div className="flex-col gap-3">
-              <p className="text-13 font-bold text-gray-600">
+              <p className="text-13 font-bold text-[var(--text-secondary)]">
                 {fmtDate(tglFokus)}
               </p>
               {eventsUntukTanggal(fmtDate(tglFokus)).length === 0 ? (
-                <p className="p-8 text-center text-13 italic text-gray-500">
+                <p className="p-8 text-center text-13 italic text-[var(--text-muted)]">
                   Tidak ada jadwal di hari ini.
                 </p>
               ) : (
@@ -947,11 +947,11 @@ export default function KalenderPage() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-200 pt-3">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--border-color)] pt-3">
             {legend.map((l) => (
               <span
                 key={l.label}
-                className="flex items-center gap-2 text-xs text-gray-600"
+                className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"
               >
                 <span
                   className="inline-block h-3 w-3 rounded-md"
@@ -965,12 +965,12 @@ export default function KalenderPage() {
 
         {modeView === "bulan" && selectedDate && (
           <div className="page-enter">
-            <div className="rounded-xl border-2 border-solid border-slate-200 border-t-4 border-t-[#7181E0] bg-white p-4 shadow-lg">
+            <div className="rounded-xl border-2 border-solid border-[var(--border-color)] border-t-4 border-t-[#7181E0] bg-[var(--bg-surface)] p-4 shadow-lg">
               <h3 className="mb-3 text-base font-bold text-[#7181E0]">
                 📅 {fmt(tahun, bulan, selectedDate)}
               </h3>
               {isiDetail.length === 0 ? (
-                <p className="p-6 text-center text-13 italic text-gray-500">
+                <p className="p-6 text-center text-13 italic text-[var(--text-muted)]">
                   Tidak ada jadwal
                 </p>
               ) : (
@@ -994,9 +994,9 @@ export default function KalenderPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-4xl rounded-xl border border-slate-200 bg-white shadow-lg animate-scaleIn"
+              className="w-full max-w-4xl rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg animate-scaleIn"
             >
-              <div className="flex items-center justify-between border-b border-slate-200 p-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] p-4">
                 <h3 className="text-lg font-bold">Detail Jadwal</h3>
               </div>
               <div className="overflow-y-auto p-6">
@@ -1005,7 +1005,7 @@ export default function KalenderPage() {
                   <button
                     type="button"
                     onClick={() => setModalDetail(null)}
-                    className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-300"
+                    className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)]"
                   >
                     Tutup
                   </button>

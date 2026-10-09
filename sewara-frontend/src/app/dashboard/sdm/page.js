@@ -259,7 +259,7 @@ export default function SDMPage() {
         <div>
           {" "}
           <h2 className="text-2xl font-bold">Manajemen Karyawan</h2>{" "}
-          <p className="text-slate-600 mb-0">
+          <p className="text-[var(--text-secondary)] mb-0">
             Kelola staf CS &amp; Gudang di bisnis Anda. Staf melihat data bisnis
             yang sama dengan Anda.
           </p>{" "}
@@ -285,7 +285,7 @@ export default function SDMPage() {
           <button
             type="button"
             onClick={muat}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 mt-4"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] mt-4"
           >
             Coba Lagi
           </button>{" "}
@@ -295,21 +295,21 @@ export default function SDMPage() {
         {" "}
         <div className="flex items-center justify-between gap-3 p-4">
           {" "}
-          <span className="text-xs font-bold text-slate-600">
+          <span className="text-xs font-bold text-[var(--text-secondary)]">
             Daftar Staf ({staff.length})
           </span>{" "}
           <button
             type="button"
             onClick={muat}
             disabled={loading}
-            className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300 disabled:cursor-not-allowed"
+            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed"
           >
             ↻ Muat Ulang
           </button>{" "}
         </div>{" "}
-        <div className="overflow-x-auto rounded-xl border-2 border-solid border-slate-200 bg-white shadow-lg">
+        <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
           <table className="w-full min-w-[640px] border-collapse whitespace-nowrap text-sm">
-            <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <thead className="bg-[var(--bg-subtle)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left">Staf</th>
                 <th className="px-4 py-3 text-left">Role</th>
@@ -329,11 +329,11 @@ export default function SDMPage() {
                 return (
                   <tr
                     key={u.email}
-                    className={isEven ? "bg-white" : "bg-slate-50"}
+                    className={isEven ? "bg-[var(--bg-surface)]" : "bg-[var(--bg-subtle)]"}
                   >
                     <td className="px-4 py-3">
                       <p className="mb-0 font-bold">{u.nama_lengkap || "-"}</p>
-                      <p className="mb-0 text-xs text-slate-600">{u.email}</p>
+                      <p className="mb-0 text-xs text-[var(--text-secondary)]">{u.email}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-[#7181E0]">
@@ -347,14 +347,14 @@ export default function SDMPage() {
                         <button
                           type="button"
                           onClick={() => bukaEdit(u)}
-                          className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                          className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => bukaGantiPassword(u)}
-                          className="rounded-lg border-0 bg-gray-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-gray-300"
+                          className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                         >
                           Ganti Password
                         </button>
@@ -401,7 +401,7 @@ export default function SDMPage() {
           </table>
         </div>{" "}
       </div>{" "}
-      <p className="text-xs text-slate-600 mt-4">
+      <p className="text-xs text-[var(--text-secondary)] mt-4">
         {" "}
         Akun staf yang dinonaktifkan tidak bisa masuk dashboard sampai
         diaktifkan kembali.{" "}
@@ -416,7 +416,7 @@ export default function SDMPage() {
             {" "}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               {" "}
               <div className="flex items-center justify-between px-6 pb-4 pt-6">
@@ -425,7 +425,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setShowTambah(false)}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>{" "}
@@ -436,7 +436,7 @@ export default function SDMPage() {
                   {" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Nama
                     </label>{" "}
                     <input
@@ -445,16 +445,16 @@ export default function SDMPage() {
                         setForm({ ...form, nama: e.target.value })
                       }
                       placeholder="mis. Budi Santoso"
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
-                    <p className="text-xs text-slate-600 mt-2 leading-normal">
+                    <p className="text-xs text-[var(--text-secondary)] mt-2 leading-normal">
                       Nama ini juga akan tertulis di invoice &amp; riwayat
                       pelayan.
                     </p>{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Username
                     </label>{" "}
                     <input
@@ -463,15 +463,15 @@ export default function SDMPage() {
                         setForm({ ...form, username: e.target.value })
                       }
                       placeholder="opsional, fallback email"
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
-                    <p className="text-xs text-slate-600 mt-2 leading-normal">
+                    <p className="text-xs text-[var(--text-secondary)] mt-2 leading-normal">
                       Ditampilkan di navbar &amp; dropdown profil.
                     </p>{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Email (login)
                     </label>{" "}
                     <input
@@ -481,12 +481,12 @@ export default function SDMPage() {
                         setForm({ ...form, emailBaru: e.target.value })
                       }
                       placeholder="nama@contoh.com"
-                      className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Password Awal
                     </label>{" "}
                     <PasswordInput
@@ -495,12 +495,12 @@ export default function SDMPage() {
                         setForm({ ...form, password: e.target.value })
                       }
                       placeholder="minimal 8 karakter"
-                      className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 pr-12 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 pr-12 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Konfirmasi Password
                     </label>{" "}
                     <PasswordInput
@@ -509,12 +509,12 @@ export default function SDMPage() {
                         setForm({ ...form, konfirmasi: e.target.value })
                       }
                       placeholder="ulangi password"
-                      className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 pr-12 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 pr-12 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Role
                     </label>{" "}
                     <div className="flex-col gap-2 mt-2">
@@ -522,7 +522,7 @@ export default function SDMPage() {
                       {OPSI_ROLE.map((r) => (
                         <label
                           key={r.value}
-                          className="flex items-start gap-2 rounded-lg border border-solid border-slate-200 bg-white p-3 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                          className="flex items-start gap-2 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-3 text-sm cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
                         >
                           {" "}
                           <input
@@ -535,7 +535,7 @@ export default function SDMPage() {
                           <span>
                             {" "}
                             <span className="font-bold">{r.label}</span>{" "}
-                            <span className="text-xs text-slate-600">
+                            <span className="text-xs text-[var(--text-secondary)]">
                               {r.desc}
                             </span>{" "}
                           </span>{" "}
@@ -550,7 +550,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setShowTambah(false)}
-                  className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                  className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
                 >
                   Batal
                 </button>{" "}
@@ -578,7 +578,7 @@ export default function SDMPage() {
             {" "}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               {" "}
               <div className="flex items-center justify-between px-6 pb-4 pt-6">
@@ -587,7 +587,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setEditAkun(null)}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>{" "}
@@ -598,18 +598,18 @@ export default function SDMPage() {
                   {" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Email (login, tidak bisa diubah)
                     </label>{" "}
                     <input
                       value={editAkun.email}
                       readOnly
-                      className="w-full rounded-md border border-solid border-gray-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-600 outline-none cursor-not-allowed"
+                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none cursor-not-allowed"
                     />{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Nama
                     </label>{" "}
                     <div
@@ -623,7 +623,7 @@ export default function SDMPage() {
                           setEditForm({ ...editForm, nama: e.target.value })
                         }
                         disabled={editLocks.nama}
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                         style={{
                           flex: 1,
                           ...(editLocks.nama
@@ -641,20 +641,20 @@ export default function SDMPage() {
                           onClick={() =>
                             setEditLocks((l) => ({ ...l, nama: false }))
                           }
-                          className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors flex-shrink-0"
+                          className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors flex-shrink-0"
                         >
                           Edit
                         </button>
                       )}{" "}
                     </div>{" "}
-                    <p className="text-xs text-slate-600 mt-2 leading-normal">
+                    <p className="text-xs text-[var(--text-secondary)] mt-2 leading-normal">
                       Nama ini juga akan tertulis di invoice &amp; riwayat
                       pelayan.
                     </p>{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Username
                     </label>{" "}
                     <div
@@ -668,7 +668,7 @@ export default function SDMPage() {
                           setEditForm({ ...editForm, username: e.target.value })
                         }
                         disabled={editLocks.username}
-                        className="w-full rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                        className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                         style={{
                           flex: 1,
                           ...(editLocks.username
@@ -686,19 +686,19 @@ export default function SDMPage() {
                           onClick={() =>
                             setEditLocks((l) => ({ ...l, username: false }))
                           }
-                          className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors flex-shrink-0"
+                          className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors flex-shrink-0"
                         >
                           Edit
                         </button>
                       )}{" "}
                     </div>{" "}
-                    <p className="text-xs text-slate-600 mt-2 leading-normal">
+                    <p className="text-xs text-[var(--text-secondary)] mt-2 leading-normal">
                       Ditampilkan di navbar &amp; dropdown profil.
                     </p>{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Role
                     </label>{" "}
                     <div className="flex-col gap-2 mt-2">
@@ -706,7 +706,7 @@ export default function SDMPage() {
                       {OPSI_ROLE.map((r) => (
                         <label
                           key={r.value}
-                          className="flex items-start gap-2 rounded-lg border border-solid border-slate-200 bg-white p-3 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                          className="flex items-start gap-2 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-3 text-sm cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
                         >
                           {" "}
                           <input
@@ -721,7 +721,7 @@ export default function SDMPage() {
                           <span>
                             {" "}
                             <span className="font-bold">{r.label}</span>{" "}
-                            <span className="text-xs text-slate-600">
+                            <span className="text-xs text-[var(--text-secondary)]">
                               {r.desc}
                             </span>{" "}
                           </span>{" "}
@@ -736,7 +736,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setEditAkun(null)}
-                  className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                  className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
                 >
                   Batal
                 </button>{" "}
@@ -764,7 +764,7 @@ export default function SDMPage() {
             {" "}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+              className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
               {" "}
               <div className="flex items-center justify-between px-6 pb-4 pt-6">
@@ -773,7 +773,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setPassAkun(null)}
-                  className="rounded-lg border-0 bg-transparent hover:bg-gray-100 px-2 py-2 text-xl text-slate-600 transition-colors"
+                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
                 >
                   &times;
                 </button>{" "}
@@ -782,12 +782,12 @@ export default function SDMPage() {
                 {" "}
                 <div className="flex flex-col gap-4">
                   {" "}
-                  <p className="text-sm text-slate-700 mb-2">
+                  <p className="text-sm text-[var(--text-secondary)] mb-2">
                     Akun: <strong>{passAkun.email}</strong>
                   </p>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Password Baru
                     </label>{" "}
                     <PasswordInput
@@ -796,12 +796,12 @@ export default function SDMPage() {
                         setPassForm({ ...passForm, password: e.target.value })
                       }
                       placeholder="minimal 8 karakter"
-                      className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 pr-12 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 pr-12 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
                   </div>{" "}
                   <div className="block">
                     {" "}
-                    <label className="block text-xs font-bold text-slate-700 mb-2">
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                       Konfirmasi Password Baru
                     </label>{" "}
                     <PasswordInput
@@ -810,7 +810,7 @@ export default function SDMPage() {
                         setPassForm({ ...passForm, konfirmasi: e.target.value })
                       }
                       placeholder="ulangi password baru"
-                      className="rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 pr-12 text-sm text-gray-900 outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-60"
+                      className="rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 pr-12 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
                     />{" "}
                   </div>{" "}
                 </div>{" "}
@@ -820,7 +820,7 @@ export default function SDMPage() {
                 <button
                   type="button"
                   onClick={() => setPassAkun(null)}
-                  className="rounded-lg border-0 bg-gray-200 hover:bg-gray-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors flex-1"
+                  className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
                 >
                   Batal
                 </button>{" "}
