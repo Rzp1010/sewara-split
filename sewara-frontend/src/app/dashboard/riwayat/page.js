@@ -262,7 +262,7 @@ function RiwayatPageInner() {
                     </Button>
                     {bolehBlacklist &&
                       (sudahBlacklist(t) ? (
-                        <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
+                        <span className="rounded-full bg-[var(--color-danger-soft,#fef2f2)] px-2 py-1 text-xs font-bold text-[var(--color-danger-text,#dc2626)]">
                           Ter-blacklist
                         </span>
                       ) : (

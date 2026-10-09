@@ -27,7 +27,7 @@ const INPUT_CLS =
   "w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20";
 
 const BTN_UTAMA =
-  "rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:hover:bg-[var(--border-color)]";
+  "rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-secondary)] disabled:hover:bg-[var(--border-color)]";
 
 const BTN_SEKUNDER =
   "rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-subtle)] disabled:cursor-not-allowed disabled:opacity-60";

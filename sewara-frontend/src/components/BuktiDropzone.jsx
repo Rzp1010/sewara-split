@@ -63,7 +63,7 @@ export default function BuktiDropzone({
           <img
             src={previewUrl}
             alt="Bukti pembayaran"
-            className={`${r} border border-solid border-slate-200 object-cover`}
+            className={`${r} border border-solid border-[var(--border-color)] object-cover`}
             style={{ width: 56, height: 56 }}
           />
           {onHapusPreview && (
@@ -105,23 +105,23 @@ export default function BuktiDropzone({
           compact ? "border-2" : "border-[1.5px]"
         } ${
           isi
-            ? "border-solid border-emerald-500 bg-green-50"
+            ? "border-solid border-[var(--color-success)] bg-[var(--color-success-soft)]"
             : hover
-              ? "border-dashed border-[#7181E0] bg-[#EEF2FF]"
+              ? "border-dashed border-[#7181E0] bg-[var(--color-primary-soft)]"
               : compact
-                ? "border-dashed border-gray-400 hover:border-[#7181E0] hover:bg-[#EEF2FF]"
-                : "border-dashed border-gray-200 hover:border-[#7181E0] hover:bg-[#EEF2FF]"
+                ? "border-dashed border-[var(--border-strong)] hover:border-[#7181E0] hover:bg-[var(--color-primary-soft)]"
+                : "border-dashed border-[var(--border-color)] hover:border-[#7181E0] hover:bg-[var(--color-primary-soft)]"
         }`}
       >
         {isi ? (
           <div className="flex flex-col items-center gap-1">
             <span
-              className="font-semibold text-emerald-800"
+              className="font-semibold text-[var(--color-success-text)]"
               style={{ wordBreak: "break-word" }}
             >
               {isi.name}
             </span>
-            <span className="text-[11px] text-emerald-700">
+            <span className="text-[11px] text-[var(--color-success-text)]">
               {ukuranMB(isi.size)} MB
             </span>
             <button
@@ -137,10 +137,10 @@ export default function BuktiDropzone({
           </div>
         ) : (
           <>
-            <span className="text-gray-400">
+            <span className="text-[var(--text-muted)]">
               Tarik &amp; lepas foto di sini, atau
             </span>
-            <span className="rounded-md bg-gray-200 px-3 py-1 text-[11px] font-semibold text-slate-700">
+            <span className="rounded-md bg-[var(--bg-subtle)] px-3 py-1 text-[11px] font-semibold text-[var(--text-primary)]">
               Browse
             </span>
             <span className="text-[10px] text-gray-400">

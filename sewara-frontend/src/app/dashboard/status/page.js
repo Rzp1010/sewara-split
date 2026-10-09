@@ -62,9 +62,9 @@ const STATUS_CONFIG = {
   },
   Mendekati: {
     badge: "bg-yellow-500 text-white",
-    column: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-800",
+    column: "bg-[var(--color-warning-soft,#fffbeb)]",
+    border: "border-[var(--color-warning-soft,#fffbeb)]",
+    text: "text-[var(--color-warning-text,#b45309)]",
     headerBg: "#eab308",
     headerText: "#fff",
   },
@@ -78,9 +78,9 @@ const STATUS_CONFIG = {
   },
   "Belum Selesai": {
     badge: "bg-indigo-500 text-white",
-    column: "bg-indigo-50",
-    border: "border-indigo-200",
-    text: "text-indigo-800",
+    column: "bg-[var(--color-primary-soft,rgba(79,70,229,0.1))]",
+    border: "border-[var(--color-primary-soft,rgba(79,70,229,0.1))]",
+    text: "text-[var(--color-primary-soft-text,#4338ca)]",
     headerBg: "#6366f1",
     headerText: "#fff",
   },
@@ -132,7 +132,7 @@ function formatJam(iso) {
 }
 
 function statusBadge(status) {
-  return STATUS_CONFIG[status]?.badge || "bg-[var(--bg-subtle)] text-white";
+  return STATUS_CONFIG[status]?.badge || "bg-[var(--bg-subtle)] text-[var(--text-primary)]";
 }
 
 const LABEL_AKSI = {
@@ -1368,7 +1368,7 @@ export default function StatusPage() {
                   key={o.k}
                   type="button"
                   onClick={() => setRentangKunci(o.k)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}
                 >
                   {o.label}
                 </button>
@@ -2283,8 +2283,8 @@ export default function StatusPage() {
                 {(() => {
                   const r = ringkasKondisi(kondisiModal.entries);
                   return (
-                    <div className="mt-6 rounded-lg border border-indigo-100 bg-indigo-50 p-4">
-                      <p className="mb-3 text-xs font-semibold text-indigo-900">
+                    <div className="mt-6 rounded-lg border border-[var(--color-primary-soft,rgba(79,70,229,0.1))] bg-[var(--color-primary-soft,rgba(79,70,229,0.1))] p-4">
+                      <p className="mb-3 text-xs font-semibold text-[var(--color-primary-soft-text,#4338ca)]">
                         Ringkasan Kondisi
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

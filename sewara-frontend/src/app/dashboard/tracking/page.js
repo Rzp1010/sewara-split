@@ -1719,15 +1719,15 @@ export default function TrackingPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="bg-surface-card rounded-lg-header">
-                <h3 className="bg-surface-card rounded-lg-title">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
+                <h3 className="m-0 text-lg font-bold text-[var(--text-primary)]">
                   Detail Transaksi
                 </h3>
                 <button
                   type="button"
                   onClick={() => setModalDetail(null)}
                   aria-label="Tutup"
-                  className="bg-surface-card rounded-lg-close"
+                  className="rounded-md border-0 bg-transparent px-2 py-1 text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                 >
                   &times;
                 </button>
@@ -1845,15 +1845,15 @@ export default function TrackingPage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
             >
-              <div className="bg-surface-card rounded-lg-header">
-                <h3 className="bg-surface-card rounded-lg-title">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
+                <h3 className="m-0 text-lg font-bold text-[var(--text-primary)]">
                   Transaksi Lainnya
                 </h3>
                 <button
                   type="button"
                   onClick={() => setModalOverflow(null)}
                   aria-label="Tutup"
-                  className="bg-surface-card rounded-lg-close"
+                  className="rounded-md border-0 bg-transparent px-2 py-1 text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                 >
                   &times;
                 </button>

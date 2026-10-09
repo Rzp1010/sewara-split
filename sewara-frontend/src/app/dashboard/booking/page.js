@@ -149,7 +149,7 @@ const getStatusClass = (status) =>
     Telat: "bg-[#F04438] text-white",
     "Belum Selesai": "bg-indigo-500 text-white",
     Selesai: "bg-[#579171] text-white",
-  })[status] || "bg-[var(--bg-subtle)] text-white";
+  })[status] || "bg-[var(--bg-subtle)] text-[var(--text-primary)]";
 
 // Persentase member efektif: tier durasi (jika ada & durasi diketahui) menang;
 // fallback ke diskon_persen fixed. Non-member / 0 → { persen: 0, sumber: null }.
@@ -2058,7 +2058,7 @@ export default function BookingPage() {
                           zIndex: 60,
                           maxHeight: 220,
                           overflowY: "auto",
-                          boxShadow: "0 8px 24px shadow-lg",
+                          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.16)",
                         }}
                       >
                         {saranMember.map((m) => (
@@ -2075,7 +2075,7 @@ export default function BookingPage() {
                               width: "100%",
                               borderRadius: 0,
                               padding: "8px 12px",
-                              borderBottom: "1px solid #e2e8f0",
+                              borderBottom: "1px solid var(--border-color)",
                             }}
                           >
                             <span

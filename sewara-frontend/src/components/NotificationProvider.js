@@ -65,10 +65,14 @@ export default function NotificationProvider({ children }) {
   }, []);
 
   const toastVariants = {
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
-    warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+    success:
+      "bg-[var(--color-success-soft)] border-[var(--color-success)] text-[var(--color-success-text)]",
+    error:
+      "bg-[var(--color-danger-soft)] border-[var(--color-danger)] text-[var(--color-danger-text)]",
+    info:
+      "bg-[var(--color-info-soft)] border-[var(--color-info)] text-[var(--color-info-text)]",
+    warning:
+      "bg-[var(--color-warning-soft)] border-[var(--color-warning)] text-[var(--color-warning-text)]",
   };
 
   const buttonBase =

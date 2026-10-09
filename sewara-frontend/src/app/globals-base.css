@@ -292,6 +292,24 @@ textarea {
   background: var(--bg-surface);
   outline: none;
 }
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #7181e0;
+  outline: 2px solid rgba(113, 129, 224, 0.2);
+  outline-offset: 1px;
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 
 /* Scrollbar, selection, focus */
 ::-webkit-scrollbar {

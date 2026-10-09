@@ -56,7 +56,7 @@ export default function TimePicker({
       onChange={handleChange}
       step={step}
       placeholder={placeholder}
-      className={`rounded-md border border-solid border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 ${className}`}
+      className={`rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 ${className}`}
     />
   );
 }
