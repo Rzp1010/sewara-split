@@ -19,8 +19,11 @@ module.exports = {
         info: "#3B82F6",
         surface: {
           DEFAULT: "var(--bg-body)",
+          body: "var(--bg-body)",
           secondary: "var(--bg-elevated)",
+          elevated: "var(--bg-elevated)",
           subtle: "var(--bg-subtle)",
+          inset: "var(--bg-inset)",
           card: "var(--bg-surface)",
         },
         text: {

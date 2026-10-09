@@ -190,7 +190,7 @@ const KartuTrx = memo(function KartuTrx({
       </div>
       <div className="text-xs text-[var(--text-secondary)] mb-3">
         <div className="flex flex-col gap-0.5 mb-1">
-          <span style={{ color: "#7181E0" }}>
+          <span style={{ color: "var(--color-primary)" }}>
             Ambil: {formatJam(t.waktu_ambil_rencana)}
           </span>
           <span className="text-[#F04438]">

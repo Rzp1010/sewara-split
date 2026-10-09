@@ -129,11 +129,11 @@
   /* Legacy tokens - prefer Tailwind utilities instead */
   --bg-body: #f3f4f6;
   --bg-surface: #ffffff;
-  --bg-subtle: #f9fafb;
-  --bg-elevated: #ffffff;
-  --bg-inset: #f3f4f6;
+  --bg-subtle: #e5e7eb;
+  --bg-elevated: #f9fafb;
+  --bg-inset: #f8fafc;
   --text-primary: #111827;
-  --text-secondary: #6b7280;
+  --text-secondary: #334155;
   --text-muted: #334155;
   --border-color: #d1d5db;
   --border-strong: #9ca3af;
