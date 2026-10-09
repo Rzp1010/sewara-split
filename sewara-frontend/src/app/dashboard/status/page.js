@@ -1368,7 +1368,7 @@ export default function StatusPage() {
                   key={o.k}
                   type="button"
                   onClick={() => setRentangKunci(o.k)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-text,#4338ca)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] hover:bg-[#d1d5db] dark:hover:bg-[var(--border-color)] text-[var(--text-primary)]"}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none ${rentangKunci === o.k ? "border-[var(--color-primary-soft-text)] bg-[#7181E0] hover:bg-[#5d6fcc] text-white" : "border-[var(--border-color)] bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] hover:bg-[#d1d5db] dark:hover:bg-[var(--border-color)] text-[var(--text-primary)]"}`}
                 >
                   {o.label}
                 </button>

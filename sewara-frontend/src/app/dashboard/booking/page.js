@@ -2239,7 +2239,7 @@ export default function BookingPage() {
                       key={d.jam}
                       type="button"
                       onClick={() => isiDurasi(d.jam)}
-                      className={`${selectedDurasi === d.jam ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                      className={`${selectedDurasi === d.jam ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-0"}`}
                     >
                       {d.label}
                     </button>
@@ -2247,7 +2247,7 @@ export default function BookingPage() {
                   <button
                     type="button"
                     onClick={pilihCustom}
-                    className={`${showCustom ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                    className={`${showCustom ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-0"}`}
                   >
                     Custom
                   </button>
@@ -2540,7 +2540,7 @@ export default function BookingPage() {
                 <button
                   type="button"
                   onClick={() => setShowPromoDiskon((v) => !v)}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] w-full text-sm font-medium transition-colors outline-none focus:outline-none border-0"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] w-full text-sm font-medium transition-colors outline-none focus:outline-none border-0"
                 >
                   {showPromoDiskon ? "− Promo & Diskon" : "+ Promo & Diskon"}
                 </button>
@@ -2628,14 +2628,14 @@ export default function BookingPage() {
                           <button
                             type="button"
                             onClick={() => setPilihSatu("member")}
-                            className={`${pilihSatu !== "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                            className={`${pilihSatu !== "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-0"}`}
                           >
                             Diskon Member
                           </button>
                           <button
                             type="button"
                             onClick={() => setPilihSatu("promo")}
-                            className={`${pilihSatu === "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                            className={`${pilihSatu === "promo" ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-0"}`}
                           >
                             Diskon Promo
                           </button>
@@ -2725,7 +2725,7 @@ export default function BookingPage() {
                       key={m}
                       type="button"
                       onClick={() => setDpMetode(m)}
-                      className={`${dpMetode === m ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-0"}`}
+                      className={`${dpMetode === m ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-0"}`}
                     >
                       {m}
                     </button>
