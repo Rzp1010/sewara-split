@@ -304,7 +304,7 @@ export default function LaporanPage() {
               setPeriode(p.key);
               setHalaman(1);
             }}
-            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${periode === p.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
+            className={`rounded-lg border-0 px-4 py-2 text-sm font-semibold ${periode === p.key ? "bg-[#7181E0] text-white hover:bg-[#5d6fcc]" : "bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[#d1d5db] dark:hover:bg-[var(--bg-subtle)]"}`}
           >
             {p.label}
           </button>

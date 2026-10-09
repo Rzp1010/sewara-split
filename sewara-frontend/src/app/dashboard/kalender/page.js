@@ -512,7 +512,7 @@ export default function KalenderPage() {
               type="button"
               key={v}
               onClick={() => switchMode(v)}
-              className={`rounded-full border-0 px-4 py-2 text-sm font-semibold transition-colors ${modeView === v ? "bg-[#7181E0] text-white shadow-sm" : "bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}
+              className={`rounded-full border-0 px-4 py-2 text-sm font-semibold transition-colors ${modeView === v ? "bg-[#7181E0] text-white shadow-sm" : "bg-[#e5e7eb] dark:bg-[var(--bg-subtle)] text-[var(--text-primary)] hover:bg-[#d1d5db] dark:hover:bg-[var(--bg-subtle)]"}`}
             >
               {lbl}
             </button>
