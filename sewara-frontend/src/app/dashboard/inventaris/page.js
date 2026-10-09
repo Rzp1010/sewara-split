@@ -1203,7 +1203,7 @@ export default function InventarisPage() {
           document.body,
         )}
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
+      <div className="overflow-x-auto rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-lg">
         <table
           className="w-full min-w-[720px] border-collapse text-left text-sm text-[var(--text-primary)]"
           style={{ whiteSpace: "nowrap" }}
