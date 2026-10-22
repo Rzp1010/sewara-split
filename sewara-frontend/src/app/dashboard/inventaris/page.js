@@ -584,6 +584,12 @@ export default function InventarisPage() {
         const rows = [];
         const drop = { format: 0, snKosong: 0, bundling: 0 };
 
+        const header = parseBarisCSV((baris[0] || "").trim(), delim);
+        if (!header[0] || header[0].trim().toLowerCase() !== "nama") {
+          setCsvLoading(false);
+          return notify("CSV harus punya baris header. Kolom pertama header harus 'nama'. Contoh: nama,tipe sewa,harga 6,...", "error");
+        }
+
         for (let i = 1; i < baris.length; i++) {
           const str = baris[i].trim();
           if (!str) continue;
