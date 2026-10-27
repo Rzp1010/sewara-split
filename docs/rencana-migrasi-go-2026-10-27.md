@@ -576,3 +576,52 @@ komentar kode mengapa aman saat dipindah ke container.
 Kode Go, SQL, migrasi, seed, dan uji tidak perlu diubah sama sekali saat pindah ke
 Docker. Perpindahan hanya menyentuh: Dockerfile, file compose, config nginx, dan
 skrip operasional.
+
+---
+
+## 19. W1 mulai: sesi auth sendiri sudah berjalan
+
+Yang berdiri:
+
+- `auth/session.go` — token 32 byte acak, dikirim sebagai cookie `sewara_session`;
+  database hanya menyimpan SHA-256-nya. Cookie `HttpOnly`, `SameSite=Lax`, `Secure`
+  otomatis di produksi.
+- `db/db.go` — `InTenant()` adalah satu-satunya jalan ke tabel bisnis: membuka
+  transaksi, memasang `app.user_id` (SET LOCAL), menurunkan role ke `authenticated`.
+  `*pgxpool.Pool` tidak pernah keluar dari paket `db`.
+- `db/session.go`, `db/identity.go` — akses sempit untuk auth. Pemeriksaan sesi tidak
+  bisa memakai konteks user (identitas belum diketahui), jadi jalurnya dipisah tegas
+  dan sengaja sempit, bukan lewat escape hatch umum.
+- `httpapi/require_auth.go` — middleware `requireAuth`. Handler yang butuh login
+  menerima `db.Identity` sebagai argumen, sehingga tidak mungkin lupa memeriksa sesi:
+  tipenya tidak cocok kalau tidak dibungkus.
+- `migrations/0004_sessions.sql` — tabel `auth.sessions` + kolom kredensial di `auth.users`.
+
+### 19.1 Hasil uji ujung-ke-ujung
+
+`scripts/smoke-auth.ps1` membangun binari (`CGO_ENABLED=0`), menyalakan Postgres,
+menyisipkan sesi sungguhan, menjalankan API, lalu menguji:
+
+| Skenario | Status | Hasil |
+|---|---|---|
+| tanpa cookie | 401 `UNAUTHORIZED` | lolos |
+| cookie palsu | 401 `UNAUTHORIZED` | lolos |
+| sesi kedaluwarsa | 401 `UNAUTHORIZED` | lolos |
+| sesi sah | 200, `role=owner` | lolos |
+
+Nilai `role=owner` itu penting: ia dibaca lewat `InTenant` → `LoadIdentity`, artinya
+konteks RLS benar-benar terpasang dan policy `profiles_select_allowed` meloloskan
+baris yang memang milik user tersebut. Kalau `SET LOCAL` lupa dipasang, hasilnya 401,
+bukan data user lain.
+
+### 19.2 Penyimpangan kecil yang disengaja
+
+`GET /api/auth/me` membalas 401 kalau baris profil tidak ada. Backend Next membalas 200
+dengan id+email saja. User tanpa profil tidak bisa memakai route apa pun, jadi 401
+lebih jujur daripada login yang tidak berguna.
+
+### 19.3 Berikutnya
+
+`POST /api/auth/login` (bcrypt + rate limit + pencatatan gagal login), lalu route
+pertama yang menyentuh data bisnis (`/api/settings`, `/api/inventory`) beserta uji
+negatif tenant per route.
