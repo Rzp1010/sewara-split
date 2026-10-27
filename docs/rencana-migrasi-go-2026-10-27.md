@@ -335,3 +335,40 @@ dipasang.
 - Middleware: session, CSRF origin check, rate limit token bucket.
 - 5-8 route sederhana diport, masing-masing lolos §10.
 - **G1**: seluruh test tenant negatif hijau + fixture lolos. Kalau tidak, migrasi dihentikan.
+
+---
+
+## 15. Kapasitas disk (keputusan 2026-10-27)
+
+EBS sekarang **16 GB**, di bawah gate 20 GB. Ini bukan penghalang, tapi harus dibereskan
+sebelum W0 karena selama transisi dua stack hidup bersamaan (Next + Go + Postgres).
+
+**Keputusan:**
+
+1. **Naikkan EBS 16 → 24 GB gp3.** Biaya tambahan ± $0,64/bulan. Snapshot volume dulu,
+   resize online tanpa reboot.
+2. **Build di luar VPS, wajib sejak hari 1.** VPS diperlakukan sebagai runtime murni:
+   - frontend: `next build` di laptop → salin `out/` (3,94 MB)
+   - Go: cross-compile `GOOS=linux GOARCH=amd64` di laptop → salin binary
+   - VPS tidak butuh Node, npm, node_modules, toolchain Go, maupun `next build`
+3. **Swap 2 GB** swapfile di volume yang sudah diperbesar.
+
+Efek gabungannya: setelah cutover VPS hanya berisi nginx + binary Go + Postgres. Disk
+pemakaian turun drastis, dan — yang lebih penting di t3.micro — **CPU credit tidak
+terbakar oleh build**, yang selama ini ikut menyebabkan aplikasi terasa lambat saat
+burst baseline habis.
+
+Langkah operasional (produksi, urut):
+
+```bash
+# 1. AWS Console → EC2 → Volumes → pilih volume → Actions → Create snapshot
+# 2. AWS Console → volume → Modify volume → 24 GiB → Modify (online, tanpa reboot)
+# 3. di instance:
+lsblk
+sudo growpart /dev/nvme0n1 1      # sesuaikan nama device
+sudo resize2fs /dev/nvme0n1p1     # xfs: sudo xfs_growfs /
+df -h
+```
+
+Upgrade path kalau nanti Postgres butuh ruang: pindahkan datadir ke volume terpisah
+supaya bisa di-snapshot independen tanpa menyentuh sistem.
