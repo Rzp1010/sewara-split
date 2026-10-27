@@ -499,3 +499,80 @@ bukan disembunyikan.
 Path API yang tidak terdaftar di Next membalas **halaman HTML 404**, bukan JSON. Setelah
 cutover, `/api/` seluruhnya dilayani Go, jadi bentuk JSON 404 menjadi perilaku yang
 berlaku. Ini perubahan yang disengaja, bukan regresi.
+
+---
+
+## 18. Aturan agar `sewara-api` tetap mudah dipindah ke Docker
+
+Keputusan sekarang: jalan dengan **systemd**, bukan Docker (VPS 1 GB, dan produksi
+sekarang pun berbasis process manager, bukan container). Tapi perpindahan ke Docker
+nantinya harus murah — diperkirakan setengah hari, bukan migrasi ulang.
+
+Supaya tetap begitu, ada aturan yang mengikat. Melanggar salah satunya bukan
+pelanggaran gaya, tapi utang yang harus dibayar saat pindah.
+
+### 18.1 Jangan menyimpan state di disk lokal server
+
+| Dilarang | Kenapa | Pakai ini |
+|---|---|---|
+| Upload/berkas pengguna ke folder lokal | Di container, filesystem mati bersama container; isinya hilang tanpa volume khusus | R2 (sudah dipakai) |
+| Cache atau hasil ekspor yang harus bertahan | idem | R2 untuk yang bertahan, memory untuk yang sementara |
+| Sesi/token di memori proses | Restart = semua user ter-logout; juga mustahil jalan >1 instance | tabel `auth.sessions` (sudah) |
+
+File sementara (`os.CreateTemp`) **boleh**, dengan syarat isinya boleh hilang kapan saja
+tanpa akibat. Kalau tidak boleh hilang, tempatnya bukan disk lokal.
+
+### 18.2 Jangan mengandalkan jadwal tingkat sistem operasi
+
+| Dilarang | Kenapa | Pakai ini |
+|---|---|---|
+| `systemd` timer / `cron` untuk urusan aplikasi | Terjemahannya ke Docker jadi pekerjaan tambahan, dan mudah terlupa saat deploy | ticker di dalam proses Go |
+| Skrip shell yang dipanggil aplikasi | Image minimal (distroless/alpine) tidak punya bash, curl, zip | pustaka Go (`archive/zip`, dsb) |
+
+Contoh yang sudah benar: pembersihan sesi kedaluwarsa dijalankan `cleanupSessions()`
+di dalam proses (`cmd/api/main.go`), bukan timer systemd.
+
+### 18.3 Jangan menulis path atau alamat mati di kode
+
+| Dilarang | Pakai ini |
+|---|---|
+| `/home/ubuntu/...`, `C:\...`, `127.0.0.1:8080` di dalam kode | environment variable (`DATABASE_URL`, `ADDR`, `APP_ENV`, `SESSION_TTL`) |
+| Membaca rahasia dari path lokal tetap | env var, atau path yang datang dari konfigurasi (bisa di-mount) |
+
+Alamat internal antar-service (`nginx` → `sewara-api`) juga lewat konfigurasi: saat
+systemd nilainya `127.0.0.1:8080`, saat Docker `sewara-api:8080`. Kode tidak berubah.
+
+### 18.4 Build dan runtime yang portabel
+
+| Aturan | Alasan |
+|---|---|
+| `CGO_ENABLED=0` saat build | Binary statis: jalan di image apa pun tanpa urusan libc |
+| Log ke stdout, bukan file | `journalctl` tinggal jadi `docker logs`; tidak ada file yang harus dirotasi |
+| Zona waktu eksplisit di konfigurasi | Container default UTC; jangan bergantung `time.Local` atau TZ sistem |
+| Postgres versi dipatok | `postgres:16` harus sama dengan versi di VPS, bukan "terbaru" |
+
+### 18.5 Database tetap dapat dibangun ulang dari nol
+
+Sudah jadi aturan tersendiri (AGENTS.md aturan DB), tapi konsekuensinya di sini:
+**satu-satunya** cara mengubah skema adalah file migrasi + ledger. Tidak ada ALTER
+manual di server mana pun. Kalau database bisa dibangun ulang dari repo, memindahkannya
+ke container hanya soal `pg_dump` dan `pg_restore`.
+
+### 18.6 Cara memeriksa
+
+Sebelum menandai sebuah pekerjaan selesai, cek cepat:
+
+```
+grep -rn "fs.WriteFile\|os.Create\|ioutil.WriteFile" sewara-api/     # state di disk?
+grep -rn "os/exec" sewara-api/                                        # panggil binari luar?
+grep -rn "C:\\\\\|/home/\|/tmp/" sewara-api/ --include=*.go           # path mati?
+```
+
+Ketiganya boleh menghasilkan nol. Kalau tidak nol, harus ada alasan tertulis di
+komentar kode mengapa aman saat dipindah ke container.
+
+### 18.7 Yang tidak perlu dikhawatirkan
+
+Kode Go, SQL, migrasi, seed, dan uji tidak perlu diubah sama sekali saat pindah ke
+Docker. Perpindahan hanya menyentuh: Dockerfile, file compose, config nginx, dan
+skrip operasional.

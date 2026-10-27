@@ -5,23 +5,25 @@ import (
 	"net/http"
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
 )
 
 // Server memegang dependensi secara eksplisit. Tidak ada global atau singleton.
-// W1 menambahkan db *tenant.DB di sini.
 type Server struct {
 	cfg config.Config
 	log *slog.Logger
+	db  *db.DB
 }
 
-func New(cfg config.Config, log *slog.Logger) http.Handler {
-	s := &Server{cfg: cfg, log: log}
+func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
+	s := &Server{cfg: cfg, log: log, db: database}
 
 	mux := http.NewServeMux()
 
 	// Rute ditulis eksplisit per method. Penambahan route baru masuk daftar ini
 	// dan harus terdaftar di docs/endpoint-matrix.md.
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+	mux.HandleFunc("GET /api/auth/me", s.requireAuth(s.handleMe))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)

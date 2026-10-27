@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/httpapi"
 )
 
@@ -30,10 +31,22 @@ func run() error {
 	log := newLogger(cfg.IsProd())
 	slog.SetDefault(log)
 
-	// W1: buka pool pgx di sini dan suntikkan ke httpapi.New sebagai *tenant.DB.
+	// Satu pool untuk seluruh proses. Gagal cepat kalau database tidak terjangkau.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	database, err := db.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+
+	// Sesi kedaluwarsa dibersihkan berkala; tanpa ini tabel auth.sessions tumbuh terus.
+	go cleanupSessions(ctx, log, database)
+
 	srv := &http.Server{
 		Addr:    cfg.Addr,
-		Handler: httpapi.New(cfg, log),
+		Handler: httpapi.New(cfg, log, database),
 		// Timeout eksplisit: tanpa ini, koneksi lambat menahan worker.
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -41,9 +54,6 @@ func run() error {
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    1 << 20,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	serveErr := make(chan error, 1)
 	go func() {
@@ -72,4 +82,28 @@ func newLogger(prod bool) *slog.Logger {
 		return slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	}
 	return slog.New(slog.NewTextHandler(os.Stdout, opts))
+}
+
+// cleanupSessions menghapus sesi kedaluwarsa sekali sejam di latar belakang.
+// Kegagalan dicatat dan diabaikan: pembersihan ini pemeliharaan, bukan fungsi
+// yang boleh menjatuhkan proses.
+func cleanupSessions(ctx context.Context, log *slog.Logger, database *db.DB) {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			n, err := database.DeleteExpiredSessions(ctx)
+			if err != nil {
+				log.Error("gagal membersihkan sesi kedaluwarsa", "err", err)
+				continue
+			}
+			if n > 0 {
+				log.Info("sesi kedaluwarsa dibersihkan", "jumlah", n)
+			}
+		}
+	}
 }
