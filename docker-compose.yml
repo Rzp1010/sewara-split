@@ -1,0 +1,44 @@
+# Staging lokal di laptop. Produksi tidak memakai Docker.
+# Jalankan: docker compose up --build
+name: sewara-staging
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sewara
+      POSTGRES_USER: sewara
+      POSTGRES_PASSWORD: sewara_dev
+    ports:
+      - "5433:5432" # 5433 supaya tidak bentrok dengan Postgres lokal
+    volumes:
+      - ./sewara-api/.data/pg:/var/lib/postgresql/data
+      # Skema produksi per 30-Sep 2026 dimuat otomatis saat volume masih kosong.
+      - ./sewara-backend/supabase/schema_prod_20260930.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sewara -d sewara"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./sewara-api
+    environment:
+      APP_ENV: development
+      ADDR: 0.0.0.0:4000
+      DATABASE_URL: postgres://sewara:sewara_dev@db:5432/sewara?sslmode=disable
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./sewara-frontend/out:/usr/share/nginx/html:ro
+      - ./deploy/nginx.staging.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
