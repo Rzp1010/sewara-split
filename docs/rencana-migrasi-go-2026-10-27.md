@@ -372,3 +372,88 @@ df -h
 
 Upgrade path kalau nanti Postgres butuh ruang: pindahkan datadir ke volume terpisah
 supaya bisa di-snapshot independen tanpa menyentuh sistem.
+
+---
+
+## 16. Hasil W0: staging Postgres self-hosted sudah berdiri
+
+Diverifikasi 2026-10-27 di laptop. Postgres 16.10 portable (tanpa Docker, tanpa admin)
+di `sewara-api/.data/pgsql`, data dir `.data/pg`, port 5433, auth trust lokal.
+Siklus hidup lewat `sewara-api/scripts/staging-db.ps1` (init/start/stop/reset/psql)
+dan `scripts/verify-schema.ps1` untuk pemeriksaan.
+
+### 16.1 Hasil pemeriksaan
+
+| Pemeriksaan | Hasil | Target |
+|---|---|---|
+| Tabel `public` | 28 | 28 (sama dengan produksi) |
+| Policy RLS | 26 | 26 |
+| Tabel dengan RLS aktif | 28 | semua tabel |
+| Fungsi `auth` | 2 (`auth.uid`, `auth.jwt`) | ada |
+| Ledger | 3 entri | 3 |
+| Tabel tapi kosong | ya | data diisi nanti dari dump data |
+
+### 16.2 Bukti RLS tetap berfungsi tanpa Supabase
+
+Diuji dengan satu tabel `profiles` berisi 2 baris milik dua user berbeda:
+
+| Skenario | Baris terlihat |
+|---|---|
+| superuser (bypass RLS) | 2 |
+| `SET ROLE authenticated` + `app.user_id` = user A | 1 |
+| `SET ROLE authenticated` + `app.user_id` = user asing | 0 |
+| `SET ROLE authenticated` tanpa konteks | 0 |
+
+Artinya: 26 policy yang ada **tidak perlu ditulis ulang**. Go cukup men-set
+`SET LOCAL app.user_id` di dalam transaksi. Konteks yang lupa diset menghasilkan
+0 baris, bukan kebocoran — default-nya aman.
+
+### 16.3 Skema tidak portabel apa adanya (temuan)
+
+Dump `schema_prod_20260930.sql` bergantung pada objek Supabase:
+
+| Ketergantungan | Jumlah | Penanganan |
+|---|---|---|
+| `auth.uid()` | 97 | disediakan shim, baca GUC `app.user_id` |
+| FK ke `auth.users` | 10 | tabel minimal di shim |
+| `auth.jwt()` | 5 | shim, baca GUC `app.jwt` |
+| Policy `TO authenticated` | 14 | role dibuat di shim |
+| `CREATE EXTENSION pg_net` | 1 | dibuang saat memuat dump |
+| Trigger `net.http_post` | 2 | dihapus (lihat 16.4) |
+| GRANT ke `authenticated` | 0 | ditambahkan migrasi sendiri |
+
+### 16.4 Notifikasi keluar dari database
+
+Dua trigger (`trg_telegram_pendaftar`, `trg_telegram_transaksi`) memanggil
+`net.http_post()` ke `https://app-sewara.vercel.app/api/telegram/webhook` dengan
+**secret hardcoded di badan fungsi SQL**, dan URL-nya menunjuk deployment lama.
+Ketiganya masalah: tidak portabel, rawan (secret ada di skema), dan menunjuk host
+yang akan mati. Trigger dan fungsinya dihapus; pengiriman notifikasi menjadi
+tanggung jawab Go setelah commit.
+
+### 16.5 Urutan bootstrap (wajib, tidak boleh ditukar)
+
+```
+1. bootstrap/  -> objek yang harus ada SEBELUM baseline (schema auth, auth.users, role)
+2. baseline    -> dump skema produksi (dump inilah yang membuat schema_migrations)
+3. migrations/ -> perubahan di atas baseline (grant, hapus trigger pg_net, dst)
+4. ledger      -> semua file yang diterapkan dicatat
+```
+
+Karena itu ada dua direktori: `sewara-api/bootstrap/` dan `sewara-api/migrations/`.
+Migrasi yang mengubah objek hasil dump harus di `migrations/`, bukan `bootstrap/`.
+
+### 16.6 Penyimpangan konvensi ledger (perlu diketahui)
+
+`AGENTS.md` mewajibkan setiap file migration diakhiri `INSERT INTO schema_migrations`.
+Untuk Postgres self-hosted, pencatatan dipindahkan ke runner (`staging-db.ps1`),
+yang mencatat **semua** file yang diterapkan setelah baseline dimuat.
+
+Alasan: pada urutan bootstrap di atas, migrasi `bootstrap/` berjalan sebelum tabel
+ledger ada (tabel itu dibuat oleh dump), sehingga INSERT di dalam file akan gagal.
+Pencatatan terpusat juga membuat status ledger = isi direktori, bukan ingatan
+masing-masing file.
+
+Konsekuensi: file migration baru **tidak** perlu (dan tidak boleh) menulis INSERT
+sendiri. Aturan `AGENTS.md` untuk Supabase tetap berlaku di `sewara-backend/supabase/migrations/`
+sampai cutover selesai.

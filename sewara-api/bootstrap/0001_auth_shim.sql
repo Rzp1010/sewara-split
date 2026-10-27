@@ -52,7 +52,3 @@ STABLE
 AS $$
     SELECT coalesce(nullif(current_setting('app.jwt', true), '')::jsonb, '{}'::jsonb)
 $$;
-
-INSERT INTO public.schema_migrations (filename)
-VALUES ('0001_auth_shim.sql')
-ON CONFLICT (filename) DO NOTHING;
