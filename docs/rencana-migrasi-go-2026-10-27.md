@@ -246,3 +246,92 @@ Sebuah route baru boleh dianggap selesai kalau:
 4. Tanggal launch final: 22 Des vs awal Jan. Libur akhir tahun mengurangi ketersediaan
    saat perbaikan darurat.
 5. Apakah `sewara-backup` diganti total ke `pg_dump`, atau dua jalur selama masa transisi.
+
+---
+
+## 13. Hasil uji static export (2026-10-27)
+
+Uji dijalankan pada konfigurasi asli dengan satu perubahan sementara (`output: "export"`),
+lalu konfigurasi dipulihkan. Tidak ada file yang tertinggal berubah.
+
+**Hasil: berhasil.**
+
+- `next build` exit `0`, compile 35,6 s, 26 halaman seluruhnya `○ (Static)` — tidak ada
+  route SSR sama sekali.
+- Artefak: 298 file, **3,94 MB** total (3,65 MB non-HTML) di `sewara-frontend/out/`.
+  Sudah tercakup `.gitignore` (`sewara-frontend/.gitignore:18`).
+- Peringatan resmi Next: `headers()` **tidak diterapkan** saat export. Security header
+  (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy) wajib pindah ke nginx.
+- Penamaan keluaran datar: `/dashboard` → `dashboard.html`, `/dashboard/booking` →
+  `dashboard/booking.html`. nginx wajib `try_files $uri $uri.html $uri/ /404.html`.
+- Route yang akan berubah/hilang saat keluar dari Supabase: `/auth/callback/success`,
+  `/verifikasi-email`, `/daftar` — ketiganya bagian alur auth Supabase.
+
+**Kesimpulan: premis resource sah.** Node bisa dihapus dari runtime, dan beban nginx
+untuk aset statis 3,94 MB dapat diabaikan. Gate W0 lolos lebih awal dari jadwal.
+
+## 14. Rencana kerja W0
+
+Aturan selama W0: **`sewara-backend` tidak disentuh** — ia masih melayani produksi.
+Semua pekerjaan Go tinggal di direktori baru `sewara-api/`.
+
+### Hari 1
+
+| # | Tugas | Pemilik | Keluaran |
+|---|---|---|---|
+| 1 | `df -h`, `free -m`, `pm2 list` di VPS; cek ukuran EBS | Kamu | angka nyata |
+| 2 | Scaffold `sewara-api/`: `go.mod`, `cmd/api/main.go`, `internal/httpapi` (router + middleware stub), config dari env divalidasi saat start, endpoint `/api/health` | AI | `go run ./cmd/api` melayani `/api/health` |
+| 3 | `docker-compose.yml`: `postgres:17`, `api`, `nginx` yang menyajikan `sewara-frontend/out/` | AI | staging jalan di laptop |
+
+Gate hari 1: `free` EBS ≥ 20 GB. Kalau kurang, naikkan gp3 dulu — sebelum kode ditulis.
+
+### Hari 2
+
+| # | Tugas | Pemilik | Keluaran |
+|---|---|---|---|
+| 4 | Muat `sewara-backend/supabase/schema_prod_20260930.sql` ke Postgres staging, bandingkan jumlah tabel dengan produksi | AI | skema identik |
+| 5 | Matriks endpoint: ekstrak 51 route file → daftar method + path dari ekspor route | AI | `docs/endpoint-matrix.md` (basis nginx switch + DoD) |
+| 6 | Perekam golden fixture: panggil API Next di DB dev, simpan respons sukses dan bentuk error | AI | `sewara-api/testdata/fixtures/*.json` |
+
+### Hari 3
+
+| # | Tugas | Pemilik | Keluaran |
+|---|---|---|---|
+| 7 | Harness isolasi tenant: seed 2 tenant, kasus negatif per endpoint, bisa dijalankan ke Next (baseline) dan nanti ke Go | AI | `sewara-api/testdata/tenant_isolation_test.go` + skrip baseline |
+| 8 | nginx staging: path switch `/api/*` → Go, sisanya static; security header dipindah dari `next.config.mjs` | AI | config nginx teruji lokal |
+| 9 | Konfirmasi freeze fitur sampai launch | Kamu | keputusan tertulis |
+
+### Hari 4
+
+| # | Tugas | Pemilik | Keluaran |
+|---|---|---|---|
+| 10 | Bukti kompatibilitas hash: ambil 1 akun uji dari `users.json`, verifikasi bcrypt di Go | AI | test lulus |
+| 11 | Putuskan pertanyaan terbuka §12 no. 2-5 | Kamu | dokumen diperbarui |
+| 12 | Review gate W0 → masuk W1 | bersama | go / no-go |
+
+### Artefak yang harus ada di akhir W0
+
+```
+sewara-api/
+  go.mod
+  cmd/api/main.go
+  internal/httpapi/       router, middleware, response helper
+  internal/db/            pool, runner migrasi
+  internal/tenant/        (kosong sampai W1)
+  testdata/fixtures/
+  testdata/tenant_isolation_test.go
+docker-compose.yml
+docs/endpoint-matrix.md
+```
+
+Kalau salah satu artefak ini belum ada di akhir W0, W1 belum boleh dimulai — karena
+tanpa fixture dan matriks endpoint, gate G1 tidak bisa diukur dan cut line tidak bisa
+dipasang.
+
+### Pratinjau W1-W2 (gate G1)
+
+- Tabel `sessions` + `users` (migrasi dari `auth.users`), login/logout/me, bcrypt verify.
+- `TenantDB` + `SET LOCAL app.tenant_id` dalam transaksi.
+- Middleware: session, CSRF origin check, rate limit token bucket.
+- 5-8 route sederhana diport, masing-masing lolos §10.
+- **G1**: seluruh test tenant negatif hijau + fixture lolos. Kalau tidak, migrasi dihentikan.
