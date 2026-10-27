@@ -625,3 +625,75 @@ lebih jujur daripada login yang tidak berguna.
 `POST /api/auth/login` (bcrypt + rate limit + pencatatan gagal login), lalu route
 pertama yang menyentuh data bisnis (`/api/settings`, `/api/inventory`) beserta uji
 negatif tenant per route.
+
+## 20. W1 lanjut: `POST /api/auth/login`
+
+Login selesai dan teruji. Bagian-bagiannya:
+
+| Berkas | Isi |
+|---|---|
+| `internal/auth/password.go` | bcrypt `HashPassword`/`VerifyPassword` (cost 10) |
+| `internal/db/login.go` | kredensial, profil login, tangga penalti, log login, hitungan rate limit |
+| `internal/httpapi/handlers_login.go` | handler + urutan pemeriksaan |
+| `internal/db/db.go` | `inSystemTx` — transaksi tanpa konteks tenant, khusus auth |
+| `internal/httpapi/response.go` | `writeErrorExtra` — amplop error + `retryAfterMs` + header `Retry-After` |
+
+Dua keputusan yang perlu dibaca sebelum menyentuh kode ini:
+
+1. **Kredensial dibaca lewat jalur sistem, profil lewat jalur tenant.** `auth.users`
+   tidak punya RLS dan harus dibaca sebelum identitas diketahui. Setelah id didapat,
+   profilnya dibaca lewat `InTenant` — jadi tetap lewat policy yang sama dengan
+   request lain, bukan lewat pintu belakang.
+2. **Urutan pemeriksaan adalah kontrak, bukan selera.** Status akun → langganan →
+   aktif → terkunci → cooldown → rate limit → password → verifikasi email. Urutan ini
+   menentukan pesan mana yang dilihat pengguna, dan pesan itu yang dibandingkan uji
+   kontrak serta frontend.
+
+### 20.1 Hasil uji ujung-ke-ujung
+
+`scripts/smoke-login.ps1` membuat sendiri akun ujinya (prefiks `c0000000`), lalu
+menjalankan 18 skenario:
+
+| Skenario | Harapan | Hasil |
+|---|---|---|
+| body kosong / email tanpa `@` / password tidak dikirim | 400 `VALIDATION_ERROR` | lolos |
+| email tidak dikenal | 401 `UNAUTHORIZED` | lolos |
+| password salah | 401 + `failed_login` naik | lolos |
+| email belum diverifikasi | 403 `FORBIDDEN` | lolos |
+| status menunggu persetujuan | 403 `FORBIDDEN` | lolos |
+| akun nonaktif | 401 `UNAUTHORIZED` | lolos |
+| langganan berakhir | 401 `UNAUTHORIZED` | lolos |
+| login benar (email huruf besar) | 200 + cookie HttpOnly | lolos |
+| cookie hasil login dipakai `GET /api/auth/me` | 200, `role=owner` | lolos |
+| penalti direset setelah sukses | `failed_login=0` | lolos |
+| gagal ke-3 | 429 `ACCOUNT_COOLDOWN` | lolos |
+| 10 kegagalan satu IP | 429 `RATE_LIMIT_EXCEEDED` | lolos |
+| 5 kegagalan satu email | 429 `RATE_LIMIT_EXCEEDED` | lolos |
+| jejak tercatat | baris di `login_logs` | lolos |
+
+### 20.2 Penyimpangan yang disengaja
+
+- **Bentuk body 423/429.** Backend Next mengirim `{error: "<string>", retryAfterMs}`
+  (tanpa amplop) untuk dua status ini. Go memakai amplop standar
+  `{ok:false, error:{code,message}, retryAfterMs}`. `api-client.js` membaca
+  `data.error?.message` kalau objek dan `data.retryAfterMs` di level atas, jadi
+  frontend menampilkan hal yang sama tanpa cabang tambahan.
+- **Akun tanpa baris profil** ditolak 401. Next meloloskannya, lalu `/me` membalas
+  200 dengan id+email saja — sesi yang tidak bisa dipakai route apa pun.
+- **Jam pada pesan "Akun terkunci"** memakai zona waktu server. Next memakai
+  `toLocaleTimeString("id-ID")` di Vercel (UTC), sehingga jam yang ditampilkan ke
+  pengguna Indonesia selama ini meleset 7 jam.
+
+### 20.3 Yang belum ada, jangan sampai terlupa
+
+- **Notifikasi Telegram login** belum dipindahkan (dulu `lib/services/telegram.ts`).
+  Masuk W2 bersama pengiriman email.
+- **Rehash password** belum dipanggil; `UpdatePasswordHash` sudah tersedia kalau
+  ternyata hash lama memakai cost lebih rendah.
+- **Impor hash dari Supabase** masih menunggu connection string database. Admin API
+  Supabase **tidak** mengembalikan `encrypted_password` sama sekali (sudah diperiksa:
+  field-nya tidak ada di respons), jadi ekspor hash hanya bisa lewat koneksi Postgres
+  langsung. Format bcrypt `$2a$`/`$2b$`/`$2y$` yang dipakai Supabase dan Go identik,
+  sehingga setelah hash didapat, user lama bisa login dengan password lamanya tanpa
+  reset.
+

@@ -77,6 +77,25 @@ type Querier interface {
 // Kenapa ini aman meski lupa dipakai: role `authenticated` tidak bisa melewati RLS,
 // dan tanpa app.user_id, auth.uid() bernilai NULL sehingga policy tidak mencocokkan
 // baris apa pun. Kelupaan menghasilkan nol baris, bukan kebocoran.
+// inSystemTx menjalankan fn dalam transaksi tanpa konteks tenant.
+//
+// Dipakai hanya untuk urusan auth — hal yang di backend Next dulu dikerjakan
+// dengan service role (kredensial, penghitung gagal login, catatan login).
+// Data bisnis tidak boleh lewat sini: tanpa role `authenticated`, RLS tidak
+// berlaku, jadi satu kelalaian berarti seluruh tenant terbaca.
+func (d *DB) inSystemTx(ctx context.Context, fn func(pgx.Tx) error) error {
+	tx, err := d.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("memulai transaksi sistem: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func (d *DB) InTenant(ctx context.Context, userID string, fn func(Querier) error) error {
 	tx, err := d.pool.Begin(ctx)
 	if err != nil {

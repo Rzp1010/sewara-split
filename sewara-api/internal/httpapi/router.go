@@ -23,6 +23,7 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
 	// Rute ditulis eksplisit per method. Penambahan route baru masuk daftar ini
 	// dan harus terdaftar di docs/endpoint-matrix.md.
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+	mux.HandleFunc("POST /api/auth/login", s.handleLogin)
 	mux.HandleFunc("GET /api/auth/me", s.requireAuth(s.handleMe))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.

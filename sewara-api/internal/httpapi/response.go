@@ -60,6 +60,26 @@ func writeValidationError(w http.ResponseWriter, message string, details any) {
 	})
 }
 
+// writeErrorExtra membalas error dengan field tambahan di level atas.
+//
+// Kenapa tidak sekadar menyelipkan ke dalam `error`: frontend membaca dua field
+// di level atas — `retryAfterMs` (hitung mundur) dan `error` sebagai string ATAU
+// objek. Menaruhnya di luar `error` membuat api-client.js membacanya tanpa cabang
+// khusus, dan amplopnya tetap seragam.
+func writeErrorExtra(w http.ResponseWriter, status int, code, message string, extra map[string]any, headers map[string]string) {
+	for k, v := range headers {
+		w.Header().Set(k, v)
+	}
+	body := map[string]any{
+		"ok":    false,
+		"error": errorInfo{Code: code, Message: message},
+	}
+	for k, v := range extra {
+		body[k] = v
+	}
+	writeJSON(w, status, body)
+}
+
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
