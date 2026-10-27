@@ -457,3 +457,45 @@ masing-masing file.
 Konsekuensi: file migration baru **tidak** perlu (dan tidak boleh) menulis INSERT
 sendiri. Aturan `AGENTS.md` untuk Supabase tetap berlaku di `sewara-backend/supabase/migrations/`
 sampai cutover selesai.
+
+---
+
+## 17. Rekaman kontrak baseline (Next) dan penyimpangannya
+
+`sewara-api/scripts/record-fixtures.ps1` menyalakan server dev Next sendiri, memanggil
+**74 endpoint** tanpa sesi dan dengan body kosong, lalu menulis
+`sewara-api/testdata/contracts/next-baseline.json`. Hasil: 67 × 401, 4 × 400, 1 × 200,
+1 × 307, 1 × 503.
+
+Yang direkam sengaja hanya permukaan yang tidak bergantung data. Respons sukses berisi
+data tidak bisa dibandingkan apa adanya karena Go memakai database sendiri; paritas
+jalur sukses diuji sebagai uji diferensial per route saat cutover.
+
+### 17.1 Empat penyimpangan kontrak di Next
+
+| Endpoint | Perilaku sekarang | Masalah |
+|---|---|---|
+| `POST /api/auth/register` | `{"error":"Format email tidak valid."}` | tidak memakai amplop `{ok:false,error:{code,message}}` sama sekali |
+| `POST /api/webhooks/payment` | `{"error":"payment_webhook_not_configured","message":"..."}` | idem, tanpa `ok` dan tanpa `code` terstruktur |
+| `POST /api/auth/resend-verification` | `{"ok":true,"data":{"ok":true,"message":"..."}}` | `ok` ganda (amplop dibungkus dua kali) |
+| `PATCH`/`DELETE /api/admin/users` | 400 `VALIDATION_ERROR` **sebelum** cek autentikasi | validasi jalan sebelum auth; bertentangan dengan perbaikan "role-check sebelum zod" yang sudah dipakai di `POST` route yang sama |
+
+Ditambah satu kasus khusus: `GET /api/auth/callback` membalas **307 redirect**, bukan JSON.
+
+### 17.2 Keputusan yang diambil
+
+Ketiga penyimpangan amplop diperbaiki di Go (bukan direplikasi). Alasannya: semuanya
+jalur error, frontend tetap harus disentuh pada cutover, dan meniru bentuk yang salah
+akan mengunci kesalahan itu selamanya. Untuk `admin/users`, urutan **auth → role →
+validasi** diberlakukan konsisten di semua method; membocorkan detail skema ke pemanggil
+tanpa sesi tidak ada manfaatnya.
+
+Rekaman `next-baseline.json` tetap disimpan sebagai bukti historis. Uji kontrak Go
+mengassert **kontrak yang diinginkan**, dan selisih yang disengaja didaftarkan di sini —
+bukan disembunyikan.
+
+### 17.3 Catatan tambahan
+
+Path API yang tidak terdaftar di Next membalas **halaman HTML 404**, bukan JSON. Setelah
+cutover, `/api/` seluruhnya dilayani Go, jadi bentuk JSON 404 menjadi perilaku yang
+berlaku. Ini perubahan yang disengaja, bukan regresi.

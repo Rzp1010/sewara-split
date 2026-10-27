@@ -1,0 +1,1048 @@
+﻿{
+    "description":  "Kontrak respons backend Next (baseline) untuk request tanpa sesi/body kosong.",
+    "recordedAt":  "2026-10-27",
+    "baseUrl":  "http://127.0.0.1:4000",
+    "cases":  [
+                  {
+                      "method":  "GET",
+                      "path":  "/api/admin/akun",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/admin/data",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "error":  "Tidak terautentikasi."
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/admin/logs",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/admin/users",
+                      "status":  400,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "VALIDATION_ERROR",
+                                                 "message":  "Input tidak valid.",
+                                                 "details":  {
+                                                                 "_errors":  [
+
+                                                                             ],
+                                                                 "email":  {
+                                                                               "_errors":  [
+                                                                                               "Invalid input: expected string, received undefined"
+                                                                                           ]
+                                                                           }
+                                                             }
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/admin/users",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/admin/users",
+                      "status":  400,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "VALIDATION_ERROR",
+                                                 "message":  "Input tidak valid.",
+                                                 "details":  {
+                                                                 "_errors":  [
+
+                                                                             ],
+                                                                 "email":  {
+                                                                               "_errors":  [
+                                                                                               "Invalid input: expected string, received undefined"
+                                                                                           ]
+                                                                           },
+                                                                 "action":  {
+                                                                                "_errors":  [
+                                                                                                "Invalid option: expected one of \"setujui_registrasi\"|\"tolak_registrasi\"|\"perpanjang_langganan\"|\"unlock_akun\"|\"ubah_password\"|\"edit_profil\"|\"set_role\"|\"toggle_active\""
+                                                                                            ]
+                                                                            }
+                                                             }
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/admin/users",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/auth/callback",
+                      "status":  307,
+                      "contentType":  "",
+                      "body":  null,
+                      "nonJson":  "bukan JSON"
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/auth/login",
+                      "status":  400,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "VALIDATION_ERROR",
+                                                 "message":  "Email dan password wajib diisi."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/auth/logout",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/auth/me",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/auth/register",
+                      "status":  400,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "error":  "Format email tidak valid."
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/auth/resend-verification",
+                      "status":  200,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  true,
+                                   "data":  {
+                                                "ok":  true,
+                                                "message":  "Jika email terdaftar, email verifikasi akan dikirim."
+                                            }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/blacklist",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/blacklist",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/blacklist/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/blacklist/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/blacklist/check",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/blacklist/header",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/blacklist/upload",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/dashboard",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/dashboard/manajemen",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/dashboard/statistik",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/inventory",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/inventory",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/inventory/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/inventory/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/inventory/bulk-delete",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/inventory-units",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/inventory-units",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/invoice/header",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/invoice/header",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/invoice/header",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/invoice-counter",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/logs",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/logs",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/logs",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/logs/login",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/member/photo",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/member/upload",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/members",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/members",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/members/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/members/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/member-types",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/member-types",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/member-types/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/member-types/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/pembayaran/export",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/pembayaran/photo",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/pembayaran/purge",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "message":  "Unauthorized"
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/pembayaran/reminder",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/pembayaran/reminder-ack",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/pembayaran/upload",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Anda harus login terlebih dahulu."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/profiles",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/promo",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/promo",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "DELETE",
+                      "path":  "/api/promo/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/promo/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/promo/use",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/promo/validate",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/settings",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/settings",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/telegram/test",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/telegram/webhook",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Secret webhook tidak valid."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/transaction-items",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/transaction-items",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/transaction-payments",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/transaction-payments",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/transactions",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/transactions",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "GET",
+                      "path":  "/api/transactions/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "PATCH",
+                      "path":  "/api/transactions/00000000-0000-0000-0000-000000000000",
+                      "status":  401,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "ok":  false,
+                                   "error":  {
+                                                 "code":  "UNAUTHORIZED",
+                                                 "message":  "Tidak terautentikasi. Silakan login."
+                                             }
+                               },
+                      "nonJson":  null
+                  },
+                  {
+                      "method":  "POST",
+                      "path":  "/api/webhooks/payment",
+                      "status":  503,
+                      "contentType":  "application/json",
+                      "body":  {
+                                   "error":  "payment_webhook_not_configured",
+                                   "message":  "Payment webhook is not configured."
+                               },
+                      "nonJson":  null
+                  }
+              ]
+}
