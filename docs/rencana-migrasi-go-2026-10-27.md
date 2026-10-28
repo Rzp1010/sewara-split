@@ -280,5 +280,59 @@ sinyal memuat ulang daftar.
 
 ### 23.7 Berikutnya
 
-`GET/POST /api/inventory-units` — route berikutnya yang bergantung pada
-inventory (S/N per unit, status `available`), lalu `GET/POST /api/members`.
+Lihat §24 — daftar route berikutnya berubah setelah audit pemakaian.
+`GET/POST /api/inventory-units` ternyata tidak dipakai siapa pun dan sudah dibuang.
+
+## 24. Audit pemakaian endpoint + pembersihan (2026-10-28)
+
+### 24.1 Alasan
+
+Angka "61 endpoint tersisa" dihitung dari semua file route, bukan dari yang
+benar-benar dipakai. Sebelum menambah route, perlu bukti mana yang hidup.
+
+### 24.2 Cara
+
+`scripts/audit-endpoint-usage.js` melacak rantai **halaman/komponen -> `lib/db.js`
+-> `lib/api-client.js` -> route**, ditambah pemakaian path literal (`<img src>`,
+anchor unduh) dan pemanggil non-frontend (cron, webhook). Hasil lengkap ada di
+`endpoint-matrix.md` bagian "Pemakaian endpoint di frontend".
+
+Empat bug parsing ditemukan saat memverifikasi hasil (semua sudah diperbaiki):
+metode HTTP menyeberang ke properti berikutnya, pencocokan path gagal karena
+pemisah Windows, `apiRequest` yang dipanggil langsung dari `db.js` tidak dihitung,
+dan `apiRequest(` yang path-nya ada di baris berikutnya. Pelajarannya: hasil audit
+yang tidak diverifikasi dengan grep independen mudah salah ke arah "tidak dipakai",
+dan kesalahan itu akan membuang fitur yang masih hidup.
+
+### 24.3 Hasil
+
+Dari 74 metode: 64 dipakai frontend, 4 dipanggil pihak lain, 6 mati.
+
+### 24.4 Tindakan
+
+Empat route dibuang bersama definisi `api-client` dan pembungkus `db.js`
+(commit `d2fba0e`): `/api/admin/akun`, `/api/dashboard/statistik`,
+`/api/inventory-units`, `/api/transaction-payments`. Tabel DB **tidak** di-drop.
+Validasi sebelum membuang: nol pemanggil di backend, frontend, SQL/seed, CI, dan
+akses dinamis; `node --check` lolos; `npm run build` static export lolos.
+
+### 24.5 Temuan yang mengubah rencana
+
+- **`POST /api/pembayaran/purge` dijalankan crontab VPS** (`0 3 15 * *`,
+  `x-purge-secret`). Di Go wajib jadi ticker internal, bukan cron OS — aturan
+  portabilitas runtime (§18). Kalau tidak diport, retensi bukti bayar 2 bulan
+  berhenti jalan tanpa error apa pun.
+- `GET /api/auth/callback` tidak dirujuk kode frontend mana pun; dia target
+  `emailRedirectTo`. Tetap wajib ada, terutama saat verifikasi email pindah ke
+  SMTP sendiri.
+- Metode mati di route yang tetap hidup — jangan diport, tapi jangan dihapus
+  sebelum cutover karena masih jadi rujukan paritas: `DELETE /api/inventory/{id}`,
+  `POST /api/transaction-items`, `GET /api/logs`, `DELETE /api/logs`, dan
+  `GET /api/invoice/header` lewat `api.invoice.headerGet`.
+
+### 24.6 Sisa kerja
+
+47 path / 68 metode harus ada di Go; 9 path sudah diport; sisa **38 path /
+55 metode**. Urutan berikutnya: domain blacklist (CRUD + upload + check +
+proxy foto), satu domain per commit.
+
