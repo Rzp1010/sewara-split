@@ -115,5 +115,124 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | DELETE /api/inventory/{id} | `handlers_inventory.go` | 32 |
 | POST /api/inventory/bulk-delete | `handlers_inventory.go` | 32 |
 
-Tersisa 61 endpoint. Deviasi kontrak yang disengaja dicatat di
-`rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
+Sisa kerja setelah audit pemakaian (bagian berikut): **38 path / 55 metode**
+(angka "61" sebelumnya belum dikurangi endpoint mati). Deviasi kontrak yang
+disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
+
+## Pemakaian endpoint di frontend (audit 2026-10-28)
+
+Alat: `node scripts/audit-endpoint-usage.js`. Yang dilacak adalah rantai
+**halaman/komponen -> `lib/db.js` -> `lib/api-client.js` -> route**, ditambah
+pemakaian path literal (`<img src>`, tautan unduh, `fetch` manual) dan pemanggil
+di luar frontend (cron, webhook). Endpoint berparameter ditulis `:id`.
+
+Total **51 path / 74 metode**. Dari jumlah itu, **43 path
+(64 metode) dipakai**, **4 path (6 metode) pembungkusnya
+mati**, dan **4 path masih dipakai tetapi bukan oleh frontend**.
+
+| Kelompok | Path | Metode |
+|---|---|---|
+| Dipakai langsung dari halaman/komponen | 12 | 14 |
+| Dipakai lewat pembungkus `lib/db.js` | 27 | 46 |
+| Dipakai sebagai URL langsung (gambar/unduh/anchor) | 4 | 4 |
+| **Subtotal dipakai** | **43** | **64** |
+| Pembungkus mati (kandidat dibuang) | 4 | 6 |
+| Dipakai pihak lain, bukan frontend | 4 | 4 |
+
+### A. Dipakai langsung dari halaman/komponen
+
+| Endpoint | Metode | Kategori | Bukti |
+|---|---|---|---|
+| `/api/auth/login` | POST | AUTH | app/page.js |
+| `/api/auth/logout` | POST | AUTH | app/dashboard/layout.js, app/dashboard/page.js |
+| `/api/auth/me` | GET | AUTH | app/dashboard/blacklist/page.js, app/dashboard/inventaris/page.js, app/dashboard/laporan/page.js |
+| `/api/auth/register` | POST | AUTH | app/daftar/page.js |
+| `/api/blacklist/header` | GET | FILE | app/dashboard/blacklist/page.js, components/BlacklistFotoSlot.jsx |
+| `/api/dashboard` | GET | AGREGAT | app/dashboard/page.js |
+| `/api/dashboard/manajemen` | GET | AGREGAT | app/dashboard/page.js |
+| `/api/inventory` | GET, POST | CRUD | app/dashboard/page.js, app/dashboard/booking/page.js, app/dashboard/inventaris/page.js |
+| `/api/pembayaran/reminder` | GET | AGREGAT | components/BannerBackupBukti.jsx |
+| `/api/pembayaran/reminder-ack` | POST | CRUD | components/BannerBackupBukti.jsx |
+| `/api/profiles` | GET | CRUD | app/dashboard/manajemen/page.js, app/dashboard/sdm/page.js |
+| `/api/settings` | GET, POST | LOGIKA | app/dashboard/layout.js, app/dashboard/loginlog/page.js, app/dashboard/member/page.js |
+
+### B. Dipakai lewat pembungkus `lib/db.js`
+
+| Endpoint | Metode | Kategori | Bukti |
+|---|---|---|---|
+| `/api/admin/data` | POST | ADMIN | app/dashboard/pengaturan/page.js, app/dashboard/pengaturan/page.js [url] |
+| `/api/admin/logs` | GET | ADMIN | app/dashboard/manajemen/page.js |
+| `/api/admin/users` | GET, POST, DELETE, PATCH | ADMIN | app/dashboard/sdm/page.js, app/dashboard/manajemen/page.js, app/dashboard/pengaturan/page.js |
+| `/api/blacklist` | GET, POST | CRUD | app/dashboard/blacklist/page.js, app/dashboard/booking/page.js, app/dashboard/pelanggan/page.js |
+| `/api/blacklist/:id` | PATCH, DELETE | CRUD | app/dashboard/blacklist/page.js |
+| `/api/blacklist/check` | GET | LOGIKA | app/dashboard/booking/page.js |
+| `/api/blacklist/upload` | POST | FILE | app/dashboard/blacklist/page.js, components/BlacklistModal.jsx |
+| `/api/inventory/:id` | PATCH, DELETE | LOGIKA | app/dashboard/booking/page.js, app/dashboard/inventaris/page.js, app/dashboard/status/page.js |
+| `/api/inventory/bulk-delete` | POST | CRUD | app/dashboard/inventaris/page.js |
+| `/api/invoice-counter` | POST | LOGIKA | app/dashboard/booking/page.js |
+| `/api/invoice/header` | GET, POST, DELETE | FILE | components/InvoiceLayoutEditor.jsx, app/dashboard/pengaturan/page.js, components/InvoiceBody.jsx [url] |
+| `/api/logs` | GET, POST, DELETE | CRUD | app/dashboard/booking/page.js, app/dashboard/status/page.js |
+| `/api/logs/login` | GET | CRUD | app/dashboard/loginlog/page.js |
+| `/api/member-types` | GET, POST | CRUD | app/dashboard/member/page.js, app/dashboard/member/page.js [url] |
+| `/api/member-types/:id` | DELETE, PATCH | CRUD | app/dashboard/member/page.js |
+| `/api/members` | GET, POST | CRUD | app/dashboard/member/page.js |
+| `/api/members/:id` | PATCH, DELETE | CRUD | app/dashboard/member/page.js |
+| `/api/pembayaran/export` | GET | FILE | app/dashboard/riwayat/page.js [url] |
+| `/api/pembayaran/photo` | GET | FILE | app/dashboard/status/page.js [url], components/ModalBuktiBayar.jsx [url] |
+| `/api/pembayaran/upload` | POST | FILE | app/dashboard/booking/page.js [url], app/dashboard/status/page.js [url] |
+| `/api/promo` | GET, POST | CRUD | app/dashboard/booking/page.js, app/dashboard/promo/page.js |
+| `/api/promo/:id` | PATCH, DELETE | CRUD | app/dashboard/promo/page.js |
+| `/api/promo/use` | POST | LOGIKA | app/dashboard/booking/page.js |
+| `/api/promo/validate` | POST | LOGIKA | app/dashboard/booking/page.js |
+| `/api/transaction-items` | GET, POST | CRUD | app/dashboard/laporan/page.js |
+| `/api/transactions` | GET, POST | CRUD | app/dashboard/status/page.js, app/dashboard/booking/page.js |
+| `/api/transactions/:id` | GET, PATCH | CRUD | app/dashboard/booking/page.js, app/dashboard/riwayat/page.js, app/dashboard/status/page.js |
+
+### C. Dipakai sebagai URL langsung
+
+| Endpoint | Metode | Kategori | Bukti |
+|---|---|---|---|
+| `/api/auth/resend-verification` | POST | AUTH | app/verifikasi-email/page.js [url] |
+| `/api/member/photo` | GET | FILE | app/dashboard/member/page.js [url] |
+| `/api/member/upload` | POST | FILE | app/dashboard/member/page.js [url] |
+| `/api/telegram/test` | POST | EKSTERNAL | app/dashboard/loginlog/page.js [url], app/dashboard/pengaturan/page.js [url] |
+
+### D. Pembungkus mati — kandidat tidak diport
+
+`api-client.js` mendefinisikan panggilan ini dan `lib/db.js` membungkusnya, tetapi
+tidak ada halaman/komponen yang memanggil pembungkus tersebut. Catatan: metode di
+sini bisa mati semua atau hanya sebagian.
+
+| Endpoint | Metode | Kategori | Bukti |
+|---|---|---|---|
+| `/api/admin/akun` | GET | ADMIN | — |
+| `/api/dashboard/statistik` | GET | AGREGAT | — |
+| `/api/inventory-units` | GET, POST | CRUD | — |
+| `/api/transaction-payments` | GET, POST | CRUD | — |
+
+- `/api/admin/akun`: db.js:getSemuaAkun() tidak dipanggil siapa pun
+- `/api/dashboard/statistik`: db.js:getDashboardStatistik() tidak dipanggil siapa pun
+- `/api/inventory-units`: db.js:getInventoryUnits() tidak dipanggil siapa pun; db.js:saveInventoryUnits() tidak dipanggil siapa pun
+- `/api/transaction-payments`: db.js:saveTransactionPayments() tidak dipanggil siapa pun
+
+### E. Tidak dirujuk frontend, tetapi dipanggil pihak lain — wajib tetap ada
+
+| Endpoint | Metode | Pemanggil |
+|---|---|---|
+| `/api/auth/callback` | GET | Tautan verifikasi email: `emailRedirectTo` di `/api/auth/register` |
+| `/api/pembayaran/purge` | POST | Cron VPS harian (README backend, `PURGE_SECRET`). Di Go wajib jadi ticker internal, bukan cron OS |
+| `/api/telegram/webhook` | POST | Server Telegram |
+| `/api/webhooks/payment` | POST | Payment gateway |
+
+### Catatan hasil audit
+
+- Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
+  43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
+  (68 metode)**. Sembilan path di antaranya sudah diport, jadi sisa **38 path
+  / 55 metode**. Empat path ber-pembungkus mati tidak perlu diport sama sekali.
+- Beberapa wrapper mati menandakan tabel yang sudah tidak dipakai:
+  `inventory_units` hanya disentuh `app/api/inventory-units/route.ts` (stok sekarang
+  dihitung dari `inventory.sns`).
+- Pembayaran **tidak** lewat `/api/transaction-payments`; `/api/transactions`
+  menyimpannya lewat RPC (`p_payments`, `p_replace_payments`), jadi route terpisah itu
+  duplikat.
