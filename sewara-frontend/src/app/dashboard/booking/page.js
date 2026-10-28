@@ -12,6 +12,7 @@ import {
   formatRupiah,
   formatTanggal,
   hitungDurasi,
+  hitungSubtotal,
   hitungPembayaran,
   kondisiUnit,
   catatanUnit,
@@ -792,24 +793,7 @@ export default function BookingPage() {
     }
 
     const updated = daftar.map((item) => {
-      let sub = 0;
-      if (item.ref.tipeSewa === "harian") {
-        let hp = dur.hari + (dur.sisaJam > 0 ? 1 : 0);
-        if (hp === 0 && dur.totalJam > 0) hp = 1;
-        sub = hp * item.ref.h24;
-      } else {
-        sub = dur.hari * item.ref.h24;
-        if (dur.hari >= 1 && dur.sisaJam > 0) {
-          // Durasi >= 1 hari: apply 50% threshold
-          if (dur.sisaJam <= 12) sub += item.ref.h24 * 0.5;
-          else sub += item.ref.h24;
-        } else if (dur.hari === 0 && dur.sisaJam > 0) {
-          // Durasi < 1 hari: use standard rates
-          if (dur.sisaJam <= 6) sub += item.ref.h6;
-          else if (dur.sisaJam <= 12) sub += item.ref.h12;
-          else sub += item.ref.h24;
-        }
-      }
+      const sub = hitungSubtotal(item, dur);
       item.hargaSatuan = sub;
       item.subtotal = sub * item.qty;
       totalBiaya += item.subtotal;
@@ -1807,24 +1791,7 @@ export default function BookingPage() {
 
       let totalBiaya = 0;
       editItemsBaru.forEach((item) => {
-        let sub = 0;
-        if (item.ref.tipeSewa === "harian") {
-          let hp = dur.hari + (dur.sisaJam > 0 ? 1 : 0);
-          if (hp === 0 && dur.totalJam > 0) hp = 1;
-          sub = hp * item.ref.h24;
-        } else {
-          sub = dur.hari * item.ref.h24;
-          if (dur.hari >= 1 && dur.sisaJam > 0) {
-            // Durasi >= 1 hari: apply 50% threshold
-            if (dur.sisaJam <= 12) sub += item.ref.h24 * 0.5;
-            else sub += item.ref.h24;
-          } else if (dur.hari === 0 && dur.sisaJam > 0) {
-            // Durasi < 1 hari: use standard rates
-            if (dur.sisaJam <= 6) sub += item.ref.h6;
-            else if (dur.sisaJam <= 12) sub += item.ref.h12;
-            else sub += item.ref.h24;
-          }
-        }
+        const sub = hitungSubtotal(item, dur);
         item.hargaSatuan = sub;
         item.subtotal = sub * item.qty;
         totalBiaya += item.subtotal;
