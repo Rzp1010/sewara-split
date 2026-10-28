@@ -15,7 +15,26 @@ type Config struct {
 	Env          string
 	CookieSecure bool
 	SessionTTL   time.Duration
+
+	// Storage adalah object storage S3-compatible (Cloudflare R2). Di development
+	// boleh kosong; di produksi wajib lengkap karena upload foto jaminan, foto
+	// member, bukti bayar, dan header invoice bergantung padanya.
+	Storage StorageConfig
 }
+
+// StorageConfig menampung kredensial R2. Bucket kosong berarti fitur file mati;
+// itu hanya sah di development.
+type StorageConfig struct {
+	Endpoint  string
+	Region    string
+	AccessKey string
+	SecretKey string
+	Bucket    string
+}
+
+// Enabled menandakan storage siap dipakai. Handler file wajib memeriksanya dan
+// membalas error yang jelas, bukan panik atau diam-diam melewati upload.
+func (s StorageConfig) Enabled() bool { return s.Bucket != "" }
 
 const (
 	EnvDev  = "development"
@@ -55,13 +74,66 @@ func Load() (Config, error) {
 		ttl = parsed
 	}
 
+	storageCfg, err := loadStorage(env)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Addr:         addr,
 		DatabaseURL:  dbURL,
 		Env:          env,
 		CookieSecure: env == EnvProd,
 		SessionTTL:   ttl,
+		Storage:      storageCfg,
 	}, nil
+}
+
+// loadStorage membaca kredensial R2.
+//
+// Aturannya: kosong semua berarti fitur file tidak aktif (hanya boleh di
+// development); terisi sebagian adalah kesalahan konfigurasi dan harus terlihat
+// saat start. Di produksi, kosong juga kesalahan — lebih baik gagal start
+// daripada menerima upload lalu membalas 500 pada tiap permintaan.
+func loadStorage(env string) (StorageConfig, error) {
+	cfg := StorageConfig{
+		Endpoint:  strings.TrimSpace(os.Getenv("R2_ENDPOINT")),
+		Region:    strings.TrimSpace(os.Getenv("R2_REGION")),
+		AccessKey: strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID")),
+		SecretKey: strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
+		Bucket:    strings.TrimSpace(os.Getenv("R2_BUCKET")),
+	}
+
+	wajib := []struct {
+		nama string
+		isi  string
+	}{
+		{"R2_ENDPOINT", cfg.Endpoint},
+		{"R2_ACCESS_KEY_ID", cfg.AccessKey},
+		{"R2_SECRET_ACCESS_KEY", cfg.SecretKey},
+		{"R2_BUCKET", cfg.Bucket},
+	}
+
+	var kosong []string
+	for _, w := range wajib {
+		if w.isi == "" {
+			kosong = append(kosong, w.nama)
+		}
+	}
+
+	if len(kosong) == len(wajib) {
+		if env == EnvProd {
+			return cfg, fmt.Errorf("storage wajib dikonfigurasi di produksi: isi %s",
+				strings.Join([]string{"R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"}, ", "))
+		}
+		return cfg, nil
+	}
+
+	if len(kosong) > 0 {
+		return cfg, fmt.Errorf("konfigurasi storage tidak lengkap, kosong: %s", strings.Join(kosong, ", "))
+	}
+
+	return cfg, nil
 }
 
 func (c Config) IsProd() bool { return c.Env == EnvProd }

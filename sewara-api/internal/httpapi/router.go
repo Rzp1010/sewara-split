@@ -6,17 +6,19 @@ import (
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/storage"
 )
 
 // Server memegang dependensi secara eksplisit. Tidak ada global atau singleton.
 type Server struct {
-	cfg config.Config
-	log *slog.Logger
-	db  *db.DB
+	cfg   config.Config
+	log   *slog.Logger
+	db    *db.DB
+	store *storage.Store
 }
 
-func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
-	s := &Server{cfg: cfg, log: log, db: database}
+func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.Store) http.Handler {
+	s := &Server{cfg: cfg, log: log, db: database, store: store}
 
 	mux := http.NewServeMux()
 
@@ -36,6 +38,17 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
 	mux.HandleFunc("POST /api/inventory/bulk-delete", s.requireAuth(s.handleInventoryBulkDelete))
 	mux.HandleFunc("PATCH /api/inventory/{id}", s.requireAuth(s.handleInventoryPatch))
 	mux.HandleFunc("DELETE /api/inventory/{id}", s.requireAuth(s.handleInventoryDelete))
+
+	// Blacklist. `check` didaftarkan sebelum `{id}` supaya path statis tidak
+	// tertangkap sebagai id — ServeMux memilih pola paling spesifik, tapi urutan
+	// tulis yang eksplisit membuat niatnya terbaca.
+	mux.HandleFunc("GET /api/blacklist", s.requireAuth(s.handleBlacklistGet))
+	mux.HandleFunc("POST /api/blacklist", s.requireAuth(s.handleBlacklistPost))
+	mux.HandleFunc("GET /api/blacklist/check", s.requireAuth(s.handleBlacklistCheck))
+	mux.HandleFunc("POST /api/blacklist/upload", s.requireAuth(s.handleBlacklistUpload))
+	mux.HandleFunc("GET /api/blacklist/header", s.requireAuth(s.handleBlacklistHeader))
+	mux.HandleFunc("PATCH /api/blacklist/{id}", s.requireAuth(s.handleBlacklistPatch))
+	mux.HandleFunc("DELETE /api/blacklist/{id}", s.requireAuth(s.handleBlacklistDelete))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)

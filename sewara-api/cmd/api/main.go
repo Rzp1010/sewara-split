@@ -13,6 +13,7 @@ import (
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/httpapi"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/storage"
 )
 
 func main() {
@@ -41,12 +42,29 @@ func run() error {
 	}
 	defer database.Close()
 
+	var store *storage.Store
+	if cfg.Storage.Enabled() {
+		store, err = storage.New(storage.Config{
+			Endpoint:  cfg.Storage.Endpoint,
+			Region:    cfg.Storage.Region,
+			AccessKey: cfg.Storage.AccessKey,
+			SecretKey: cfg.Storage.SecretKey,
+			Bucket:    cfg.Storage.Bucket,
+		})
+		if err != nil {
+			return err
+		}
+		log.Info("storage terhubung", "bucket", cfg.Storage.Bucket)
+	} else {
+		log.Warn("storage tidak dikonfigurasi; fitur file tidak akan berfungsi")
+	}
+
 	// Sesi kedaluwarsa dibersihkan berkala; tanpa ini tabel auth.sessions tumbuh terus.
 	go cleanupSessions(ctx, log, database)
 
 	srv := &http.Server{
 		Addr:    cfg.Addr,
-		Handler: httpapi.New(cfg, log, database),
+		Handler: httpapi.New(cfg, log, database, store),
 		// Timeout eksplisit: tanpa ini, koneksi lambat menahan worker.
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
