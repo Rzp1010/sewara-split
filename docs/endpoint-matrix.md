@@ -111,6 +111,9 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | GET /api/dashboard | `handlers_dashboard.go` | 6 |
 | GET /api/inventory | `handlers_inventory.go` | 20 |
 | POST /api/inventory | `handlers_inventory.go` | 20 |
+| PATCH /api/inventory/{id} | `handlers_inventory.go` | 32 |
+| DELETE /api/inventory/{id} | `handlers_inventory.go` | 32 |
+| POST /api/inventory/bulk-delete | `handlers_inventory.go` | 32 |
 
-Tersisa 64 endpoint. Deviasi kontrak yang disengaja dicatat di
-`rencana-migrasi-go-2026-10-27.md` §17 dan §22.
+Tersisa 61 endpoint. Deviasi kontrak yang disengaja dicatat di
+`rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.

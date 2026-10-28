@@ -187,3 +187,98 @@ panggilan RPC, dan query 3 baris tidak akan pernah untung dengan generator.
 1. `PATCH/DELETE /api/inventory/[id]` + `POST /api/inventory/bulk-delete`
 2. `GET/POST /api/inventory-units`
 3. `GET/POST /api/members` (mulai butuh cross-check blacklist)
+
+---
+
+## 23. CRUD inventaris tuntas: PATCH/DELETE + bulk-delete (2026-10-28)
+
+Tiga endpoint melengkapi `/api/inventory`: `PATCH /api/inventory/{id}`,
+`DELETE /api/inventory/{id}`, `POST /api/inventory/bulk-delete`.
+**32 skenario** baru lolos.
+
+### 23.1 Bentuk PATCH: map, bukan struct
+
+PATCH harus membedakan tiga hal yang tidak bisa diwakili satu tipe field:
+
+| Keadaan | Arti |
+|---|---|
+| kolom tidak ada di body | jangan disentuh |
+| kolom ada, nilainya `null` | kosongkan kolom |
+| kolom ada, nilainya terisi | isi kolom |
+
+Karena itu body dibaca sebagai `map[string]json.RawMessage`, lalu
+`buildInventoryPatch` menerjemahkannya menjadi `[]db.SetClause`. Struct dengan
+pointer tidak cukup: `nil` akan berarti dua hal sekaligus.
+
+Konsekuensi nyata: form edit mengirim `denda: null` ketika kolomnya dikosongkan
+(`parseInt("")` = `NaN` → JSON `null`), dan nilai itu harus benar-benar
+mengosongkan kolom, bukan diabaikan.
+
+### 23.2 Keamanan penyusunan SQL
+
+`SET` dibangun dari nama kolom, jadi nama itu tidak boleh datang dari klien:
+
+- handler hanya menerjemahkan kunci yang ada di daftar putihnya sendiri;
+- `db.susunSet` memeriksa ulang setiap kolom terhadap `kolomBolehDiubah` dan
+  mengembalikan error kalau tidak terdaftar (lapisan kedua);
+- semua nama kolom dikutip; nilai selalu lewat parameter `$n`.
+
+`id`, `user_id`, `created_at`, `updated_at` diabaikan tanpa error — frontend
+mengirim seluruh baris dan backend Next juga membuang `user_id` diam-diam.
+Kolom **tidak dikenal** justru ditolak 400, supaya salah ketik tidak lolos
+sebagai "tidak ada yang berubah".
+
+### 23.3 Deviasi positif dari backend Next
+
+| Keadaan | Next | Go |
+|---|---|---|
+| PATCH id tenant lain / tidak ada | 500 (`.single()` gagal) | **404** |
+| PATCH kolom tidak dikenal | 500 (PostgREST) | **400** |
+| DELETE barang dipakai transaksi | 500 (FK mentah) | **409 `INVENTORY_IN_USE`** |
+| `updated_at` saat PATCH | tidak pernah maju (klien mengirim nilai lama) | `now()` |
+| bulk-delete | cek lalu hapus, dua pernyataan terpisah | satu transaksi (atomik) |
+
+`INVENTORY_IN_USE` bukan sekadar kerapian: frontend mencocokkan
+`hasil.code === "INVENTORY_IN_USE"` untuk menampilkan pesan yang tepat, jadi
+kode itu harus ada di amplop error.
+
+### 23.4 Guard paket (PAKET_IN_USE)
+
+Isi paket tidak boleh berubah selama paket dipakai transaksi **Booking** atau
+**Disewa**. Tiga hal yang mudah salah:
+
+1. **Penyimpanan ulang dengan isi sama harus lolos.** Frontend mengirim seluruh
+   baris, jadi tanpa pengecualian ini setiap penyimpanan paket yang sedang
+   dipakai akan ditolak. Perbandingan memakai bentuk kanonik (`komponenKanonik`):
+   hanya `idBarang` + `qty`, diurutkan — `nama` bukan bagian definisi paket.
+2. **Guard hanya jalan kalau `komponen` ikut dikirim.** PATCH nama saja tidak
+   menambah query.
+3. **Pemeriksaan dan UPDATE dalam satu transaksi**, jadi tidak ada celah antara
+   cek dan tulis.
+
+### 23.5 Preflight hapus memeriksa pemakaian, bukan status
+
+`DELETE` menolak barang yang tercatat di `transaction_items` **apa pun status
+transaksinya**. Ini perilaku backend Next dan sudah dikunci smoke test: barang
+yang hanya dipakai transaksi `Selesai` atau `Dibatalkan` tetap tidak bisa
+dihapus. Alasannya struktural — FK `transaction_items → inventory` adalah
+`ON DELETE RESTRICT`, jadi menghapusnya memang akan gagal; preflight hanya
+mengubah error mentah menjadi 409 yang bisa dibaca.
+
+Hapus bersifat idempoten: id yang tidak ada, atau milik tenant lain, tetap
+dibalas 200. RLS yang menyaring, dan frontend memperlakukan "selesai" sebagai
+sinyal memuat ulang daftar.
+
+### 23.6 Metrics setelah §23
+
+| Metric | Nilai |
+|---|---|
+| Total skenario teruji | 104 |
+| Endpoint Go | 13 |
+| Route bisnis | 5 |
+| Security holes | 0 |
+
+### 23.7 Berikutnya
+
+`GET/POST /api/inventory-units` — route berikutnya yang bergantung pada
+inventory (S/N per unit, status `available`), lalu `GET/POST /api/members`.

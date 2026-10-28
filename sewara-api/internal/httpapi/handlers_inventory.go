@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -248,4 +249,286 @@ func jsonText(raw json.RawMessage) (*string, error) {
 		return &s, nil
 	}
 	return &isi, nil
+}
+
+// handleInventoryPatch menerapkan perubahan sebagian pada satu barang.
+//
+// Body dibaca sebagai map, bukan struct, karena PATCH harus membedakan tiga hal
+// yang tidak bisa diwakili satu tipe field: kolom tidak dikirim (jangan disentuh),
+// kolom dikirim null (kosongkan), dan kolom dikirim nilai (isi).
+func (s *Server) handleInventoryPatch(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	id, ok := parseInventoryPathID(w, r)
+	if !ok {
+		return
+	}
+
+	var body map[string]json.RawMessage
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
+		writeValidationError(w, "Body tidak valid.", nil)
+		return
+	}
+
+	sets, komponen, pesan := buildInventoryPatch(body)
+	if pesan != "" {
+		writeValidationError(w, pesan, nil)
+		return
+	}
+	if len(sets) == 0 {
+		writeValidationError(w, "Tidak ada kolom yang diubah.", nil)
+		return
+	}
+
+	tenantID, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		s.log.Error("gagal membaca tenant id", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	saved, err := s.db.UpdateInventory(r.Context(), me.UserID, tenantID, id, sets, komponen)
+	if err != nil {
+		s.writeInventoryError(w, err)
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"inventory": saved})
+}
+
+// handleInventoryDelete menghapus satu barang. Membalas 200 juga ketika tidak
+// ada baris yang terhapus (sudah tidak ada, atau milik tenant lain): DELETE yang
+// idempoten, sama seperti backend Next, dan frontend memperlakukannya sebagai
+// "selesai" lalu memuat ulang daftar.
+func (s *Server) handleInventoryDelete(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	id, ok := parseInventoryPathID(w, r)
+	if !ok {
+		return
+	}
+
+	if err := s.db.DeleteInventory(r.Context(), me.UserID, []int64{id}); err != nil {
+		s.writeInventoryError(w, err)
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// handleInventoryBulkDelete menghapus beberapa barang sekaligus.
+//
+// Semua-atau-tidak-sama-sekali: kalau satu barang sudah dipakai transaksi, tidak
+// ada yang terhapus. Frontend memakai jalur ini untuk hapus satu item juga,
+// jadi perilakunya dibuat sama dengan handleInventoryDelete.
+func (s *Server) handleInventoryBulkDelete(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	var body struct {
+		IDs []int64 `json:"ids"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
+		writeValidationError(w, "Body tidak valid.", nil)
+		return
+	}
+
+	if err := s.db.DeleteInventory(r.Context(), me.UserID, body.IDs); err != nil {
+		s.writeInventoryError(w, err)
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// writeInventoryError menerjemahkan error lapisan db menjadi respons HTTP.
+//
+// Pesan dan kode untuk PAKET_IN_USE / INVENTORY_IN_USE disalin dari backend Next:
+// frontend mencocokkan `error.code === "INVENTORY_IN_USE"` dan menampilkan
+// message server apa adanya.
+func (s *Server) writeInventoryError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, db.ErrNotFound):
+		writeError(w, http.StatusNotFound, CodeNotFound, "Inventaris tidak ditemukan.")
+	case errors.Is(err, db.ErrPaketDipakai):
+		writeError(w, http.StatusConflict, CodePaketInUse,
+			"Isi paket tidak bisa diubah selama dipakai booking aktif (Booking/Disewa).")
+	case errors.Is(err, db.ErrInventoryDipakai):
+		writeError(w, http.StatusConflict, CodeInventoryInUse,
+			"Inventaris tidak dapat dihapus karena sudah digunakan dalam transaksi.")
+	default:
+		s.log.Error("operasi inventaris gagal", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+	}
+}
+
+// parseInventoryPathID membaca {id} dari path. Yang bukan angka ditolak sebelum
+// menyentuh database.
+func parseInventoryPathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeValidationError(w, "Id inventaris harus berupa angka.", nil)
+		return 0, false
+	}
+	return id, true
+}
+
+// buildInventoryPatch mengubah body PATCH menjadi daftar kolom yang berubah.
+//
+// Yang dikembalikan: daftar SET, isi `komponen` (nil kalau tidak dikirim, dipakai
+// db untuk guard paket), dan pesan validasi (kosong berarti valid).
+//
+// Kolom `id`, `user_id`, `created_at`, dan `updated_at` diabaikan tanpa error:
+// frontend mengirim seluruh baris, dan backend Next juga membuang `user_id`
+// diam-diam. Kolom lain yang tidak dikenal justru ditolak supaya salah ketik
+// tidak lewat sebagai "tidak ada yang berubah".
+func buildInventoryPatch(body map[string]json.RawMessage) ([]db.SetClause, json.RawMessage, string) {
+	dikenal := map[string]bool{
+		"id": true, "user_id": true, "created_at": true, "updated_at": true,
+		"nama": true, "jenis": true, "kondisi": true, "tipeSewa": true,
+		"denda": true, "tag": true, "keterangan": true, "tarif": true,
+		"h6": true, "h12": true, "h24": true,
+		"sns": true, "komponen": true, "kondisi_sn": true,
+	}
+	for kunci := range body {
+		if !dikenal[kunci] {
+			return nil, nil, "Kolom '" + kunci + "' tidak dikenal."
+		}
+	}
+
+	sets := make([]db.SetClause, 0, len(body))
+
+	if raw, ada := body["nama"]; ada {
+		nama, err := jsonText(raw)
+		if err != nil || nama == nil || strings.TrimSpace(*nama) == "" {
+			return nil, nil, "Nama barang wajib diisi."
+		}
+		sets = append(sets, db.SetClause{Kolom: "nama", Arg: strings.TrimSpace(*nama)})
+	}
+
+	if raw, ada := body["jenis"]; ada {
+		jenis, err := jsonText(raw)
+		if err != nil || jenis == nil || (*jenis != "satuan" && *jenis != "bundling") {
+			return nil, nil, "Jenis barang harus 'satuan' atau 'bundling'."
+		}
+		sets = append(sets, db.SetClause{Kolom: "jenis", Arg: *jenis})
+	}
+
+	if raw, ada := body["kondisi"]; ada {
+		kondisi, err := jsonText(raw)
+		if err != nil {
+			return nil, nil, "Kondisi barang tidak dikenal."
+		}
+		if kondisi != nil && !kondisiInventory[*kondisi] {
+			return nil, nil, "Kondisi barang tidak dikenal."
+		}
+		sets = append(sets, db.SetClause{Kolom: "kondisi", Arg: nilaiAtauNull(kondisi)})
+	}
+
+	for _, kunci := range []string{"tipeSewa", "tag", "keterangan", "tarif"} {
+		raw, ada := body[kunci]
+		if !ada {
+			continue
+		}
+		teks, err := jsonText(raw)
+		if err != nil {
+			return nil, nil, "Kolom '" + kunci + "' harus berupa teks atau null."
+		}
+		sets = append(sets, db.SetClause{Kolom: kunci, Arg: nilaiAtauNull(teks)})
+	}
+
+	if raw, ada := body["denda"]; ada {
+		denda, err := jsonText(raw)
+		if err != nil {
+			return nil, nil, "Denda harus berupa teks atau angka."
+		}
+		sets = append(sets, db.SetClause{Kolom: "denda", Arg: nilaiAtauNull(denda)})
+	}
+
+	for _, kunci := range []string{"h6", "h12", "h24"} {
+		raw, ada := body[kunci]
+		if !ada {
+			continue
+		}
+		angka, err := jsonNumber(raw)
+		if err != nil {
+			return nil, nil, "Kolom '" + kunci + "' harus berupa angka atau null."
+		}
+		sets = append(sets, db.SetClause{Kolom: kunci, Arg: angka})
+	}
+
+	if raw, ada := body["sns"]; ada {
+		sets = append(sets, db.SetClause{Kolom: "sns", Arg: jsonbOr(raw, "[]")})
+	}
+
+	var komponen json.RawMessage
+	if raw, ada := body["komponen"]; ada {
+		if pesan := validasiKomponen(raw); pesan != "" {
+			return nil, nil, pesan
+		}
+		komponen = jsonbOr(raw, "[]")
+		sets = append(sets, db.SetClause{Kolom: "komponen", Arg: komponen})
+	}
+
+	if raw, ada := body["kondisi_sn"]; ada {
+		sets = append(sets, db.SetClause{Kolom: "kondisi_sn", Arg: jsonbOr(raw, "{}")})
+	}
+
+	return sets, komponen, ""
+}
+
+// validasiKomponen memeriksa isi paket. Pesannya disalin dari backend Next.
+func validasiKomponen(raw json.RawMessage) string {
+	if strings.TrimSpace(string(raw)) == "null" {
+		return ""
+	}
+
+	var daftar []json.RawMessage
+	if err := json.Unmarshal(raw, &daftar); err != nil {
+		return "Komponen harus berupa array."
+	}
+
+	for _, entri := range daftar {
+		var c map[string]json.RawMessage
+		if err := json.Unmarshal(entri, &c); err != nil || c == nil {
+			return "Setiap komponen wajib punya idBarang dan qty > 0."
+		}
+
+		idBarang, ada := c["idBarang"]
+		if !ada || strings.TrimSpace(string(idBarang)) == "null" {
+			return "Setiap komponen wajib punya idBarang dan qty > 0."
+		}
+
+		qty, err := jsonNumber(c["qty"])
+		if err != nil || qty == nil {
+			return "Setiap komponen wajib punya idBarang dan qty > 0."
+		}
+		if q, ok := qty.(float64); !ok || !(q > 0) {
+			return "Setiap komponen wajib punya idBarang dan qty > 0."
+		}
+
+		if nama, ada := c["nama"]; ada {
+			isi := strings.TrimSpace(string(nama))
+			if isi != "null" && !strings.HasPrefix(isi, `"`) {
+				return "Nama komponen harus berupa teks."
+			}
+		}
+	}
+
+	return ""
+}
+
+// nilaiAtauNull mengubah *string menjadi nilai untuk database: nil jadi NULL,
+// selain itu string biasa.
+func nilaiAtauNull(v *string) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+// jsonNumber membaca angka atau null dari JSON. Dipakai untuk kolom numeric.
+func jsonNumber(raw json.RawMessage) (any, error) {
+	isi := strings.TrimSpace(string(raw))
+	if isi == "" || isi == "null" {
+		return nil, nil
+	}
+	nilai, err := strconv.ParseFloat(strings.Trim(isi, `"`), 64)
+	if err != nil {
+		return nil, err
+	}
+	return nilai, nil
 }

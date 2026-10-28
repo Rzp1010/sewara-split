@@ -25,6 +25,12 @@ const (
 	CodeInternalError        = "INTERNAL_ERROR"
 	CodeDatabaseError        = "DATABASE_ERROR"
 	CodeExternalServiceError = "EXTERNAL_SERVICE_ERROR"
+
+	// Kode khusus inventaris. Frontend mempercabangkan berdasarkan nilai ini
+	// (inventaris/page.js memeriksa `INVENTORY_IN_USE`), jadi teksnya tidak boleh
+	// diubah — pesannya boleh, kodenya jangan.
+	CodePaketInUse     = "PAKET_IN_USE"
+	CodeInventoryInUse = "INVENTORY_IN_USE"
 )
 
 // Bentuk amplop mengikuti lib/api/response.ts: {ok:true, data?} dan

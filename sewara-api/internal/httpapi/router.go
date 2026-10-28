@@ -33,6 +33,9 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
 	mux.HandleFunc("GET /api/dashboard", s.requireAuth(s.handleDashboardGet))
 	mux.HandleFunc("GET /api/inventory", s.requireAuth(s.handleInventoryGet))
 	mux.HandleFunc("POST /api/inventory", s.requireAuth(s.handleInventoryPost))
+	mux.HandleFunc("POST /api/inventory/bulk-delete", s.requireAuth(s.handleInventoryBulkDelete))
+	mux.HandleFunc("PATCH /api/inventory/{id}", s.requireAuth(s.handleInventoryPatch))
+	mux.HandleFunc("DELETE /api/inventory/{id}", s.requireAuth(s.handleInventoryDelete))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
