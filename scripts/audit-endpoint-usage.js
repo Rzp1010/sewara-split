@@ -65,8 +65,16 @@ const clientLines = feText.get(clientPath).split(/\r?\n/);
 const apiDefs = [];
 const objStack = [{ indent: -1, key: 'api' }];
 
-function pathDariBaris(line) {
-  const call = line.match(/apiRequest\(\s*(['"`])([^'"`]+)\1/);
+function pathDariBaris(lines, idx) {
+  const line = lines[idx];
+  let call = line.match(/apiRequest\(\s*(['"`])([^'"`]+)\1/);
+
+  // Bentuk `apiRequest(` lalu path di baris berikutnya.
+  if (!call && /apiRequest\(\s*$/.test(line)) {
+    const nxt = lines[idx + 1] || '';
+    call = nxt.match(/^\s*(['"`])([^'"`]+)\1/);
+  }
+
   if (call) {
     const raw = call[2];
     const tanpaTemplate = raw.replace(/\$\{.*$/, '');
@@ -119,7 +127,7 @@ for (let i = 0; i < clientLines.length; i++) {
   const propM = line.match(/^(\s*)([A-Za-z_$][\w$]*)\s*:/);
   if (propM) propSekarang = { indent: propM[1].length, key: propM[2] };
 
-  const url = pathDariBaris(line);
+  const url = pathDariBaris(clientLines, i);
   if (!url) continue;
 
   // Kunci metode: di baris yang sama kalau ada, kalau tidak properti terakhir
@@ -178,7 +186,7 @@ const dbLines = feText.get(dbPath).split(/\r?\n/);
 
 for (let i = 0; i < dbLines.length; i++) {
   if (!dbLines[i].includes('apiRequest(')) continue;
-  const url = pathDariBaris(dbLines[i]) || pathDariBaris(dbLines[i + 1] || '');
+  const url = pathDariBaris(dbLines, i);
   if (!url) continue;
   dbDirectDefs.push({
     fn: enclosingFunction(dbLines, i),

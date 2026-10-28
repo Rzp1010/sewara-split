@@ -2,7 +2,8 @@
 
 Sumber: `sewara-backend/app/api/**/route.ts`
 Dibuat: 2026-10-27, otomatis dari ekspor route.
-Total: **51 file route, 74 endpoint HTTP**.
+Total: **51 file route, 74 endpoint HTTP** saat audit 2026-10-28. Setelah empat
+route mati dibuang pada tanggal yang sama: **47 file route, 68 endpoint**.
 
 Kategori:
 - **CRUD** — baca/tulis satu tabel, pola seragam.
@@ -15,7 +16,6 @@ Kategori:
 
 | Path | Methods | Kategori |
 |---|---|---|
-| /api/admin/akun | GET | ADMIN |
 | /api/admin/data | POST | ADMIN |
 | /api/admin/logs | GET | ADMIN |
 | /api/admin/users | GET, POST, DELETE, PATCH | ADMIN |
@@ -32,11 +32,9 @@ Kategori:
 | /api/blacklist/upload | POST | FILE |
 | /api/dashboard | GET | AGREGAT |
 | /api/dashboard/manajemen | GET | AGREGAT |
-| /api/dashboard/statistik | GET | AGREGAT |
 | /api/inventory | GET, POST | CRUD |
 | /api/inventory/:id | PATCH, DELETE | LOGIKA |
 | /api/inventory/bulk-delete | POST | CRUD |
-| /api/inventory-units | GET, POST | CRUD |
 | /api/invoice/header | GET, POST, DELETE | FILE |
 | /api/invoice-counter | POST | LOGIKA |
 | /api/logs | GET, POST, DELETE | CRUD |
@@ -62,7 +60,6 @@ Kategori:
 | /api/telegram/test | POST | EKSTERNAL |
 | /api/telegram/webhook | POST | EKSTERNAL |
 | /api/transaction-items | GET, POST | CRUD |
-| /api/transaction-payments | GET, POST | CRUD |
 | /api/transactions | GET, POST | CRUD |
 | /api/transactions/:id | GET, PATCH | CRUD |
 | /api/webhooks/payment | POST | EKSTERNAL |
@@ -126,9 +123,13 @@ Alat: `node scripts/audit-endpoint-usage.js`. Yang dilacak adalah rantai
 pemakaian path literal (`<img src>`, tautan unduh, `fetch` manual) dan pemanggil
 di luar frontend (cron, webhook). Endpoint berparameter ditulis `:id`.
 
-Total **51 path / 74 metode**. Dari jumlah itu, **43 path
+Total saat audit **51 path / 74 metode**. Dari jumlah itu, **43 path
 (64 metode) dipakai**, **4 path (6 metode) pembungkusnya
 mati**, dan **4 path masih dipakai tetapi bukan oleh frontend**.
+
+Empat path mati itu **sudah dibuang** pada 2026-10-28 (route Next, definisi
+`api-client`, dan pembungkus `db.js`; tabel DB tidak di-drop). Skrip yang sama
+kini melaporkan **47 path / 68 metode** tanpa satu pun pembungkus mati.
 
 | Kelompok | Path | Metode |
 |---|---|---|
@@ -197,11 +198,15 @@ mati**, dan **4 path masih dipakai tetapi bukan oleh frontend**.
 | `/api/member/upload` | POST | FILE | app/dashboard/member/page.js [url] |
 | `/api/telegram/test` | POST | EKSTERNAL | app/dashboard/loginlog/page.js [url], app/dashboard/pengaturan/page.js [url] |
 
-### D. Pembungkus mati — kandidat tidak diport
+### D. Pembungkus mati — SUDAH DIBUANG 2026-10-28
 
 `api-client.js` mendefinisikan panggilan ini dan `lib/db.js` membungkusnya, tetapi
-tidak ada halaman/komponen yang memanggil pembungkus tersebut. Catatan: metode di
-sini bisa mati semua atau hanya sebagian.
+tidak ada halaman/komponen yang memanggil pembungkus tersebut. Sebelum dibuang,
+keempatnya divalidasi ulang dari empat arah: pemanggil di `sewara-backend`,
+`sewara-frontend/src`, `sewara-api` (SQL/seed), `.github`, serta akses dinamis
+(`api[...]`, nama fungsi sebagai string) — semuanya nol. Route, definisi
+`api-client`, dan pembungkus `db.js` dihapus; **tabel DB tidak di-drop** supaya
+data lama tetap utuh sampai cutover.
 
 | Endpoint | Metode | Kategori | Bukti |
 |---|---|---|---|
@@ -230,9 +235,16 @@ sini bisa mati semua atau hanya sebagian.
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
   (68 metode)**. Sembilan path di antaranya sudah diport, jadi sisa **38 path
   / 55 metode**. Empat path ber-pembungkus mati tidak perlu diport sama sekali.
-- Beberapa wrapper mati menandakan tabel yang sudah tidak dipakai:
-  `inventory_units` hanya disentuh `app/api/inventory-units/route.ts` (stok sekarang
-  dihitung dari `inventory.sns`).
-- Pembayaran **tidak** lewat `/api/transaction-payments`; `/api/transactions`
-  menyimpannya lewat RPC (`p_payments`, `p_replace_payments`), jadi route terpisah itu
-  duplikat.
+- `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
+  dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja
+  dibiarkan; drop menyusul setelah cutover.
+- Pembayaran **tidak** lewat `/api/transaction-payments` (sudah dibuang);
+  `/api/transactions` menyimpannya lewat RPC (`p_payments`, `p_replace_payments`),
+  jadi route terpisah itu memang duplikat.
+- Masih ada metode mati di dalam route yang tetap hidup. Jangan diport, tapi juga
+  jangan dihapus sebelum cutover (masih dipakai sebagai rujukan paritas):
+  `DELETE /api/inventory/{id}` (`api.inventory.delete` tak pernah dipanggil; hapus
+  inventaris selalu lewat `bulk-delete`), `POST /api/transaction-items`
+  (`saveTransactionItems`), `GET /api/logs` dan `DELETE /api/logs`
+  (`getLogs`, `deleteLogs`), serta `GET /api/invoice/header` lewat
+  `api.invoice.headerGet` (yang dipakai adalah URL langsungnya di komponen).

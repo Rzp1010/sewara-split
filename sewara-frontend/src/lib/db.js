@@ -256,16 +256,6 @@ export async function hapusInventory(ids) {
   return { ok: true, error: null };
 }
 
-export async function getInventoryUnits(inventoryId) {
-  const { units } = await api.inventory.units.getAll(inventoryId);
-  return units || [];
-}
-
-export async function saveInventoryUnits(inventoryId, serialNumbers) {
-  if (!serialNumbers || serialNumbers.length === 0) return;
-  await api.inventory.units.save(inventoryId, serialNumbers);
-}
-
 // ============================================================================
 // TRANSAKSI
 // ============================================================================
@@ -424,7 +414,7 @@ export async function saveTransactionAtomic(transactionData, items = [], payment
 }
 
 // ============================================================================
-// ITEM & PEMBAYARAN TRANSAKSI
+// ITEM TRANSAKSI
 // ============================================================================
 
 export async function getTransactionItems(transactionId) {
@@ -446,16 +436,6 @@ export async function getTransactionItemsSemua() {
 export async function saveTransactionItems(transactionId, items) {
   if (!items || items.length === 0) return;
   await api.transactions.items.save(transactionId, items);
-}
-
-export async function getTransactionPayments(transactionId) {
-  const { payments } = await api.transactions.payments.get(transactionId);
-  return payments || [];
-}
-
-export async function saveTransactionPayments(transactionId, payments) {
-  if (!payments || payments.length === 0) return;
-  await api.transactions.payments.save(transactionId, payments);
 }
 
 // ============================================================================
@@ -932,14 +912,6 @@ export async function getLoginLogs() {
 // DASHBOARD
 // ============================================================================
 
-export async function getDashboardStatistik(rentang = null) {
-  const params = rentang?.mulai && rentang?.akhir
-    ? { mulai: rentang.mulai, akhir: rentang.akhir }
-    : {};
-  const { statistik } = await api.dashboard.getStatistik(params);
-  return statistik;
-}
-
 export async function getRekapStatus(rentang = null) {
   const params = rentang?.mulai && rentang?.akhir
     ? { mulai: rentang.mulai, akhir: rentang.akhir }
@@ -1024,16 +996,6 @@ export async function listOwners() {
   } catch (e) {
     console.error('listOwners error:', e.message);
     return { ok: false, data: [], error: 'Gagal memuat daftar Owner.' };
-  }
-}
-
-export async function getSemuaAkun() {
-  try {
-    const { akun } = await api.admin.akun();
-    return { ok: true, data: akun || [], error: null };
-  } catch (e) {
-    console.error('getSemuaAkun error:', e.message);
-    return { ok: false, data: [], error: e.message };
   }
 }
 

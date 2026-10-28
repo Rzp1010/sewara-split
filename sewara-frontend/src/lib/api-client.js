@@ -85,18 +85,6 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ ids }),
       }),
-    units: {
-      getAll: (inventoryId) =>
-        apiRequest(`/api/inventory-units${qs({ inventory_id: inventoryId })}`),
-      save: (inventoryId, serialNumbers) =>
-        apiRequest('/api/inventory-units', {
-          method: 'POST',
-          body: JSON.stringify({
-            inventory_id: inventoryId,
-            serial_numbers: serialNumbers,
-          }),
-        }),
-    },
   },
 
   transactions: {
@@ -121,17 +109,6 @@ export const api = {
         apiRequest('/api/transaction-items', {
           method: 'POST',
           body: JSON.stringify({ transaction_id: transactionId, items }),
-        }),
-    },
-    payments: {
-      get: (transactionId) =>
-        apiRequest(
-          `/api/transaction-payments${qs({ transaction_id: transactionId })}`,
-        ),
-      save: (transactionId, payments) =>
-        apiRequest('/api/transaction-payments', {
-          method: 'POST',
-          body: JSON.stringify({ transaction_id: transactionId, payments }),
         }),
     },
   },
@@ -221,7 +198,6 @@ export const api = {
 
   dashboard: {
     getStats: (params) => apiRequest(`/api/dashboard${qs(params)}`),
-    getStatistik: (params) => apiRequest(`/api/dashboard/statistik${qs(params)}`),
     getManajemen: () => apiRequest('/api/dashboard/manajemen'),
   },
 
@@ -237,6 +213,5 @@ export const api = {
     patchUser: (data) =>
       apiRequest('/api/admin/users', { method: 'PATCH', body: JSON.stringify(data) }),
     logs: () => apiRequest('/api/admin/logs'),
-    akun: () => apiRequest('/api/admin/akun'),
   },
 };
