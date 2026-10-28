@@ -60,6 +60,13 @@ function Start-Container {
             Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1
         }
         
+        # Seed (optional, load jika ada)
+        $seedFile = Join-Path $root 'seeds\staging_seed.sql'
+        if (Test-Path $seedFile) {
+            Write-Host "Memuat seed..."
+            Get-Content $seedFile -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName | Out-Null
+        }
+        
         # Record ledger
         $allFiles = @()
         $allFiles += (Get-ChildItem $bootDir -Filter *.sql | Sort-Object Name | ForEach-Object { $_.Name })
@@ -68,6 +75,10 @@ function Start-Container {
         foreach ($f in $allFiles) {
             docker exec $containerName psql -U $dbUser -d $dbName -c "INSERT INTO public.schema_migrations (filename) VALUES ('$f') ON CONFLICT DO NOTHING" | Out-Null
         }
+        
+        # Reset sequences setelah seed (agar INSERT berikutnya tidak bentrok)
+        Write-Host "Reset sequences..."
+        docker exec $containerName psql -U $dbUser -d $dbName -c "SELECT setval('member_types_id_seq', COALESCE((SELECT max(id) FROM member_types), 0) + 1, false);" | Out-Null
         
         Write-Host ""
         Write-Host "Tabel   : $(docker exec $containerName psql -U $dbUser -d $dbName -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"

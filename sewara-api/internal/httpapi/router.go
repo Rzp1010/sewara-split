@@ -27,6 +27,8 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB) http.Handler {
 	mux.HandleFunc("GET /api/auth/me", s.requireAuth(s.handleMe))
 	mux.HandleFunc("GET /api/settings", s.requireAuth(s.handleSettingsGet))
 	mux.HandleFunc("POST /api/settings", s.requireAuth(s.handleSettingsPost))
+	mux.HandleFunc("GET /api/member-types", s.requireAuth(s.handleMemberTypesGet))
+	mux.HandleFunc("POST /api/member-types", s.requireAuth(s.handleMemberTypesPost))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
