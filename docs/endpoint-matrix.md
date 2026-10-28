@@ -93,3 +93,24 @@ Selain test isolasi tenant standar, route berikut butuh kasus tambahan:
 Nilai `ERROR_CODES` (15 nilai, sumber `lib/api/constants.ts`) dan bentuk amplop
 `{ok, data?}` / `{ok:false, error:{code, message, details?}}`. Keduanya dikunci oleh
 golden fixture.
+
+## Status port ke Go (2026-10-28)
+
+Diperbarui manual setiap kali route baru selesai. Sumber kebenaran jumlah
+skenario: `sewara-api/scripts/smoke-*.ps1`.
+
+| Endpoint | Go | Skenario |
+|---|---|---|
+| POST /api/auth/login | `handlers_login.go` | 18 |
+| GET /api/auth/me | `handlers_auth.go` | (tercakup smoke-login) |
+| GET /api/settings | `handlers_settings.go` | 12 |
+| POST /api/settings | `handlers_settings.go` | 12 |
+| GET /api/member-types | `handlers_member_types.go` | 8 |
+| POST /api/member-types | `handlers_member_types.go` | 8 |
+| GET /api/profiles | `handlers_profiles.go` | 8 |
+| GET /api/dashboard | `handlers_dashboard.go` | 6 |
+| GET /api/inventory | `handlers_inventory.go` | 20 |
+| POST /api/inventory | `handlers_inventory.go` | 20 |
+
+Tersisa 64 endpoint. Deviasi kontrak yang disengaja dicatat di
+`rencana-migrasi-go-2026-10-27.md` §17 dan §22.

@@ -11,19 +11,19 @@ import (
 
 // Key yang boleh ditulis staf (non-owner/superadmin). Key lain → 403.
 var keyStaf = map[string]bool{
-	"kalender_selesai":  true,
+	"kalender_selesai": true,
 	"bukti_backup_ack": true,
 }
 
 // Key privat yang disembunyikan dari staf pada GET. Owner/superadmin bebas.
 var keyPrivat = map[string]bool{
-	"telegram_login_notif":          true,
-	"webhook_sheets":                true,
-	"invoice_prefix":                true,
-	"invoice_digit":                 true,
-	"invoice_mulai":                 true,
-	"invoice_counter":               true,
-	"cari_sembunyikan_riwayat":      true,
+	"telegram_login_notif":     true,
+	"webhook_sheets":           true,
+	"invoice_prefix":           true,
+	"invoice_digit":            true,
+	"invoice_mulai":            true,
+	"invoice_counter":          true,
+	"cari_sembunyikan_riwayat": true,
 }
 
 func isOwnerRole(role string) bool {
