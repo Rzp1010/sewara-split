@@ -33,171 +33,266 @@ const (
 	loginFailureWindow     = 10 * time.Minute
 	loginIPFailureLimit    = 10
 	loginEmailFailureLimit = 5
-	// Body login tidak butuh ruang besar; batas ini menutup kiriman sampah.
-	maxLoginBodyBytes = 4 << 10
+	maxLoginBodyBytes      = 4 << 10
 )
+
+// loginInput adalah kredensial yang sudah divalidasi.
+type loginInput struct {
+	email    string
+	password string
+}
+
+// loginContext adalah konteks per-request untuk login.
+type loginContext struct {
+	now       time.Time
+	ip        string
+	userAgent string
+	counts    db.LoginFailureCounts
+	user      *db.AuthUser
+	profil    *db.LoginProfile
+	ownerID   *string
+}
+
+// loginRejection adalah alasan penolakan login + metadata response.
+type loginRejection struct {
+	status  int
+	code    string
+	message string
+	detail  string
+	extra   map[string]any
+	headers map[string]string
+}
 
 // handleLogin memverifikasi kredensial lalu menerbitkan cookie sesi.
 //
-// Urutan pemeriksaan sengaja sama dengan backend Next: status akun, langganan,
-// pembatasan laju, baru password. Mengubah urutannya mengubah pesan yang dilihat
-// pengguna, jadi urutan ini adalah bagian dari kontrak, bukan selera.
+// Urutan pemeriksaan sengaja sama dengan backend Next: validasi → load data →
+// status akun → langganan → lockout → rate limit → password → email confirmation.
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	input, err := validateLoginInput(r)
+	if err != nil {
+		writeValidationError(w, msgLoginValidation, nil)
+		return
+	}
+
+	ctx := s.buildLoginContext(r, input.email)
+	reject := func(rej loginRejection) {
+		s.logLoginAttempt(input.email, ctx.ownerID, ctx.ip, ctx.userAgent, "login_gagal", rej.detail)
+		writeErrorExtra(w, rej.status, rej.code, rej.message, rej.extra, rej.headers)
+	}
+
+	if rej := checkAccountRestrictions(ctx.profil, ctx.now); rej != nil {
+		reject(*rej)
+		return
+	}
+
+	if ctx.counts.IP >= loginIPFailureLimit || ctx.counts.Email >= loginEmailFailureLimit {
+		alasan := "email"
+		if ctx.counts.IP >= loginIPFailureLimit {
+			alasan = "ip"
+		}
+		reject(loginRejection{
+			status:  http.StatusTooManyRequests,
+			code:    CodeRateLimitExceeded,
+			message: msgLoginRateLimit,
+			detail:  "rate limit " + alasan,
+			extra:   map[string]any{"retryAfterMs": int(loginFailureWindow.Milliseconds())},
+			headers: map[string]string{"Retry-After": "600"},
+		})
+		return
+	}
+
+	if ctx.user == nil {
+		reject(loginRejection{
+			status:  http.StatusUnauthorized,
+			code:    CodeUnauthorized,
+			message: msgLoginCredentials,
+			detail:  "email tidak dikenal",
+		})
+		return
+	}
+
+	if rej := s.verifyCredentials(r.Context(), ctx.user, ctx.profil, input.password); rej != nil {
+		reject(*rej)
+		return
+	}
+
+	if err := s.createLoginSession(w, r, ctx.user.ID, input.email, ctx.ownerID, ctx.ip, ctx.userAgent, ctx.now); err != nil {
+		s.log.Error("gagal membuat sesi login", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// validateLoginInput memeriksa body request dan mengembalikan kredensial yang sudah dibersihkan.
+func validateLoginInput(r *http.Request) (loginInput, error) {
 	var body struct {
 		Email    *string `json:"email"`
 		Password *string `json:"password"`
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, maxLoginBodyBytes)).Decode(&body); err != nil {
-		writeValidationError(w, msgLoginValidation, nil)
-		return
+		return loginInput{}, err
 	}
-	// Pointer, bukan string: field yang tidak dikirim harus bisa dibedakan dari
-	// string kosong. Zod di backend lama juga membedakan keduanya.
 	if body.Email == nil || body.Password == nil {
-		writeValidationError(w, msgLoginValidation, nil)
-		return
+		return loginInput{}, errors.New("field kosong")
 	}
 	email := strings.ToLower(strings.TrimSpace(*body.Email))
 	if !looksLikeEmail(email) {
-		writeValidationError(w, msgLoginValidation, nil)
-		return
+		return loginInput{}, errors.New("email tidak valid")
 	}
+	return loginInput{email: email, password: *body.Password}, nil
+}
 
+// buildLoginContext memuat semua data yang dibutuhkan untuk keputusan login.
+func (s *Server) buildLoginContext(r *http.Request, email string) loginContext {
 	now := time.Now()
 	ip := clientIP(r)
 	userAgent := r.UserAgent()
 
 	counts, err := s.db.CountRecentLoginFailures(r.Context(), email, ip, now.Add(-loginFailureWindow))
 	if err != nil {
-		// Pembatasan laju adalah lapisan tambahan. Database yang tersendat tidak
-		// boleh membuat pengguna sah tidak bisa masuk sama sekali.
 		s.log.Error("gagal menghitung percobaan login", "err", err)
 		counts = db.LoginFailureCounts{}
 	}
 
 	user, userErr := s.db.AuthUserByEmail(r.Context(), email)
-	if userErr != nil && !errors.Is(userErr, db.ErrNotFound) {
+	var userPtr *db.AuthUser
+	if userErr == nil {
+		userPtr = &user
+	} else if !errors.Is(userErr, db.ErrNotFound) {
 		s.log.Error("gagal membaca kredensial", "err", userErr)
-		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
-		return
 	}
 
 	var profil *db.LoginProfile
-	if userErr == nil {
+	var ownerID *string
+	if userPtr != nil {
 		p, err := s.db.LoadLoginProfile(r.Context(), user.ID)
 		switch {
 		case err == nil:
 			profil = &p
+			ownerID = p.OwnerID
 		case errors.Is(err, db.ErrNotFound):
-			// Kredensial ada, profil tidak. Akun setengah jadi: tanpa profil tidak
-			// ada satu pun route yang bisa dipakai, jadi sesi tidak perlu diterbitkan.
 			s.log.Warn("akun tanpa profil", "email", email)
 		default:
 			s.log.Error("gagal membaca profil login", "err", err)
-			writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
-			return
 		}
 	}
 
-	var ownerID *string
-	if profil != nil {
-		ownerID = profil.OwnerID
+	return loginContext{
+		now:       now,
+		ip:        ip,
+		userAgent: userAgent,
+		counts:    counts,
+		user:      userPtr,
+		profil:    profil,
+		ownerID:   ownerID,
+	}
+}
+
+// checkAccountRestrictions memeriksa status/langganan/lockout/cooldown. Nil = lolos.
+func checkAccountRestrictions(profil *db.LoginProfile, now time.Time) *loginRejection {
+	if profil == nil {
+		return nil
 	}
 
-	// reject mencatat percobaan lalu membalas. Semua penolakan lewat sini supaya
-	// jejak login_logs tidak bisa terlewat di salah satu cabang — tabel itu juga
-	// yang menjadi dasar pembatasan laju berikutnya.
-	reject := func(status int, code, message, detail string, extra map[string]any, headers map[string]string) {
-		s.logLoginAttempt(email, ownerID, ip, userAgent, "login_gagal", detail)
-		writeErrorExtra(w, status, code, message, extra, headers)
-	}
-
-	if profil != nil {
-		if profil.Status != nil && *profil.Status == "menunggu" {
-			reject(http.StatusForbidden, CodeForbidden, msgLoginWaiting, "akun menunggu persetujuan", nil, nil)
-			return
-		}
-		if profil.SubscribedUntil != nil && profil.SubscribedUntil.Before(now) {
-			reject(http.StatusUnauthorized, CodeUnauthorized, msgLoginExpired, "langganan berakhir", nil, nil)
-			return
-		}
-		if !profil.Active {
-			// Pesan sengaja sama dengan password salah: menonaktifkan akun tidak
-			// perlu diumumkan ke orang yang mencoba masuk.
-			reject(http.StatusUnauthorized, CodeUnauthorized, msgLoginCredentials, "akun nonaktif", nil, nil)
-			return
-		}
-		if menit, terkunci := sisaMenit(profil.LockedUntil, now); terkunci {
-			jam := profil.LockedUntil.In(time.Local).Format("15.04")
-			pesan := "Akun terkunci. Coba lagi sekitar " + jam + " (" + strconv.Itoa(menit) + " menit) atau hubungi atasan."
-			reject(http.StatusLocked, CodeAccountLocked, pesan, "akun terkunci",
-				map[string]any{"retryAfterMs": menit * 60 * 1000},
-				map[string]string{"Retry-After": strconv.Itoa(menit * 60)})
-			return
-		}
-		if menit, jeda := sisaMenit(profil.CooldownUntil, now); jeda {
-			pesan := "Terlalu banyak percobaan. Coba lagi dalam " + strconv.Itoa(menit) + " menit."
-			reject(http.StatusTooManyRequests, CodeAccountCooldown, pesan, "terlalu banyak percobaan",
-				map[string]any{"retryAfterMs": menit * 60 * 1000},
-				map[string]string{"Retry-After": strconv.Itoa(menit * 60)})
-			return
+	if profil.Status != nil && *profil.Status == "menunggu" {
+		return &loginRejection{
+			status:  http.StatusForbidden,
+			code:    CodeForbidden,
+			message: msgLoginWaiting,
+			detail:  "akun menunggu persetujuan",
 		}
 	}
 
-	if counts.IP >= loginIPFailureLimit || counts.Email >= loginEmailFailureLimit {
-		alasan := "email"
-		if counts.IP >= loginIPFailureLimit {
-			alasan = "ip"
+	if profil.SubscribedUntil != nil && profil.SubscribedUntil.Before(now) {
+		return &loginRejection{
+			status:  http.StatusUnauthorized,
+			code:    CodeUnauthorized,
+			message: msgLoginExpired,
+			detail:  "langganan berakhir",
 		}
-		reject(http.StatusTooManyRequests, CodeRateLimitExceeded, msgLoginRateLimit, "rate limit "+alasan,
-			map[string]any{"retryAfterMs": int(loginFailureWindow.Milliseconds())},
-			map[string]string{"Retry-After": "600"})
-		return
 	}
 
-	if userErr != nil {
-		reject(http.StatusUnauthorized, CodeUnauthorized, msgLoginCredentials, "email tidak dikenal", nil, nil)
-		return
+	if !profil.Active {
+		return &loginRejection{
+			status:  http.StatusUnauthorized,
+			code:    CodeUnauthorized,
+			message: msgLoginCredentials,
+			detail:  "akun nonaktif",
+		}
 	}
 
-	// Password diperiksa sebelum status verifikasi email: Supabase pun membalas
-	// "Email not confirmed" hanya kalau passwordnya benar, sehingga pesan itu
-	// tidak bisa dipakai menebak password orang lain.
-	if user.EncryptedPassword == nil || !auth.VerifyPassword(*user.EncryptedPassword, *body.Password) {
+	if menit, terkunci := sisaMenit(profil.LockedUntil, now); terkunci {
+		jam := profil.LockedUntil.In(time.Local).Format("15.04")
+		return &loginRejection{
+			status:  http.StatusLocked,
+			code:    CodeAccountLocked,
+			message: "Akun terkunci. Coba lagi sekitar " + jam + " (" + strconv.Itoa(menit) + " menit) atau hubungi atasan.",
+			detail:  "akun terkunci",
+			extra:   map[string]any{"retryAfterMs": menit * 60 * 1000},
+			headers: map[string]string{"Retry-After": strconv.Itoa(menit * 60)},
+		}
+	}
+
+	if menit, jeda := sisaMenit(profil.CooldownUntil, now); jeda {
+		return &loginRejection{
+			status:  http.StatusTooManyRequests,
+			code:    CodeAccountCooldown,
+			message: "Terlalu banyak percobaan. Coba lagi dalam " + strconv.Itoa(menit) + " menit.",
+			detail:  "terlalu banyak percobaan",
+			extra:   map[string]any{"retryAfterMs": menit * 60 * 1000},
+			headers: map[string]string{"Retry-After": strconv.Itoa(menit * 60)},
+		}
+	}
+
+	return nil
+}
+
+// verifyCredentials memeriksa password + email confirmation. Nil = lolos.
+func (s *Server) verifyCredentials(ctx context.Context, user *db.AuthUser, profil *db.LoginProfile, password string) *loginRejection {
+	if user.EncryptedPassword == nil || !auth.VerifyPassword(*user.EncryptedPassword, password) {
 		if profil != nil {
-			if _, err := s.db.RegisterLoginFailure(r.Context(), profil.UserID); err != nil {
+			if _, err := s.db.RegisterLoginFailure(ctx, profil.UserID); err != nil {
 				s.log.Error("gagal mencatat kegagalan login", "err", err)
 			}
 		}
-		reject(http.StatusUnauthorized, CodeUnauthorized, msgLoginCredentials, "password salah", nil, nil)
-		return
+		return &loginRejection{
+			status:  http.StatusUnauthorized,
+			code:    CodeUnauthorized,
+			message: msgLoginCredentials,
+			detail:  "password salah",
+		}
 	}
 
 	if user.EmailConfirmedAt == nil {
-		reject(http.StatusForbidden, CodeForbidden, msgLoginUnverified, "email belum diverifikasi", nil, nil)
-		return
+		return &loginRejection{
+			status:  http.StatusForbidden,
+			code:    CodeForbidden,
+			message: msgLoginUnverified,
+			detail:  "email belum diverifikasi",
+		}
 	}
 
+	return nil
+}
+
+// createLoginSession membuat token + cookie, lalu memulai pekerjaan pasca-login.
+func (s *Server) createLoginSession(w http.ResponseWriter, r *http.Request, userID, email string, ownerID *string, ip, userAgent string, now time.Time) error {
 	token, hash, err := auth.NewToken()
 	if err != nil {
-		s.log.Error("gagal membuat token sesi", "err", err)
-		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
-		return
+		return err
 	}
 
-	if err := s.db.CreateSession(r.Context(), hash, user.ID, now.Add(s.cfg.SessionTTL), userAgent, ip); err != nil {
-		s.log.Error("gagal menyimpan sesi", "err", err)
-		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
-		return
+	if err := s.db.CreateSession(r.Context(), hash, userID, now.Add(s.cfg.SessionTTL), userAgent, ip); err != nil {
+		return err
 	}
 
 	http.SetCookie(w, auth.Cookie(token, s.cfg.SessionTTL, s.cookieSecure(r)))
 
-	// Pekerjaan pasca-login tidak menahan respons: kalau gagal, pengguna tetap
-	// sudah masuk dan kegagalannya hanya kehilangan satu baris catatan.
-	go s.afterLoginSuccess(user.ID, email, ownerID, ip, userAgent)
+	go s.afterLoginSuccess(userID, email, ownerID, ip, userAgent)
 
-	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+	return nil
 }
 
 // afterLoginSuccess melunasi penalti dan mencatat keberhasilan.
@@ -216,10 +311,6 @@ func (s *Server) afterLoginSuccess(userID, email string, ownerID *string, ip, us
 	}); err != nil {
 		s.log.Error("gagal mencatat login sukses", "err", err)
 	}
-
-	// Catatan: notifikasi Telegram login belum dipindahkan. Backend lama
-	// mengirimnya lewat lib/services/telegram.ts; penggantinya masuk W2 bersama
-	// pengiriman email (lihat docs/rencana-migrasi-go-2026-10-27.md).
 }
 
 // logLoginAttempt menulis satu baris login_logs. Ditulis sinkron karena baris ini
@@ -237,7 +328,6 @@ func (s *Server) logLoginAttempt(email string, ownerID *string, ip, userAgent, e
 }
 
 // sisaMenit mengubah batas waktu penalti menjadi sisa menit yang dibulatkan ke atas.
-// Batas waktu yang sudah lewat (atau kosong) berarti tidak ada penalti.
 func sisaMenit(until *time.Time, now time.Time) (int, bool) {
 	if until == nil || !until.After(now) {
 		return 0, false
@@ -250,7 +340,6 @@ func sisaMenit(until *time.Time, now time.Time) (int, bool) {
 }
 
 // clientIP mengambil IP asli di balik nginx/Cloudflare.
-// Tanpa X-Forwarded-For (mis. saat pengembangan langsung), RemoteAddr dipakai.
 func clientIP(r *http.Request) string {
 	if v := r.Header.Get("X-Forwarded-For"); v != "" {
 		first, _, _ := strings.Cut(v, ",")
@@ -266,14 +355,11 @@ func clientIP(r *http.Request) string {
 }
 
 // cookieSecure menandai cookie Secure kalau koneksi ke klien memang HTTPS.
-// Di produksi nilai ini sudah benar dari config; header dipakai untuk kasus
-// nginx yang meneruskan HTTP ke aplikasi.
 func (s *Server) cookieSecure(r *http.Request) bool {
 	return s.cfg.CookieSecure || r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 // looksLikeEmail adalah pemeriksaan bentuk minimum, bukan validasi RFC.
-// Tujuannya menolak masukan yang jelas salah tanpa menolak alamat sah yang aneh.
 func looksLikeEmail(s string) bool {
 	at := strings.IndexByte(s, '@')
 	if at <= 0 || at == len(s)-1 {
