@@ -9,10 +9,10 @@ import (
 // Setting adalah satu pasangan key-value per tenant.
 // Value disimpan sebagai text (JSON string), sama seperti backend Next.
 type Setting struct {
-	UserID    string
-	Key       string
-	Value     *string
-	UpdatedAt time.Time
+	UserID    string    `json:"user_id"`
+	Key       string    `json:"key"`
+	Value     *string   `json:"value"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetSettings membaca semua setting tenant. Filter key dilakukan di handler.

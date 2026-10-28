@@ -8,14 +8,15 @@ import (
 )
 
 // MemberType adalah tipe member (Reguler, VIP, dst) per tenant.
+// Tag JSON snake_case wajib: frontend membaca nama field ini apa adanya.
 type MemberType struct {
-	ID                  int64
-	UserID              string
-	Nama                string
-	DiskonPersen        float64
-	Status              string
-	CreatedAt           time.Time
-	DiskonDurasiAturan  json.RawMessage
+	ID                 int64           `json:"id"`
+	UserID             string          `json:"user_id"`
+	Nama               string          `json:"nama"`
+	DiskonPersen       float64         `json:"diskon_persen"`
+	Status             string          `json:"status"`
+	CreatedAt          time.Time       `json:"created_at"`
+	DiskonDurasiAturan json.RawMessage `json:"diskon_durasi_aturan"`
 }
 
 // GetMemberTypes membaca semua tipe member tenant, diurutkan nama.
