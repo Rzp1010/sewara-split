@@ -9,6 +9,7 @@ import {
   formatRupiah,
   formatTanggal,
   hitungDurasiDenganAturan,
+  hitungSubtotal,
   hitungPembayaran,
   kondisiUnit,
   catatanUnit,
@@ -778,17 +779,7 @@ export default function StatusPage() {
       trx.durasi_teks = dur.durasi_teks;
       let biayaBrutoBaru = 0;
       (trx.items || []).forEach((item) => {
-        let sub = 0;
-        if (item.ref.tipeSewa === "harian") {
-          let hp = dur.hari + (dur.sisaJam > 0 ? 1 : 0);
-          if (hp === 0 && dur.totalJam > 0) hp = 1;
-          sub = hp * item.ref.h24;
-        } else {
-          sub = dur.hari * item.ref.h24;
-          if (dur.sisaJam > 0 && dur.sisaJam <= 6) sub += item.ref.h6;
-          else if (dur.sisaJam > 6 && dur.sisaJam <= 12) sub += item.ref.h12;
-          else if (dur.sisaJam > 12) sub += item.ref.h24;
-        }
+        const sub = hitungSubtotal(item, dur);
         item.hargaSatuan = sub;
         item.subtotal = sub * item.qty;
         biayaBrutoBaru += item.subtotal;

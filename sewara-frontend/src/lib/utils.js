@@ -100,6 +100,42 @@ export function hitungDurasi(ambil, kembali) {
   };
 }
 
+/**
+ * Subtotal satu item untuk durasi tertentu (SUMBER TUNGGAL rumus harga sewa).
+ *
+ * Aturan:
+ * - Sewa >= 24 jam → berlaku untuk SEMUA tipe sewa (harian maupun fleksibel):
+ *   tarif hari penuh (hari x h24) + sisa jam.
+ *   Sisa <= 12 jam ditagih 50% h24; sisa > 12 jam ditagih 1x h24.
+ *   Contoh 36 jam = 1x h24 + 0.5x h24 = 1.5x h24.
+ * - Sewa < 24 jam:
+ *   - tipe "harian" → minimum 1 hari (h24), tidak ada tarif per jam.
+ *   - tipe "fleksibel" → h6 (<= 6 jam), h12 (<= 12 jam), h24 (> 12 jam).
+ */
+export function hitungSubtotal(item, dur) {
+  const ref = item?.ref || item || {};
+  const h24 = Number(ref.h24) || 0;
+  if (!dur || dur.error) return 0;
+
+  const hari = Number(dur.hari) || 0;
+  const sisaJam = Number(dur.sisaJam) || 0;
+  const totalJam = Number(dur.totalJam) || 0;
+
+  if (totalJam <= 0) return 0;
+
+  if (hari >= 1) {
+    let sub = hari * h24;
+    if (sisaJam > 0) sub += sisaJam <= 12 ? h24 * 0.5 : h24;
+    return sub;
+  }
+
+  // totalJam > 0 tapi hari 0 → sisaJam 1..23
+  if (ref.tipeSewa === "harian") return h24;
+  if (sisaJam <= 6) return Number(ref.h6) || 0;
+  if (sisaJam <= 12) return Number(ref.h12) || 0;
+  return h24;
+}
+
 export function hitungDurasiDenganAturan(
   ambilRencana,
   ambilAktual,
