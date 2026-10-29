@@ -79,6 +79,7 @@ function Start-Container {
         # Reset sequences setelah seed (agar INSERT berikutnya tidak bentrok)
         Write-Host "Reset sequences..."
         docker exec $containerName psql -U $dbUser -d $dbName -c "SELECT setval('member_types_id_seq', COALESCE((SELECT max(id) FROM member_types), 0) + 1, false);" | Out-Null
+        docker exec $containerName psql -U $dbUser -d $dbName -c "SELECT setval('promo_codes_id_seq', COALESCE((SELECT max(id) FROM promo_codes), 0) + 1, false);" | Out-Null
         
         Write-Host ""
         Write-Host "Tabel   : $(docker exec $containerName psql -U $dbUser -d $dbName -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"

@@ -363,3 +363,24 @@ Deviasi positif: guard prefix dan validasi `path` pada header dijalankan sebelum
 cek storage. Tenant tidak pernah mendapat 503 sebagai pengganti 403 untuk path
 milik tenant lain.
 
+## 26. Domain promo CRUD Go (2026-10-29)
+
+Empat metode CRUD selesai di `handlers_promo.go`: daftar, tambah, ubah, hapus.
+Kode otomatis uppercase + trim. Constraint duplikat per tenant dikembalikan
+`409 PROMO_DUPLIKAT`. GET otomatis tandai expired (`berlaku_sampai` lewat ATAU
+`terpakai >= kuota`).
+
+`internal/db/promo.go`: 6 metode (List/Get/Insert/Update/Delete/TandaiPromoExpired).
+Update read-modify-write, field nil tidak diubah. Constraint `promo_codes_user_kode`
+mapped ke `ErrPromoDuplikat`.
+
+`scripts/smoke-promo.ps1`: **30/30 lolos** pada Docker staging. Cakupan CRUD,
+validasi diskon 0-100, kuota ≥0, status aktif/nonaktif, duplikat kode per tenant,
+isolasi dua tenant, auto-tandai expired tanggal + kuota.
+
+Perbaikan staging: reset `promo_codes_id_seq` setelah seed supaya INSERT smoke
+tidak bentrok dengan seed `OVERRIDING SYSTEM VALUE` id 1-4.
+
+Sisa: `POST /api/promo/validate` dan `POST /api/promo/use` (logika kadaluarsa +
+concurrency guard `terpakai`).
+

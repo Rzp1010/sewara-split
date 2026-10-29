@@ -50,6 +50,12 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("PATCH /api/blacklist/{id}", s.requireAuth(s.handleBlacklistPatch))
 	mux.HandleFunc("DELETE /api/blacklist/{id}", s.requireAuth(s.handleBlacklistDelete))
 
+	// Promo.
+	mux.HandleFunc("GET /api/promo", s.requireAuth(s.handlePromoGet))
+	mux.HandleFunc("POST /api/promo", s.requireAuth(s.handlePromoPost))
+	mux.HandleFunc("PATCH /api/promo/{id}", s.requireAuth(s.handlePromoPatch))
+	mux.HandleFunc("DELETE /api/promo/{id}", s.requireAuth(s.handlePromoDelete))
+
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
 
