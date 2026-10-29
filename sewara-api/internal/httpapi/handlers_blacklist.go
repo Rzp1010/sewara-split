@@ -322,8 +322,8 @@ func (s *Server) handleBlacklistCheck(w http.ResponseWriter, r *http.Request, me
 
 	if match == nil {
 		writeSuccess(w, http.StatusOK, map[string]any{
-			"hit":   false,
-			"nama":  nil,
+			"hit":    false,
+			"nama":   nil,
 			"alasan": nil,
 		})
 		return
@@ -465,11 +465,6 @@ func (s *Server) handleBlacklistUpload(w http.ResponseWriter, r *http.Request, m
 // Dipakai sebagai `src` gambar dan tautan PDF di frontend, jadi responsnya byte
 // mentah dengan header cache — bukan envelope JSON.
 func (s *Server) handleBlacklistHeader(w http.ResponseWriter, r *http.Request, me db.Identity) {
-	if s.store == nil {
-		writeError(w, http.StatusServiceUnavailable, CodeExternalServiceError, msgStorageOff)
-		return
-	}
-
 	key := strings.TrimSpace(r.URL.Query().Get("path"))
 	if key == "" {
 		writeValidationError(w, "Parameter path wajib diisi.", nil)
@@ -483,9 +478,15 @@ func (s *Server) handleBlacklistHeader(w http.ResponseWriter, r *http.Request, m
 		return
 	}
 
-	// Guard prefix: tanpa ini, path apa pun di bucket bisa dibaca tenant mana pun.
+	// Guard prefix diperiksa sebelum cek store: 403 harus dikembalikan
+	// bahkan saat storage belum dikonfigurasi (dev tanpa R2).
 	if !strings.HasPrefix(key, "blacklist/"+tenantID+"/") {
 		writeError(w, http.StatusForbidden, CodeForbidden, "Anda tidak memiliki akses ke file ini.")
+		return
+	}
+
+	if s.store == nil {
+		writeError(w, http.StatusServiceUnavailable, CodeExternalServiceError, msgStorageOff)
 		return
 	}
 

@@ -332,7 +332,27 @@ akses dinamis; `node --check` lolos; `npm run build` static export lolos.
 
 ### 24.6 Sisa kerja
 
-47 path / 68 metode harus ada di Go; 9 path sudah diport; sisa **38 path /
-55 metode**. Urutan berikutnya: domain blacklist (CRUD + upload + check +
-proxy foto), satu domain per commit.
+Setelah blacklist, 47 path / 68 metode harus ada di Go; 14 path sudah diport;
+sisa **33 path / 48 metode**. Domain berikutnya: promo atau members (CRUD murni),
+satu domain per commit.
+
+## 25. Domain blacklist Go (2026-10-29)
+
+Tujuh metode selesai di `handlers_blacklist.go`: daftar, tambah, ubah, hapus,
+check pasangan nama+HP, unggah dokumen, dan proxy dokumen. Akses tulis khusus
+owner; baca dan check mengikuti isolasi tenant RLS. Saat membuat entri dari
+member, snapshot dokumen disalin server-side ke prefix `blacklist/<tenant>/`.
+
+`migrations/0005_blacklist.sql` menyalin skema, RLS, constraint maksimal lima
+dokumen, dan index dari migration Next. Ledger dicatat runner staging, bukan file
+migration (§aturan DB pengecualian 2026-10-27).
+
+`scripts/smoke-blacklist.ps1`: **41/41 lolos** pada Docker staging. Cakupan CRUD,
+validasi, owner/staf, isolasi dua tenant, normalisasi HP, duplikat, dan guard
+prefix. Upload/proxy bucket nyata belum diuji: storage sengaja off; respons 503,
+400, dan 403 guard terverifikasi.
+
+Deviasi positif: guard prefix dan validasi `path` pada header dijalankan sebelum
+cek storage. Tenant tidak pernah mendapat 503 sebagai pengganti 403 untuk path
+milik tenant lain.
 
