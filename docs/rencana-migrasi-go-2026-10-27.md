@@ -384,3 +384,56 @@ tidak bentrok dengan seed `OVERRIDING SYSTEM VALUE` id 1-4.
 Sisa: `POST /api/promo/validate` dan `POST /api/promo/use` (logika kadaluarsa +
 concurrency guard `terpakai`).
 
+
+## 27. Domain members CRUD Go (2026-10-29)
+
+CRUD anggota selesai di `handlers_members.go`: GET/POST/PATCH/DELETE. Normalisasi
+HP (leading 0→6, hanya digit). Constraint `members_user_nama_hp` unik per tenant
+dikembalikan `409 MEMBER_DUPLIKAT`.
+
+`internal/db/members.go`: 5 metode (List/Get/Insert/Update/Delete). Update
+read-modify-write, field `nil` tidak diubah. HP dinormalisasi sebelum query/insert
+untuk konsistensi pencarian.
+
+`scripts/smoke-members.ps1`: **22/22 lolos** pada Docker staging. Cakupan CRUD,
+validasi nama/HP wajib, duplikat pair nama+HP per tenant, isolasi dua tenant,
+normalisasi HP `0812` → `6812`.
+
+Belum: upload foto (`POST /api/member/upload`) dan proxy foto (`GET /api/member/photo`)
+— menunggu keputusan R2 di G1.
+
+## 28. Rekapitulasi progres migrasi (2026-10-29)
+
+**Selesai dan lolos smoke:**
+- Auth: login, me (18 skenario)
+- Settings GET/POST (12)
+- Member-types CRUD (8)
+- Profiles GET (8)
+- Dashboard GET (6)
+- Inventory GET/POST/PATCH/DELETE + bulk-delete (32)
+- Blacklist CRUD + check + upload/header tanpa storage (41)
+- Promo CRUD + validate + use (30)
+- Members CRUD (22)
+
+Total: **9 domain, 29 endpoint, 177 skenario smoke lolos.**
+
+**Sisa kerja (dari `endpoint-matrix.md` §audit):** 24 path / 36 metode.
+
+Kelompok berikutnya (urutan mudah→sulit):
+1. **CRUD murni** (risiko rendah, pola seragam): `logs`, `transaction-items`,
+   `member-types/{id}` DELETE/PATCH.
+2. **Agregat** (query laporan): `dashboard/manajemen`, `pembayaran/reminder`.
+3. **Transaksi** (logika bisnis inti): `transactions` GET/POST/PATCH, `transaction-items`,
+   `invoice-counter`.
+4. **File** (R2 + presigned/proxy): `invoice/header`, `member/photo`, `member/upload`,
+   `pembayaran/photo`, `pembayaran/upload`, `pembayaran/export`.
+5. **Admin** (lintas tenant): `admin/data`, `admin/logs`, `admin/users`.
+6. **Auth** (sesi + registrasi): `auth/register`, `auth/callback`, `auth/logout`,
+   `auth/resend-verification`.
+7. **Eksternal** (webhook + signature): `telegram/test`, `telegram/webhook`,
+   `webhooks/payment`.
+
+**Gate G1 (akhir minggu 2):** minimal transaksi GET/POST + invoice + 1 file endpoint
+lolos smoke. Kalau gagal, migrasi dihentikan.
+
+**Commit terakhir:** `797e4d1` (members CRUD). Branch `dev` lokal, belum push.

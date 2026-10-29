@@ -122,8 +122,14 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/promo | `handlers_promo.go` | 30 |
 | PATCH /api/promo/{id} | `handlers_promo.go` | 30 |
 | DELETE /api/promo/{id} | `handlers_promo.go` | 30 |
+| POST /api/promo/validate | `handlers_promo.go` | 30 |
+| POST /api/promo/use | `handlers_promo.go` | 30 |
+| GET /api/members | `handlers_members.go` | 22 |
+| POST /api/members | `handlers_members.go` | 22 |
+| PATCH /api/members/{id} | `handlers_members.go` | 22 |
+| DELETE /api/members/{id} | `handlers_members.go` | 22 |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **30 path / 46 metode**
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **24 path / 36 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
 
