@@ -102,38 +102,51 @@ try {
     $r = Invoke-Api 'GET' '/api/member-types' $null $null
     Add-Hasil 'GET tanpa cookie -> 401' $r.Status 401 ''
 
-    # GET all tenant A (seed sudah ada 2)
+    # GET tenant A hanya menampilkan dua seed miliknya.
     $r = Invoke-Api 'GET' '/api/member-types' $cookieA $null
-    $count = ($r.Body -split '"id":' | Measure-Object).Count - 1
-    Add-Hasil 'GET all tenant A (seed 2) -> 200' $r.Status 200 "count=$count"
+    $dataA = ($r.Body | ConvertFrom-Json).data.memberTypes
+    $idsA = @($dataA | ForEach-Object { $_.id })
+    $getAOK = $r.Status -eq 200 -and $idsA.Count -eq 2
+    Add-Hasil 'GET tenant A -> dua seed member type' ([int]$getAOK) 1 "HTTP=$($r.Status) ids=$($idsA -join ',')"
 
     # POST tenant A
     $r = Invoke-Api 'POST' '/api/member-types' $cookieA '{"nama":"VIP Plus","diskon_persen":15,"status":"aktif","diskon_durasi_aturan":[]}'
-    $idBaru = if ($r.Body -match '"id":(\d+)') { $Matches[1] } else { 0 }
-    Add-Hasil 'POST tenant A -> 200' $r.Status 200 "id=$idBaru"
+    $createdA = ($r.Body | ConvertFrom-Json).data.memberType
+    $idBaru = if ($createdA.id) { $createdA.id } else { 0 }
+    $postAOK = $r.Status -eq 200 -and $createdA.nama -eq 'VIP Plus' -and $createdA.user_id -eq 'a0000000-0000-0000-0000-000000000001'
+    Add-Hasil 'POST tenant A -> tersimpan di tenant A' ([int]$postAOK) 1 "HTTP=$($r.Status) id=$idBaru"
 
     # GET all tenant A sekarang 3
     $r = Invoke-Api 'GET' '/api/member-types' $cookieA $null
-    $count = ($r.Body -split '"id":' | Measure-Object).Count - 1
-    Add-Hasil 'GET all tenant A sekarang 3 -> 200' $r.Status 200 "count=$count"
+    $dataA = ($r.Body | ConvertFrom-Json).data.memberTypes
+    $count = @($dataA).Count
+    $getAAfterPostOK = $r.Status -eq 200 -and $count -eq 3 -and @($dataA | Where-Object { $_.id -eq $idBaru }).Count -eq 1
+    Add-Hasil 'GET tenant A setelah POST -> tiga termasuk baru' ([int]$getAAfterPostOK) 1 "HTTP=$($r.Status) count=$count"
 
     # POST nama kosong -> 400
     $r = Invoke-Api 'POST' '/api/member-types' $cookieA '{"nama":"","diskon_persen":0}'
     Add-Hasil 'POST nama kosong -> 400' $r.Status 400 ''
 
-    # GET tenant B tidak lihat data tenant A
+    # GET tenant B tidak lihat data tenant A; B hanya punya dua seed sendiri.
     $r = Invoke-Api 'GET' '/api/member-types' $cookieB $null
-    $countB = ($r.Body -split '"id":' | Measure-Object).Count - 1
-    Add-Hasil 'Tenant B tidak lihat data tenant A' $r.Status 200 "countB=$countB (seed 2)"
+    $dataB = ($r.Body | ConvertFrom-Json).data.memberTypes
+    $countB = @($dataB).Count
+    $idsB = @($dataB | ForEach-Object { $_.id })
+    $tenantBIsolated = $r.Status -eq 200 -and $countB -eq 2 -and $idBaru -notin $idsB
+    Add-Hasil 'Tenant B tidak lihat data tenant A' ([int]$tenantBIsolated) 1 "HTTP=$($r.Status) countB=$countB ids=$($idsB -join ',')"
 
-    # POST tenant B
+    # POST tenant B harus menyimpan di tenant B.
     $r = Invoke-Api 'POST' '/api/member-types' $cookieB '{"nama":"Premium","diskon_persen":20}'
-    Add-Hasil 'POST tenant B -> 200' $r.Status 200 ''
+    $createdB = ($r.Body | ConvertFrom-Json).data.memberType
+    $postBOK = $r.Status -eq 200 -and $createdB.nama -eq 'Premium' -and $createdB.user_id -eq 'b0000000-0000-0000-0000-000000000001'
+    Add-Hasil 'POST tenant B -> tersimpan di tenant B' ([int]$postBOK) 1 "HTTP=$($r.Status) id=$($createdB.id)"
 
-    # GET tenant B sekarang 3
+    # GET tenant B sekarang tiga, termasuk record tenant B baru.
     $r = Invoke-Api 'GET' '/api/member-types' $cookieB $null
-    $countB = ($r.Body -split '"id":' | Measure-Object).Count - 1
-    Add-Hasil 'GET tenant B sekarang 3 -> 200' $r.Status 200 "countB=$countB"
+    $dataB = ($r.Body | ConvertFrom-Json).data.memberTypes
+    $countB = @($dataB).Count
+    $tenantBAfterPost = $r.Status -eq 200 -and $countB -eq 3 -and @($dataB | Where-Object { $_.id -eq $createdB.id }).Count -eq 1
+    Add-Hasil 'GET tenant B setelah POST -> tiga termasuk baru' ([int]$tenantBAfterPost) 1 "HTTP=$($r.Status) countB=$countB"
 
     Write-Host ''
     $hasil | Format-Table -AutoSize | Out-String | Write-Host

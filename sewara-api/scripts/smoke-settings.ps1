@@ -66,6 +66,7 @@ if ($LASTEXITCODE -ne 0) {
 # Buat akun uji + hash password untuk seed yang sudah ada
 $hash = '$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu'
 docker exec sewara-staging-db psql -U sewara -d sewara -c "
+DELETE FROM settings WHERE user_id::text LIKE 'd0000000%';
 DELETE FROM auth.users WHERE id::text LIKE 'd0000000%';
 INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at) VALUES
   ('a0000000-0000-0000-0000-000000000001', 'owner-a@staging.local', '$hash', now()),
@@ -118,28 +119,45 @@ try {
     $r = Invoke-Api 'GET' '/api/settings' $null $null
     Add-Hasil 'GET tanpa cookie -> 401' $r.Status 401 ''
 
-    # GET all (owner) — kosong awalnya
-    $r = Invoke-Api 'GET' '/api/settings' $cookieOwner $null
-    $count = if ($r.Body -match '"settings":\s*\[') { ($r.Body -split '"key"' | Measure-Object).Count - 1 } else { 0 }
-    Add-Hasil 'GET all owner (kosong awal) -> 200' $r.Status 200 "count=$count"
+    # Seed punya tiga settings owner A; akun test diuji terpisah.
+    $cookieA = Get-SessionCookie 'owner-a@staging.local' 'Rahasia123'
+    $r = Invoke-Api 'GET' '/api/settings' $cookieA $null
+    $seedData = $null
+    try { $seedData = ($r.Body | ConvertFrom-Json).data.settings } catch {}
+    $seedCount = if ($null -eq $seedData) { 0 } else { @($seedData).Count }
+    $seedOK = $r.Status -eq 200 -and $seedCount -eq 3
+    Add-Hasil 'Seed owner A -> 3 setting' ([int]$seedOK) 1 "HTTP=$($r.Status) count=$seedCount"
+    if (-not $seedOK) { throw 'Seed settings owner A tidak sesuai; isolasi tenant tidak dapat diverifikasi.' }
+    $ownerBaseline = Invoke-Api 'GET' '/api/settings' $cookieOwner $null
+    $ownerBaselineData = $null
+    try { $ownerBaselineData = ($ownerBaseline.Body | ConvertFrom-Json).data.settings } catch {}
+    $ownerBaselineCount = if ($null -eq $ownerBaselineData) { 0 } else { @($ownerBaselineData).Count }
+    $ownerBaselineOK = $ownerBaseline.Status -eq 200 -and $ownerBaselineCount -eq 0
+    Add-Hasil 'Owner test mulai tanpa settings' ([int]$ownerBaselineOK) 1 "HTTP=$($ownerBaseline.Status) count=$ownerBaselineCount"
+    if (-not $ownerBaselineOK) { throw 'Owner test tidak bersih; isolasi tenant tidak dapat diverifikasi.' }
 
     # POST satu setting (owner)
     $r = Invoke-Api 'POST' '/api/settings' $cookieOwner '{"key":"test_key","value":"test_value"}'
-    Add-Hasil 'POST satu setting owner -> 200' $r.Status 200 ''
+    $postOneOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok
+    Add-Hasil 'POST satu setting owner -> tersimpan' ([int]$postOneOK) 1 "HTTP=$($r.Status)"
 
     # GET by key
     $r = Invoke-Api 'GET' '/api/settings?key=test_key' $cookieOwner $null
     $ada = $r.Body -match '"test_value"'
-    Add-Hasil 'GET by key -> 200 + value cocok' $r.Status 200 "match=$ada"
+    Add-Hasil 'GET by key -> 200 + value cocok' ([int]($r.Status -eq 200 -and $ada)) 1 "HTTP=$($r.Status) match=$ada"
 
     # POST array settings
     $r = Invoke-Api 'POST' '/api/settings' $cookieOwner '[{"key":"k1","value":"v1"},{"key":"k2","value":"v2"}]'
-    Add-Hasil 'POST array settings -> 200' $r.Status 200 ''
+    $postArrayOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok
+    Add-Hasil 'POST array settings -> diterima' ([int]$postArrayOK) 1 "HTTP=$($r.Status)"
 
-    # GET all sekarang ada 3
+    # Tiga key milik owner test setelah array upsert; validasi konten.
     $r = Invoke-Api 'GET' '/api/settings' $cookieOwner $null
-    $count = ($r.Body -split '"key"' | Measure-Object).Count - 1
-    Add-Hasil 'GET all sekarang ada 3 -> 200' $r.Status 200 "count=$count"
+    $ownerData = ($r.Body | ConvertFrom-Json).data.settings
+    $ownerKeys = @($ownerData | ForEach-Object { $_.key } | Sort-Object)
+    $ownerCount = if ($null -eq $ownerData) { 0 } else { @($ownerData).Count }
+    $ownerKeysOK = $r.Status -eq 200 -and $ownerCount -eq 3 -and ($ownerKeys -join ',') -eq 'k1,k2,test_key'
+    Add-Hasil 'Owner test memiliki tiga key sendiri' ([int]$ownerKeysOK) 1 "HTTP=$($r.Status) count=$ownerCount keys=$($ownerKeys -join ',')"
 
     # Staf coba tulis key privat (telegram_login_notif) -> 403
     $r = Invoke-Api 'POST' '/api/settings' $cookieStaf '{"key":"telegram_login_notif","value":"test"}'
@@ -147,27 +165,32 @@ try {
 
     # Staf tulis key yang boleh (kalender_selesai) -> 200
     $r = Invoke-Api 'POST' '/api/settings' $cookieStaf '{"key":"kalender_selesai","value":"2026-12-31"}'
-    Add-Hasil 'Staf tulis key allowlist -> 200' $r.Status 200 ''
+    $staffWriteOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok
+    Add-Hasil 'Staf tulis key allowlist -> tersimpan' ([int]$staffWriteOK) 1 "HTTP=$($r.Status)"
 
     # Owner tulis key privat -> 200
     $r = Invoke-Api 'POST' '/api/settings' $cookieOwner '{"key":"telegram_login_notif","value":"true"}'
-    Add-Hasil 'Owner tulis key privat -> 200' $r.Status 200 ''
+    $ownerPrivateWriteOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok
+    Add-Hasil 'Owner tulis key privat -> tersimpan' ([int]$ownerPrivateWriteOK) 1 "HTTP=$($r.Status)"
 
     # Staf GET key privat -> 200 tapi null (tidak 403)
     $r = Invoke-Api 'GET' '/api/settings?key=telegram_login_notif' $cookieStaf $null
     $null_ = $r.Body -match '"setting":\s*null'
-    Add-Hasil 'Staf GET key privat -> 200 null' $r.Status 200 "null=$null_"
+    Add-Hasil 'Staf GET key privat -> null' ([int]($r.Status -eq 200 -and $null_)) 1 "HTTP=$($r.Status) null=$null_"
 
     # Owner GET key privat -> 200 + value ada
     $r = Invoke-Api 'GET' '/api/settings?key=telegram_login_notif' $cookieOwner $null
     $ada = $r.Body -match '"true"'
-    Add-Hasil 'Owner GET key privat -> 200 + value' $r.Status 200 "ada=$ada"
+    Add-Hasil 'Owner GET key privat -> value ada' ([int]($r.Status -eq 200 -and $ada)) 1 "HTTP=$($r.Status) ada=$ada"
 
-    # Isolasi tenant: owner A vs owner test (berbeda tenant)
-    $cookieA = Get-SessionCookie 'owner-a@staging.local' 'Rahasia123'
+    # Owner A tetap hanya melihat tiga seed settings miliknya.
     $r = Invoke-Api 'GET' '/api/settings' $cookieA $null
-    $countA = ($r.Body -split '"key"' | Measure-Object).Count - 1
-    Add-Hasil 'Tenant A tidak lihat setting tenant test' $r.Status 200 "countA=$countA (harap 0)"
+    $tenantAData = $null
+    try { $tenantAData = ($r.Body | ConvertFrom-Json).data.settings } catch {}
+    $tenantAKeys = @($tenantAData | ForEach-Object { $_.key } | Sort-Object)
+    $tenantACount = if ($null -eq $tenantAData) { 0 } else { @($tenantAData).Count }
+    $terisolasi = $r.Status -eq 200 -and $tenantACount -eq 3 -and ($tenantAKeys -join ',') -eq 'daftar_jaminan,invoice_counter,notif_jam'
+    Add-Hasil 'Owner A hanya lihat tiga key seed sendiri' ([int]$terisolasi) 1 "HTTP=$($r.Status) count=$tenantACount keys=$($tenantAKeys -join ',')"
 
     Write-Host ''
     $hasil | Format-Table -AutoSize | Out-String | Write-Host

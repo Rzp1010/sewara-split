@@ -84,21 +84,29 @@ try {
     Add-Hasil 'GET tanpa cookie -> 401' $r.Status 401 ''
 
     $r = Invoke-Api '/api/dashboard' $cookieOwnerA
-    $adaRekap = $r.Body -match '"rekapStatus"'
-    $adaBayar = $r.Body -match '"pembayaran"'
-    Add-Hasil 'Owner A -> 200 + kedua field ada' $r.Status 200 "rekap=$adaRekap bayar=$adaBayar"
+    $bodyA = $r.Body | ConvertFrom-Json
+    $adaRekap = $null -ne $bodyA.data.rekapStatus
+    $adaBayar = $null -ne $bodyA.data.pembayaran
+    $ownerAOK = $r.Status -eq 200 -and $bodyA.ok -and $adaRekap -and $adaBayar
+    Add-Hasil 'Owner A -> rekap status + pembayaran' ([int]$ownerAOK) 1 "HTTP=$($r.Status) rekap=$adaRekap bayar=$adaBayar"
 
-    # Staf pakai tenant owner (RPC guard lolos)
+    # Staf pakai tenant owner (RPC guard lolos).
     $r = Invoke-Api '/api/dashboard' $cookieCS
-    Add-Hasil 'CS A (tenant owner) -> 200' $r.Status 200 ''
+    $bodyCS = $r.Body | ConvertFrom-Json
+    $csOK = $r.Status -eq 200 -and $bodyCS.ok -and $null -ne $bodyCS.data.rekapStatus -and $null -ne $bodyCS.data.pembayaran
+    Add-Hasil 'CS A (tenant owner) -> body dashboard valid' ([int]$csOK) 1 "HTTP=$($r.Status)"
 
-    # Owner B: tenant sendiri, tidak tercampur
+    # Owner B menerima body dashboard valid.
     $r = Invoke-Api '/api/dashboard' $cookieOwnerB
-    Add-Hasil 'Owner B -> 200 (tenant terpisah)' $r.Status 200 ''
+    $bodyB = $r.Body | ConvertFrom-Json
+    $ownerBOK = $r.Status -eq 200 -and $bodyB.ok -and $null -ne $bodyB.data.rekapStatus -and $null -ne $bodyB.data.pembayaran
+    Add-Hasil 'Owner B -> body dashboard valid' ([int]$ownerBOK) 1 "HTTP=$($r.Status)"
 
-    # Rentang tanggal valid
+    # Rentang tanggal valid.
     $r = Invoke-Api '/api/dashboard?mulai=2026-01-01T00:00:00Z&akhir=2026-12-31T23:59:59Z' $cookieOwnerA
-    Add-Hasil 'Dengan filter tanggal -> 200' $r.Status 200 ''
+    $bodyFilter = $r.Body | ConvertFrom-Json
+    $filterOK = $r.Status -eq 200 -and $bodyFilter.ok -and @($bodyFilter.data.PSObject.Properties.Name) -contains 'rekapStatus' -and @($bodyFilter.data.PSObject.Properties.Name) -contains 'pembayaran'
+    Add-Hasil 'Filter tanggal -> body dashboard valid' ([int]$filterOK) 1 "HTTP=$($r.Status)"
 
     # Tanggal tidak valid -> 400 (validasi di handler, bukan 500 dari RPC).
     # Backend Next membalas 500 di sini; 400 lebih jujur karena masukannya yang salah.

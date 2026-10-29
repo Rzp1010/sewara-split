@@ -31,6 +31,8 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("POST /api/settings", s.requireAuth(s.handleSettingsPost))
 	mux.HandleFunc("GET /api/member-types", s.requireAuth(s.handleMemberTypesGet))
 	mux.HandleFunc("POST /api/member-types", s.requireAuth(s.handleMemberTypesPost))
+	mux.HandleFunc("PATCH /api/member-types/{id}", s.requireAuth(s.handleMemberTypesPatch))
+	mux.HandleFunc("DELETE /api/member-types/{id}", s.requireAuth(s.handleMemberTypesDelete))
 	mux.HandleFunc("GET /api/profiles", s.requireAuth(s.handleProfilesGet))
 	mux.HandleFunc("GET /api/dashboard", s.requireAuth(s.handleDashboardGet))
 	mux.HandleFunc("GET /api/inventory", s.requireAuth(s.handleInventoryGet))
@@ -63,6 +65,12 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("POST /api/members", s.requireAuth(s.handleMembersPost))
 	mux.HandleFunc("PATCH /api/members/{id}", s.requireAuth(s.handleMembersPatch))
 	mux.HandleFunc("DELETE /api/members/{id}", s.requireAuth(s.handleMembersDelete))
+
+	// Transactions.
+	mux.HandleFunc("GET /api/transactions", s.requireAuth(s.handleTransactionsGet))
+	mux.HandleFunc("POST /api/transactions", s.requireAuth(s.handleTransactionsPost))
+	mux.HandleFunc("GET /api/transactions/{id}", s.requireAuth(s.handleTransactionsDetailGet))
+	mux.HandleFunc("PATCH /api/transactions/{id}", s.requireAuth(s.handleTransactionsDetailPatch))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)

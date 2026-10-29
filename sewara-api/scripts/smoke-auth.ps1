@@ -14,16 +14,15 @@
 $ErrorActionPreference = 'Stop'
 
 $root   = Split-Path -Parent $PSScriptRoot
-$pgBin  = Join-Path $root '.data\pgsql\bin'
-$psql   = Join-Path $pgBin 'psql.exe'
-$conn   = @('-h', '127.0.0.1', '-p', '5433', '-U', 'sewara', '-d', 'sewara', '-q', '-tA')
+$container = 'sewara-staging-db'
+$conn   = @('exec', $container, 'psql', '-U', 'sewara', '-d', 'sewara', '-q', '-tA')
 $apiExe = Join-Path $root '.data\bin\sewara-api.exe'
 $apiURL = 'http://127.0.0.1:8099'
 $ownerA = 'a0000000-0000-0000-0000-000000000001'
 $ownerEmail = 'owner-a@staging.local'
 
 function Invoke-Sql([string]$sql) {
-    $out = & $psql @conn -c $sql 2>&1
+    $out = & docker @conn -c $sql 2>&1
     if ($LASTEXITCODE -ne 0) { throw "psql gagal: $($out -join ' ')" }
     return $out
 }
@@ -62,7 +61,8 @@ try {
 }
 finally { Pop-Location }
 
-& (Join-Path $PSScriptRoot 'staging-db.ps1') start
+$env:PATH = "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin;$env:PATH"
+& (Join-Path $PSScriptRoot 'docker-staging.ps1') start
 
 $api = $null
 try {
@@ -70,7 +70,7 @@ try {
     # mereferensikannya lewat foreign key.
     Invoke-Sql "INSERT INTO auth.users (id, email) VALUES ('$ownerA'::uuid, '$ownerEmail') ON CONFLICT (id) DO NOTHING" | Out-Null
 
-    $env:DATABASE_URL = 'postgres://sewara@127.0.0.1:5433/sewara?sslmode=disable'
+    $env:DATABASE_URL = 'postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable'
     $env:ADDR = '127.0.0.1:8099'
     $env:APP_ENV = 'development'
 
@@ -123,6 +123,6 @@ try {
 }
 finally {
     if ($api -and -not $api.HasExited) { Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue }
-    & (Join-Path $PSScriptRoot 'staging-db.ps1') stop
+    & (Join-Path $PSScriptRoot 'docker-staging.ps1') stop
 }
 

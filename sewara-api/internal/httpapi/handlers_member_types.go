@@ -63,3 +63,62 @@ func (s *Server) handleMemberTypesPost(w http.ResponseWriter, r *http.Request, m
 
 	writeSuccess(w, http.StatusOK, map[string]any{"memberType": result})
 }
+
+// handleMemberTypesPatch mengubah tipe member tenant.
+func (s *Server) handleMemberTypesPatch(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeValidationError(w, "ID wajib diisi.", nil)
+		return
+	}
+
+	var body map[string]any
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
+		writeValidationError(w, "Body tidak valid.", nil)
+		return
+	}
+
+	delete(body, "user_id")
+	delete(body, "id")
+
+	if len(body) == 0 {
+		writeValidationError(w, "Tidak ada perubahan.", nil)
+		return
+	}
+
+	if nama, ok := body["nama"].(string); ok && nama == "" {
+		writeValidationError(w, "Nama tidak boleh kosong.", nil)
+		return
+	}
+
+	result, err := s.db.UpdateMemberType(r.Context(), me.UserID, id, body)
+	if err != nil {
+		s.log.Error("gagal update member_type", "err", err, "id", id)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	if result == nil {
+		writeError(w, http.StatusNotFound, CodeNotFound, "Tipe member tidak ditemukan.")
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"memberType": result})
+}
+
+// handleMemberTypesDelete menghapus tipe member tenant.
+func (s *Server) handleMemberTypesDelete(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeValidationError(w, "ID wajib diisi.", nil)
+		return
+	}
+
+	if err := s.db.DeleteMemberType(r.Context(), me.UserID, id); err != nil {
+		s.log.Error("gagal delete member_type", "err", err, "id", id)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+}

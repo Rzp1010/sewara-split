@@ -17,8 +17,8 @@
 $ErrorActionPreference = 'Stop'
 
 $root   = Split-Path -Parent $PSScriptRoot
-$psql   = Join-Path $root '.data\pgsql\bin\psql.exe'
-$conn   = @('-h', '127.0.0.1', '-p', '5433', '-U', 'sewara', '-d', 'sewara', '-q', '-tA')
+$container = 'sewara-staging-db'
+$conn   = @('exec', $container, 'psql', '-U', 'sewara', '-d', 'sewara', '-q', '-tA')
 $apiExe = Join-Path $root '.data\bin\sewara-api.exe'
 $apiURL = 'http://127.0.0.1:8099'
 $tmpDir = Join-Path $env:TEMP 'opencode'
@@ -30,7 +30,7 @@ $password = 'Rahasia123'
 $hash     = '$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu'
 
 function Invoke-Sql([string]$sql) {
-    $out = & $psql @conn -c $sql 2>&1
+    $out = & docker @conn -c $sql 2>&1
     if ($LASTEXITCODE -ne 0) { throw "psql gagal: $($out -join ' ')" }
     return $out
 }
@@ -72,7 +72,8 @@ try {
 }
 finally { Pop-Location }
 
-& (Join-Path $PSScriptRoot 'staging-db.ps1') start
+$env:PATH = "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin;$env:PATH"
+& (Join-Path $PSScriptRoot 'docker-staging.ps1') start
 
 $api = $null
 try {
@@ -110,7 +111,7 @@ ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email, status = EXCLUDED.st
 "@ | Out-Null
     }
 
-    $env:DATABASE_URL = 'postgres://sewara@127.0.0.1:5433/sewara?sslmode=disable'
+    $env:DATABASE_URL = 'postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable'
     $env:ADDR = '127.0.0.1:8099'
     $env:APP_ENV = 'development'
 
@@ -232,5 +233,5 @@ ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email, status = EXCLUDED.st
 }
 finally {
     if ($api -and -not $api.HasExited) { Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue }
-    & (Join-Path $PSScriptRoot 'staging-db.ps1') stop
+    & (Join-Path $PSScriptRoot 'docker-staging.ps1') stop
 }

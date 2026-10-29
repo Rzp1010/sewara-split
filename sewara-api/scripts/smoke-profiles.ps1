@@ -100,45 +100,55 @@ try {
     $r = Invoke-Api 'GET' '/api/profiles' $null
     Add-Hasil 'GET tanpa cookie -> 401' $r.Status 401 ''
 
-    # Owner A: lihat dirinya + CS A (2 baris), TIDAK lihat owner B
+    # Owner A: lihat dirinya + CS A, bukan tenant B.
     $r = Invoke-Api 'GET' '/api/profiles' $cookieOwnerA
-    $count = ($r.Body -split '"user_id":' | Measure-Object).Count - 1
-    $adaB = $r.Body -match 'owner-b@staging.local'
-    Add-Hasil 'Owner A lihat 2 profil (diri+CS)' $r.Status 200 "count=$count, adaB=$adaB"
+    $profiles = ($r.Body | ConvertFrom-Json).data.profiles
+    $count = @($profiles).Count
+    $adaB = @($profiles | Where-Object { $_.email -eq 'owner-b@staging.local' }).Count -gt 0
+    $adaOwnerA = @($profiles | Where-Object { $_.email -eq 'owner-a@staging.local' }).Count -gt 0
+    $ownerAOK = $r.Status -eq 200 -and $count -eq 2 -and $adaOwnerA -and -not $adaB
+    Add-Hasil 'Owner A lihat profil tenant sendiri' ([int]$ownerAOK) 1 "HTTP=$($r.Status) count=$count adaB=$adaB"
 
-    # CS A: RLS hanya izinkan lihat dirinya sendiri (owner_id ≠ dirinya)
+    # CS A hanya melihat profil dirinya.
     $r = Invoke-Api 'GET' '/api/profiles' $cookieCS
-    $count = ($r.Body -split '"user_id":' | Measure-Object).Count - 1
-    $adaB = $r.Body -match 'owner-b@staging.local'
-    Add-Hasil 'CS A lihat 1 profil (hanya dirinya)' $r.Status 200 "count=$count, adaB=$adaB"
+    $profiles = ($r.Body | ConvertFrom-Json).data.profiles
+    $count = @($profiles).Count
+    $csOnly = $count -eq 1 -and $profiles[0].email -eq 'cs-a@staging.local'
+    Add-Hasil 'CS A lihat profil dirinya saja' ([int]($r.Status -eq 200 -and $csOnly)) 1 "HTTP=$($r.Status) count=$count"
 
-    # Superadmin: lihat SEMUA profil (tidak dibatasi tenant)
+    # Superadmin: lihat semua profil.
     $r = Invoke-Api 'GET' '/api/profiles' $cookieSuperadmin
-    $count = ($r.Body -split '"user_id":' | Measure-Object).Count - 1
-    $adaA = $r.Body -match 'owner-a@staging.local'
-    $adaB = $r.Body -match 'owner-b@staging.local'
-    Add-Hasil 'Superadmin lihat semua profil' $r.Status 200 "count=$count, adaA=$adaA, adaB=$adaB"
+    $profiles = ($r.Body | ConvertFrom-Json).data.profiles
+    $count = @($profiles).Count
+    $adaA = @($profiles | Where-Object { $_.email -eq 'owner-a@staging.local' }).Count -gt 0
+    $adaB = @($profiles | Where-Object { $_.email -eq 'owner-b@staging.local' }).Count -gt 0
+    $superadminOK = $r.Status -eq 200 -and $count -ge 3 -and $adaA -and $adaB
+    Add-Hasil 'Superadmin lihat semua profil' ([int]$superadminOK) 1 "HTTP=$($r.Status) count=$count adaA=$adaA adaB=$adaB"
 
-    # Owner B: lihat dirinya + CS B (2 baris), TIDAK lihat owner A
+    # Owner B: lihat dirinya + CS B, bukan tenant A.
     $r = Invoke-Api 'GET' '/api/profiles' $cookieOwnerB
-    $count = ($r.Body -split '"user_id":' | Measure-Object).Count - 1
-    $adaA = $r.Body -match 'owner-a@staging.local'
-    Add-Hasil 'Owner B lihat 2 profil, tidak lihat A' $r.Status 200 "count=$count, adaA=$adaA"
+    $profiles = ($r.Body | ConvertFrom-Json).data.profiles
+    $count = @($profiles).Count
+    $adaA = @($profiles | Where-Object { $_.email -eq 'owner-a@staging.local' }).Count -gt 0
+    $adaOwnerB = @($profiles | Where-Object { $_.email -eq 'owner-b@staging.local' }).Count -gt 0
+    $ownerBOK = $r.Status -eq 200 -and $count -eq 2 -and $adaOwnerB -and -not $adaA
+    Add-Hasil 'Owner B lihat profil tenant sendiri' ([int]$ownerBOK) 1 "HTTP=$($r.Status) count=$count adaA=$adaA"
 
-    # Filter by email (owner A cari CS A) -> ketemu
+    # Filter by email (owner A cari CS A) -> ketemu.
     $r = Invoke-Api 'GET' '/api/profiles?email=cs-a@staging.local' $cookieOwnerA
-    $ada = $r.Body -match 'cs-a@staging.local'
-    Add-Hasil 'Filter email CS A (owner A) -> ketemu' $r.Status 200 "ada=$ada"
+    $profile = ($r.Body | ConvertFrom-Json).data.profile
+    $ada = $null -ne $profile -and $profile.email -eq 'cs-a@staging.local'
+    Add-Hasil 'Filter CS A -> profil cocok' ([int]($r.Status -eq 200 -and $ada)) 1 "HTTP=$($r.Status) ada=$ada"
 
-    # Filter by email tenant lain (owner A cari owner B) -> null (RLS)
+    # Filter by email tenant lain -> null (RLS).
     $r = Invoke-Api 'GET' '/api/profiles?email=owner-b@staging.local' $cookieOwnerA
-    $null_ = $r.Body -match '"profile":\s*null'
-    Add-Hasil 'Filter email tenant lain -> null (RLS)' $r.Status 200 "null=$null_"
+    $null_ = $null -eq ($r.Body | ConvertFrom-Json).data.profile
+    Add-Hasil 'Filter tenant lain -> null (RLS)' ([int]($r.Status -eq 200 -and $null_)) 1 "HTTP=$($r.Status) null=$null_"
 
-    # Filter email tidak ada -> null
+    # Filter email tidak ada -> null.
     $r = Invoke-Api 'GET' '/api/profiles?email=tidak-ada@staging.local' $cookieOwnerA
-    $null_ = $r.Body -match '"profile":\s*null'
-    Add-Hasil 'Filter email tidak ada -> null' $r.Status 200 "null=$null_"
+    $null_ = $null -eq ($r.Body | ConvertFrom-Json).data.profile
+    Add-Hasil 'Filter email tidak ada -> null' ([int]($r.Status -eq 200 -and $null_)) 1 "HTTP=$($r.Status) null=$null_"
 
     Write-Host ''
     $hasil | Format-Table -AutoSize | Out-String | Write-Host

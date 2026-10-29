@@ -63,3 +63,45 @@ func (d *DB) InsertMemberType(ctx context.Context, userID string, mt MemberType)
 	}
 	return result, nil
 }
+
+// UpdateMemberType mengubah tipe member. Return nil jika tidak ditemukan atau bukan milik tenant.
+func (d *DB) UpdateMemberType(ctx context.Context, userID, id string, fields map[string]any) (*MemberType, error) {
+	var result MemberType
+	err := d.InTenant(ctx, userID, func(q Querier) error {
+		setClauses := ""
+		args := []any{id}
+		i := 2
+		for k, v := range fields {
+			if setClauses != "" {
+				setClauses += ", "
+			}
+			setClauses += fmt.Sprintf("%s = $%d", k, i)
+			args = append(args, v)
+			i++
+		}
+
+		query := fmt.Sprintf(`
+			UPDATE member_types
+			SET %s
+			WHERE id = $1
+			RETURNING id, user_id::text, nama, diskon_persen, status, created_at, diskon_durasi_aturan`, setClauses)
+
+		return q.QueryRow(ctx, query, args...).
+			Scan(&result.ID, &result.UserID, &result.Nama, &result.DiskonPersen, &result.Status, &result.CreatedAt, &result.DiskonDurasiAturan)
+	})
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("update member_type: %w", err)
+	}
+	return &result, nil
+}
+
+// DeleteMemberType menghapus tipe member. Idempoten: tidak error jika tidak ditemukan.
+func (d *DB) DeleteMemberType(ctx context.Context, userID, id string) error {
+	return d.InTenant(ctx, userID, func(q Querier) error {
+		_, err := q.Exec(ctx, `DELETE FROM member_types WHERE id = $1`, id)
+		return err
+	})
+}

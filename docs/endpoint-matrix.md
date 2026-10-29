@@ -104,6 +104,8 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/settings | `handlers_settings.go` | 12 |
 | GET /api/member-types | `handlers_member_types.go` | 8 |
 | POST /api/member-types | `handlers_member_types.go` | 8 |
+| PATCH /api/member-types/{id} | `handlers_member_types.go` | 16 |
+| DELETE /api/member-types/{id} | `handlers_member_types.go` | 16 |
 | GET /api/profiles | `handlers_profiles.go` | 8 |
 | GET /api/dashboard | `handlers_dashboard.go` | 6 |
 | GET /api/inventory | `handlers_inventory.go` | 20 |
@@ -128,6 +130,10 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/members | `handlers_members.go` | 22 |
 | PATCH /api/members/{id} | `handlers_members.go` | 22 |
 | DELETE /api/members/{id} | `handlers_members.go` | 22 |
+| GET /api/transactions | `handlers_transactions.go` | 14 |
+| POST /api/transactions | `handlers_transactions.go` | 14 |
+| GET /api/transactions/{id} | `handlers_transactions.go` | (cakupan smoke-transactions) |
+| PATCH /api/transactions/{id} | `handlers_transactions.go` | (cakupan smoke-transactions) |
 
 Sisa kerja setelah audit pemakaian (bagian berikutnya): **24 path / 36 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati). Deviasi kontrak yang

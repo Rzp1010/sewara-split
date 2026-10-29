@@ -36,26 +36,26 @@ Dua route bisnis selesai dan teruji: `/api/settings` dan `/api/member-types`.
 
 ### 21.4 Audit keamanan, efisiensi, maintainability
 
-**Keamanan (SOLID ✅):**
-- SQL injection: 0 — semua query parameterized
+**Keamanan (SOLID Γ£à):**
+- SQL injection: 0 ΓÇö semua query parameterized
 - Password: bcrypt cost 10, tidak pernah di-log
 - Cookie: HttpOnly + SameSite Lax + Secure (prod)
 - RLS enforcement: InTenant konsisten, role authenticated
 - Input validation: body size limit (1MB settings, 4KB login)
 - Session: SHA-256 hash stored, token 32 byte random
-- Error leak: minimal — internal error tidak ekspos ke client
+- Error leak: minimal ΓÇö internal error tidak ekspos ke client
 
-**Efisiensi (BAIK ✅):**
+**Efisiensi (BAIK Γ£à):**
 - Connection pool: MaxConns=10 (VPS 1GB), MinConns=1, lifetime 30m, idle 5m
-- N+1 query: 1 temuan minor — `UpsertSettings` loop INSERT (acceptable, jarang >10 items)
+- N+1 query: 1 temuan minor ΓÇö `UpsertSettings` loop INSERT (acceptable, jarang >10 items)
 - Transaction scope: sempit, auto-rollback defer
 - Index: belum ada, tambah nanti: `CREATE INDEX idx_member_types_user_nama ON member_types(user_id, nama)`
 
-**Maintainability (7/10 ⚠️):**
-- `handleLogin`: **159 baris** — terlalu panjang, perlu refactor jadi helper functions
+**Maintainability (7/10 ΓÜá∩╕Å):**
+- `handleLogin`: **159 baris** ΓÇö terlalu panjang, perlu refactor jadi helper functions
   - Kandidat: `validateLoginInput()`, `checkAccountStatus()`, `verifyCredentials()`
-- `handleSettingsPost`: 93 baris — borderline acceptable
-- `requireAuth`: 55 baris — borderline
+- `handleSettingsPost`: 93 baris ΓÇö borderline acceptable
+- `requireAuth`: 55 baris ΓÇö borderline
 - Error handling: 34 checks, pattern konsisten
 - Logging: structured slog, semua error tercatat
 - Panic/Exit: hanya di recovery middleware + main (aman)
@@ -75,19 +75,19 @@ Dua route bisnis selesai dan teruji: `/api/settings` dan `/api/member-types`.
 
 ### 21.6 Berikutnya
 
-Route bisnis ke-3 dan seterusnya. Kandidat (urut mudah → susah):
+Route bisnis ke-3 dan seterusnya. Kandidat (urut mudah ΓåÆ susah):
 1. GET routes read-only (inventaris list, penyewa list)
 2. POST/PATCH dengan validasi (inventaris CRUD + bundling)
 3. DELETE soft-delete (inventaris status deleted)
 
-Setelah 3-4 route lagi, keputusan sqlc (vs hand-written SQL). → **diputuskan di §22.3**
+Setelah 3-4 route lagi, keputusan sqlc (vs hand-written SQL). ΓåÆ **diputuskan di ┬º22.3**
 
 ---
 
 ## 22. Route bisnis berikutnya + keputusan sqlc (2026-10-28)
 
 Empat route lagi selesai dan teruji: `/api/profiles`, `/api/dashboard`,
-`/api/inventory` (GET+POST). Total skenario teruji naik dari 38 → 72.
+`/api/inventory` (GET+POST). Total skenario teruji naik dari 38 ΓåÆ 72.
 
 ### 22.1 Bug JSON tag (temuan paling penting W1)
 
@@ -100,7 +100,7 @@ Diperbaiki pada `Profile`, `MemberType`, `Setting`. `InventoryItem` dan
 `InventoryRingkas` ditulis dengan tag sejak awal.
 
 **Aturan sekarang:** setiap struct yang keluar ke client wajib punya tag
-`json:"snake_case"` — kecuali nama kolomnya memang camelCase di skema
+`json:"snake_case"` ΓÇö kecuali nama kolomnya memang camelCase di skema
 (`tipeSewa`), yang harus disalin apa adanya.
 
 **Pelajaran untuk smoke test:** memeriksa status code tidak cukup. Assertion
@@ -119,7 +119,7 @@ dengan `"tipeSewa"`; gunakan `-cmatch`/`-cnotmatch`.
 **Cakupan baris profiles ditentukan RLS, bukan filter handler.**
 `profiles_select_allowed` = `(user_id = auth.uid()) OR superadmin OR (owner_id = auth.uid())`.
 Konsekuensinya: CS melihat 1 baris (dirinya), owner 2 (dirinya + stafnya),
-superadmin semua. Ekspektasi "staf bisa melihat atasannya" **salah** — jangan
+superadmin semua. Ekspektasi "staf bisa melihat atasannya" **salah** ΓÇö jangan
 "diperbaiki" di handler; itu perilaku policy.
 
 **Dashboard** memakai dua RPC (`rpc_dashboard_rekap_status`,
@@ -127,7 +127,7 @@ superadmin semua. Ekspektasi "staf bisa melihat atasannya" **salah** — jangan
 `p_user_id` adalah tenant pemanggil. Guard itu dipertahankan: kalau konteks
 tenant di Go salah, database yang menolak.
 
-**Inventory** — dua deviasi positif yang disengaja:
+**Inventory** ΓÇö dua deviasi positif yang disengaja:
 - `?kolom=` (pemilihan kolom dinamis) **ditolak 400**. Nilainya dulu disambung
   langsung ke daftar kolom SELECT; bentuk amannya hanya daftar putih tetap.
   Frontend tidak memakainya untuk inventory (hanya transactions).
@@ -137,7 +137,7 @@ tenant di Go salah, database yang menolak.
   (hasil `parseInt` di form dan CSV). `inventoryBody.Denda` karena itu
   `json.RawMessage` + `jsonText()`, supaya kedua bentuk diterima dan tersimpan
   sebagai teks ("5000").
-- `?ids=` kosong = filter kosong → **nol baris**, bukan seluruh katalog
+- `?ids=` kosong = filter kosong ΓåÆ **nol baris**, bukan seluruh katalog
   (`q.Has("ids")`, bukan `q.Get("ids") == ""`). Ini bug yang tertangkap smoke
   test sebelum commit.
 - `id` tidak pernah dari client: `DEFAULT nextval(inventory_id_seq)`.
@@ -154,26 +154,26 @@ Pengukuran pada 5 route yang sudah ada:
 | CAST `::text`/`::uuid`/`::timestamptz` | 35 |
 | Field nullable (`*string`, `*time.Time`) | 21 |
 | Bug SQL sejak awal | **0** |
-| Bug yang pernah terjadi | 1 — JSON tag (bukan SQL) |
+| Bug yang pernah terjadi | 1 ΓÇö JSON tag (bukan SQL) |
 
 Alasan penolakan:
 1. **Tidak ada masalah yang mau disembuhkan.** 29 query, 0 bug SQL.
-2. **CAST `::text` jadi friksi.** sqlc menginfer `uuid` → `pgtype.UUID`, bukan
+2. **CAST `::text` jadi friksi.** sqlc menginfer `uuid` ΓåÆ `pgtype.UUID`, bukan
    `string`, sementara frontend butuh string. Butuh override per kolom.
-3. **21 field nullable tetap pointer manual** — sqlc tidak menghilangkannya.
+3. **21 field nullable tetap pointer manual** ΓÇö sqlc tidak menghilangkannya.
 4. **Query dinamis tidak bisa digenerate** (`UpsertSettings` loop per baris,
    parameter NULL opsional dashboard), jadi hasilnya campuran dua pola.
 5. **Biaya rewrite** 772 baris + 7 handler + 6 smoke test untuk mencegah 0 bug.
 
-**Pemicu tinjau ulang (salah satu):** query >60; ≥2 bug kelas kolom/tipe yang
-lolos ke runtime; satu file route butuh 6–8 query sendiri (kandidat:
-`transactions`); skema berubah >3× per minggu setelah cutover.
+**Pemicu tinjau ulang (salah satu):** query >60; ΓëÑ2 bug kelas kolom/tipe yang
+lolos ke runtime; satu file route butuh 6ΓÇô8 query sendiri (kandidat:
+`transactions`); skema berubah >3├ù per minggu setelah cutover.
 
 Ini keputusan **tingkat codebase**, bukan tingkat fitur: sqlc menghemat tenaga
 per query, dan tenaga itu baru mahal saat jumlah query besar. Query dinamis,
 panggilan RPC, dan query 3 baris tidak akan pernah untung dengan generator.
 
-### 22.4 Metrics setelah §22
+### 22.4 Metrics setelah ┬º22
 
 | Metric | Nilai |
 |---|---|
@@ -211,7 +211,7 @@ Karena itu body dibaca sebagai `map[string]json.RawMessage`, lalu
 pointer tidak cukup: `nil` akan berarti dua hal sekaligus.
 
 Konsekuensi nyata: form edit mengirim `denda: null` ketika kolomnya dikosongkan
-(`parseInt("")` = `NaN` → JSON `null`), dan nilai itu harus benar-benar
+(`parseInt("")` = `NaN` ΓåÆ JSON `null`), dan nilai itu harus benar-benar
 mengosongkan kolom, bukan diabaikan.
 
 ### 23.2 Keamanan penyusunan SQL
@@ -223,7 +223,7 @@ mengosongkan kolom, bukan diabaikan.
   mengembalikan error kalau tidak terdaftar (lapisan kedua);
 - semua nama kolom dikutip; nilai selalu lewat parameter `$n`.
 
-`id`, `user_id`, `created_at`, `updated_at` diabaikan tanpa error — frontend
+`id`, `user_id`, `created_at`, `updated_at` diabaikan tanpa error ΓÇö frontend
 mengirim seluruh baris dan backend Next juga membuang `user_id` diam-diam.
 Kolom **tidak dikenal** justru ditolak 400, supaya salah ketik tidak lolos
 sebagai "tidak ada yang berubah".
@@ -250,7 +250,7 @@ Isi paket tidak boleh berubah selama paket dipakai transaksi **Booking** atau
 1. **Penyimpanan ulang dengan isi sama harus lolos.** Frontend mengirim seluruh
    baris, jadi tanpa pengecualian ini setiap penyimpanan paket yang sedang
    dipakai akan ditolak. Perbandingan memakai bentuk kanonik (`komponenKanonik`):
-   hanya `idBarang` + `qty`, diurutkan — `nama` bukan bagian definisi paket.
+   hanya `idBarang` + `qty`, diurutkan ΓÇö `nama` bukan bagian definisi paket.
 2. **Guard hanya jalan kalau `komponen` ikut dikirim.** PATCH nama saja tidak
    menambah query.
 3. **Pemeriksaan dan UPDATE dalam satu transaksi**, jadi tidak ada celah antara
@@ -261,7 +261,7 @@ Isi paket tidak boleh berubah selama paket dipakai transaksi **Booking** atau
 `DELETE` menolak barang yang tercatat di `transaction_items` **apa pun status
 transaksinya**. Ini perilaku backend Next dan sudah dikunci smoke test: barang
 yang hanya dipakai transaksi `Selesai` atau `Dibatalkan` tetap tidak bisa
-dihapus. Alasannya struktural — FK `transaction_items → inventory` adalah
+dihapus. Alasannya struktural ΓÇö FK `transaction_items ΓåÆ inventory` adalah
 `ON DELETE RESTRICT`, jadi menghapusnya memang akan gagal; preflight hanya
 mengubah error mentah menjadi 409 yang bisa dibaca.
 
@@ -269,7 +269,7 @@ Hapus bersifat idempoten: id yang tidak ada, atau milik tenant lain, tetap
 dibalas 200. RLS yang menyaring, dan frontend memperlakukan "selesai" sebagai
 sinyal memuat ulang daftar.
 
-### 23.6 Metrics setelah §23
+### 23.6 Metrics setelah ┬º23
 
 | Metric | Nilai |
 |---|---|
@@ -280,7 +280,7 @@ sinyal memuat ulang daftar.
 
 ### 23.7 Berikutnya
 
-Lihat §24 — daftar route berikutnya berubah setelah audit pemakaian.
+Lihat ┬º24 ΓÇö daftar route berikutnya berubah setelah audit pemakaian.
 `GET/POST /api/inventory-units` ternyata tidak dipakai siapa pun dan sudah dibuang.
 
 ## 24. Audit pemakaian endpoint + pembersihan (2026-10-28)
@@ -319,13 +319,13 @@ akses dinamis; `node --check` lolos; `npm run build` static export lolos.
 ### 24.5 Temuan yang mengubah rencana
 
 - **`POST /api/pembayaran/purge` dijalankan crontab VPS** (`0 3 15 * *`,
-  `x-purge-secret`). Di Go wajib jadi ticker internal, bukan cron OS — aturan
-  portabilitas runtime (§18). Kalau tidak diport, retensi bukti bayar 2 bulan
+  `x-purge-secret`). Di Go wajib jadi ticker internal, bukan cron OS ΓÇö aturan
+  portabilitas runtime (┬º18). Kalau tidak diport, retensi bukti bayar 2 bulan
   berhenti jalan tanpa error apa pun.
 - `GET /api/auth/callback` tidak dirujuk kode frontend mana pun; dia target
   `emailRedirectTo`. Tetap wajib ada, terutama saat verifikasi email pindah ke
   SMTP sendiri.
-- Metode mati di route yang tetap hidup — jangan diport, tapi jangan dihapus
+- Metode mati di route yang tetap hidup ΓÇö jangan diport, tapi jangan dihapus
   sebelum cutover karena masih jadi rujukan paritas: `DELETE /api/inventory/{id}`,
   `POST /api/transaction-items`, `GET /api/logs`, `DELETE /api/logs`, dan
   `GET /api/invoice/header` lewat `api.invoice.headerGet`.
@@ -345,7 +345,7 @@ member, snapshot dokumen disalin server-side ke prefix `blacklist/<tenant>/`.
 
 `migrations/0005_blacklist.sql` menyalin skema, RLS, constraint maksimal lima
 dokumen, dan index dari migration Next. Ledger dicatat runner staging, bukan file
-migration (§aturan DB pengecualian 2026-10-27).
+migration (┬ºaturan DB pengecualian 2026-10-27).
 
 `scripts/smoke-blacklist.ps1`: **41/41 lolos** pada Docker staging. Cakupan CRUD,
 validasi, owner/staf, isolasi dua tenant, normalisasi HP, duplikat, dan guard
@@ -375,7 +375,7 @@ Update read-modify-write, field nil tidak diubah. Constraint `promo_codes_user_k
 mapped ke `ErrPromoDuplikat`.
 
 `scripts/smoke-promo.ps1`: **30/30 lolos** pada Docker staging. Cakupan CRUD,
-validasi diskon 0-100, kuota ≥0, status aktif/nonaktif, duplikat kode per tenant,
+validasi diskon 0-100, kuota ΓëÑ0, status aktif/nonaktif, duplikat kode per tenant,
 isolasi dua tenant, auto-tandai expired tanggal + kuota.
 
 Perbaikan staging: reset `promo_codes_id_seq` setelah seed supaya INSERT smoke
@@ -388,7 +388,7 @@ concurrency guard `terpakai`).
 ## 27. Domain members CRUD Go (2026-10-29)
 
 CRUD anggota selesai di `handlers_members.go`: GET/POST/PATCH/DELETE. Normalisasi
-HP (leading 0→6, hanya digit). Constraint `members_user_nama_hp` unik per tenant
+HP (leading 0ΓåÆ6, hanya digit). Constraint `members_user_nama_hp` unik per tenant
 dikembalikan `409 MEMBER_DUPLIKAT`.
 
 `internal/db/members.go`: 5 metode (List/Get/Insert/Update/Delete). Update
@@ -397,10 +397,10 @@ untuk konsistensi pencarian.
 
 `scripts/smoke-members.ps1`: **22/22 lolos** pada Docker staging. Cakupan CRUD,
 validasi nama/HP wajib, duplikat pair nama+HP per tenant, isolasi dua tenant,
-normalisasi HP `0812` → `6812`.
+normalisasi HP `0812` ΓåÆ `6812`.
 
 Belum: upload foto (`POST /api/member/upload`) dan proxy foto (`GET /api/member/photo`)
-— menunggu keputusan R2 di G1.
+ΓÇö menunggu keputusan R2 di G1.
 
 ## 28. Rekapitulasi progres migrasi (2026-10-29)
 
@@ -417,9 +417,9 @@ Belum: upload foto (`POST /api/member/upload`) dan proxy foto (`GET /api/member/
 
 Total: **9 domain, 29 endpoint, 177 skenario smoke lolos.**
 
-**Sisa kerja (dari `endpoint-matrix.md` §audit):** 24 path / 36 metode.
+**Sisa kerja (dari `endpoint-matrix.md` ┬ºaudit):** 24 path / 36 metode.
 
-Kelompok berikutnya (urutan mudah→sulit):
+Kelompok berikutnya (urutan mudahΓåÆsulit):
 1. **CRUD murni** (risiko rendah, pola seragam): `logs`, `transaction-items`,
    `member-types/{id}` DELETE/PATCH.
 2. **Agregat** (query laporan): `dashboard/manajemen`, `pembayaran/reminder`.
@@ -437,3 +437,125 @@ Kelompok berikutnya (urutan mudah→sulit):
 lolos smoke. Kalau gagal, migrasi dihentikan.
 
 **Commit terakhir:** `797e4d1` (members CRUD). Branch `dev` lokal, belum push.
+
+## 29. Hasil smoke test Docker staging (2026-10-29)
+
+**DB staging kanonis:** Docker `sewara-staging-db`, database `sewara`, host port 5433.
+Portable PostgreSQL lokal dihentikan selama smoke Docker; jangan jalankan kedua DB
+bersamaan karena sama-sama memakai port 5433. `smoke-login.ps1` dan `smoke-auth.ps1`
+dialihkan ke Docker staging; bukan lagi portable DB.
+
+**Smoke Docker lulus:**
+
+| Skrip | Skenario | Hasil |
+|---|---:|---|
+| `smoke-blacklist.ps1` | 41 | PASS |
+| `smoke-dashboard.ps1` | 6 | PASS |
+| `smoke-inventory.ps1` | 20 | PASS |
+| `smoke-inventory-crud.ps1` | 32 | PASS |
+| `smoke-member-types.ps1` | 8 | PASS |
+| `smoke-members.ps1` | 24 | PASS |
+| `smoke-profiles.ps1` | 8 | PASS |
+| `smoke-promo-logika.ps1` | 18 | PASS |
+| `smoke-promo.ps1` | 30 | PASS |
+| `smoke-settings.ps1` | 12 | PASS* (run lama; assertion lemah) |
+
+**Total batch awal:** 10 smoke scripts, 199 skenario bertanda lolos saat run awal
+(termasuk `smoke-settings` 12 skenario dengan assertion isolasi lemah). Verifikasi
+lanjutan 2026-10-29:
+
+| Skrip | Skenario | Hasil |
+|---|---:|---|
+| `smoke-settings.ps1` | 13 | PASS (rerun bersih) |
+| `smoke-login.ps1` | 18 | PASS |
+| `smoke-auth.ps1` | 4 | PASS |
+
+`smoke-settings.ps1` assertion diperbaiki dan harness dibersihkan untuk rerun:
+tenant owner A memegang 3 seed keys; owner-test mulai tanpa settings, lalu memiliki
+3 key (`test_key`, `k1`, `k2`) setelah tes writes; owner A tetap hanya melihat 3 seed
+keys. Semua 13 skenario lulus pada rerun bersih. Smoke login dan auth memakai Docker
+staging; portable PostgreSQL bukan target tes.
+
+Sepuluh smoke awal dijalankan ulang berurutan setelah perubahan harness: sembilan
+lulus sebelum settings, lalu batch sempat berhenti karena settings stale data dan
+assertion count keliru. Setelah cleanup/accounting diperbaiki, full batch terpadu
+2026-10-29 lulus: 12 script berstatus exit 0, berurutan, tanpa script terlewat.
+
+Audit assertion lanjutan memperkuat body/tenant checks di dashboard, profiles,
+member-types, dan settings. Full batch Docker pasca-perubahan lulus berurutan: 12/12
+scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
+inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
+promo-logika 18, settings 13, auth 4 = **222 skenario**.
+
+**Cakupan verifikasi terakhir:** 13 smoke scripts, 236 skenario lulus (batch 12 script
+222 + transaksi 14 individual run). Ini tidak membuktikan seluruh endpoint migration Go;
+lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
+check, tetapi semua package tidak punya test file.
+
+**Full batch berurutan 2026-10-29 (pasca PATCH/DELETE member-types + GET/PATCH
+transactions `:id`):** 13 smoke scripts Docker, exit 0 semua, 259 skenario lulus.
+
+| Skrip | Skenario | Hasil |
+|---|---:|---|
+| `smoke-login.ps1` | 18 | PASS |
+| `smoke-settings.ps1` | 13 | PASS |
+| `smoke-member-types.ps1` | 8 | PASS |
+| `smoke-member-types-crud.ps1` | 15 | PASS |
+| `smoke-profiles.ps1` | 8 | PASS |
+| `smoke-dashboard.ps1` | 6 | PASS |
+| `smoke-inventory.ps1` | 20 | PASS |
+| `smoke-inventory-crud.ps1` | 32 | PASS |
+| `smoke-members.ps1` | 24 | PASS |
+| `smoke-blacklist.ps1` | 41 | PASS |
+| `smoke-promo.ps1` | 30 | PASS |
+| `smoke-promo-logika.ps1` | 18 | PASS |
+| `smoke-transactions.ps1` | 26 | PASS |
+
+Catatan batch:
+
+- `smoke-transactions` naik 14 → 26: 12 skenario baru untuk GET/PATCH
+  `/api/transactions/{id}` (detail + items + payments nested, isolasi tenant,
+  validasi id non-angka, 404 tenant lain, PATCH status/field, body kosong).
+- `smoke-member-types-crud.ps1` baru (15 skenario): PATCH/DELETE
+  `/api/member-types/{id}` — validasi body, user_id diabaikan, 404 milik tenant
+  lain/ tidak ada, DELETE idempoten, isolasi antar tenant.
+- `smoke-inventory-crud` awalnya 7 GAGAL karena seed `staging_seed.sql` tidak lagi
+  berisi transaksi (baris 1001-1004/2001-2004 dihapus untuk smoke-transactions
+  mulai dari 0), sehingga guard `INVENTORY_IN_USE` tidak pernah terpicu dan
+  barang seed ikut terhapus. Bukan bug Go — setup smoke diperbaiki: script kini
+  meng-insert sendiri transaksi 3001 (Booking) memakai barang 101 + paket uji,
+  dan 3002 (Disewa) memakai barang 102. Rerun bersih 32/32.
+- PATCH `smoke-member-types.ps1` sempat terduplikasi (dua instans paralel di DB
+  bersama) dan satu run tampil GAGAL karena kontaminasi data; rerun berurutan
+  tunggal 8/8 bersih. Smoke tidak boleh paralel — port 5433 & container dipakai
+  bersama.
+- `smoke-auth.ps1` tetap dikecualikan dari batch: target portable DB, belum
+  dimigrasi ke Docker (lihat known issue AGENTS.md 2026-10-29).
+
+**Audit cakupan lanjutan 2026-10-29:**
+
+- `/api/member/upload` dan `/api/member/photo` belum terdaftar di Go router.
+  Handler CRUD members menerima `foto_jaminan`, tetapi belum ada jalur HTTP upload/
+  proxy. R2 tidak dikonfigurasi pada mesin ini: tak ada `R2_*` di `.env.example`;
+  kredensial runtime berada di env/config lokal yang tidak dibaca atau ditampilkan.
+  R2 dev nyata tidak diuji.
+- `/api/auth/register`, `/api/auth/callback`, `/api/auth/logout`, dan
+  `/api/auth/resend-verification` belum ada di router Go. Endpoint lama register/
+  resend/callback memerlukan Supabase Auth/SMTP; tidak dapat smoke secara aman di
+  Docker DB saja. Logout juga belum punya handler Go.
+
+**Batas tersisa sebelum port route yang belum ada:**
+
+- Member upload/photo: endpoint `/api/member/upload` dan `/api/member/photo` belum
+  terdaftar di Go router. Handler CRUD members menerima `foto_jaminan` JSON, tetapi
+  belum ada jalur HTTP upload/proxy. R2 dev tidak diuji; kredensial terekspos di chat
+  sebelumnya, perlu rotasi sebelum pemakaian berikutnya.
+- Auth legacy: `/api/auth/register`, `/api/auth/callback`, `/api/auth/logout`,
+  `/api/auth/resend-verification` belum ada di Go router. Endpoint register/resend/
+  callback nyata memerlukan Supabase Auth + SMTP eksternal; tidak dapat smoke secara
+  aman di Docker DB saja. Logout juga belum punya handler Go.
+- Assertion lemah tersisa: `smoke-dashboard`, `smoke-profiles`, `smoke-settings` masih
+  cek HTTP 200 saja pada beberapa skenario; body/isolasi tidak diverifikasi penuh.
+  Audit lanjutan bisa menambah edge case tanpa mengubah source aplikasi.
+
+Smoke yang tersedia sudah lulus terpadu. Refactor Go pending approval user.

@@ -109,10 +109,12 @@ try {
 
     Sql @"
 INSERT INTO transactions (id,id_transaksi,penyewa,hp_penyewa,status,items,user_id,total_akhir,member_id,created_at,updated_at) VALUES
-(3001,'TEST-3001','Pelanggan Uji','081100000009','Booking','[]','$ownerAId',100000,1,now(),now());
-INSERT INTO transaction_items (id,transaction_id,inventory_id,item_name,item_type,qty,unit_price,subtotal,user_id,created_at,updated_at)
-OVERRIDING SYSTEM VALUE VALUES
-(9001,3001,$paketId,'Paket Uji','bundling',1,100000,100000,'$ownerAId',now(),now());
+(3001,'TEST-3001','Pelanggan Uji','081100000009','Booking','[]','$ownerAId',100000,1,now(),now()),
+(3002,'TEST-3002','Pelanggan Uji 2','081100000010','Disewa','[]','$ownerAId',100000,1,now(),now());
+INSERT INTO transaction_items (id,transaction_id,inventory_id,item_name,item_type,qty,unit_price,subtotal,user_id,created_at,updated_at) VALUES
+(9001,3001,$paketId,'Paket Uji','bundling',1,100000,100000,'$ownerAId',now(),now()),
+(9002,3001,101,'Barang 101','satuan',1,10000,10000,'$ownerAId',now(),now()),
+(9003,3002,102,'Barang 102','satuan',1,10000,10000,'$ownerAId',now(),now());
 "@ | Out-Null
 
     # ---------------- PATCH ----------------
