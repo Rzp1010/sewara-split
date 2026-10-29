@@ -194,3 +194,119 @@ func (s *Server) handlePromoDelete(w http.ResponseWriter, r *http.Request, me db
 
 	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
 }
+
+// handlePromoValidate memeriksa apakah promo valid (ditemukan, aktif, belum expired).
+// Respons selalu 200 dengan {valid, promo?, error?} — bukan HTTP error.
+func (s *Server) handlePromoValidate(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	var req struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		writeValidationError(w, "Body tidak valid.", nil)
+		return
+	}
+
+	tenantID, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		s.log.Error("gagal membaca tenant id", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	promo, err := s.db.GetPromo(r.Context(), tenantID, req.ID)
+	if errors.Is(err, db.ErrNotFound) {
+		writeSuccess(w, http.StatusOK, map[string]any{
+			"valid": false,
+			"error": "Kode promo tidak ditemukan",
+		})
+		return
+	}
+	if err != nil {
+		s.log.Error("gagal membaca promo", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	if db.SudahKadaluarsa(promo, time.Now()) {
+		if promo.Status == "aktif" {
+			_ = s.db.SetPromoExpired(r.Context(), req.ID)
+			promo.Status = "expired"
+		}
+		writeSuccess(w, http.StatusOK, map[string]any{
+			"valid": false,
+			"error": "Kode promo sudah kedaluwarsa",
+			"promo": promo,
+		})
+		return
+	}
+
+	if promo.Status != "aktif" {
+		writeSuccess(w, http.StatusOK, map[string]any{
+			"valid": false,
+			"error": "Kode promo nonaktif",
+			"promo": promo,
+		})
+		return
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"valid": true, "promo": promo})
+}
+
+// handlePromoUse menaikkan counter terpakai dengan concurrency guard.
+func (s *Server) handlePromoUse(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	var req struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		writeValidationError(w, "Body tidak valid.", nil)
+		return
+	}
+
+	tenantID, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		s.log.Error("gagal membaca tenant id", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	promo, err := s.db.GetPromo(r.Context(), tenantID, req.ID)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, CodeNotFound, "Kode promo tidak ditemukan.")
+		return
+	}
+	if err != nil {
+		s.log.Error("gagal membaca promo", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	if db.SudahKadaluarsa(promo, time.Now()) {
+		if promo.Status == "aktif" {
+			_ = s.db.SetPromoExpired(r.Context(), req.ID)
+		}
+		writeError(w, http.StatusConflict, "PROMO_EXPIRED", "Kode promo sudah kedaluwarsa.")
+		return
+	}
+
+	if promo.Status != "aktif" {
+		writeError(w, http.StatusConflict, "PROMO_INACTIVE", "Kode promo nonaktif.")
+		return
+	}
+
+	current := promo.Terpakai
+	if err := s.db.UsePromo(r.Context(), req.ID, current); errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusConflict, "PROMO_QUOTA_EXCEEDED", "Kuota kode promo habis atau promo sudah tidak aktif.")
+		return
+	} else if err != nil {
+		s.log.Error("gagal menggunakan promo", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
+	// Tandai expired kalau kuota habis setelah increment.
+	if promo.Kuota != nil && current+1 >= *promo.Kuota {
+		_ = s.db.SetPromoExpired(r.Context(), req.ID)
+	}
+
+	writeSuccess(w, http.StatusOK, map[string]any{"ok": true})
+}

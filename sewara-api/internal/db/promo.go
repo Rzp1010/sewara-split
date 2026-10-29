@@ -159,6 +159,52 @@ func (db *DB) DeletePromo(ctx context.Context, tenantID string, id int64) error 
 	return nil
 }
 
+// SudahKadaluarsa memeriksa apakah promo lewat tanggal berlaku_sampai atau kuota
+// sudah habis. Dipakai validate dan use.
+func SudahKadaluarsa(p PromoCode, now time.Time) bool {
+	if p.BerlakuSampai != nil && !now.Before(*p.BerlakuSampai) {
+		return true
+	}
+	if p.Kuota != nil && p.Terpakai >= *p.Kuota {
+		return true
+	}
+	return false
+}
+
+// UsePromo menaikkan counter terpakai dengan guard concurrency. Return ErrNotFound
+// kalau update tidak menyentuh baris (race condition atau promo tidak aktif).
+func (db *DB) UsePromo(ctx context.Context, id int64, currentTerpakai int) error {
+	var tag pgconn.CommandTag
+	var err error
+
+	// UPDATE dengan WHERE terpakai=current supaya dua pemakaian bersamaan tidak
+	// saling menimpa. Kalau kuota ada, tambahkan guard terpakai < kuota.
+	tag, err = db.pool.Exec(ctx, `
+		UPDATE promo_codes
+		SET terpakai = terpakai + 1
+		WHERE id = $1
+		  AND status = 'aktif'
+		  AND terpakai = $2
+		  AND (kuota IS NULL OR terpakai < kuota)
+	`, id, currentTerpakai)
+
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetPromoExpired mengubah status promo menjadi 'expired'.
+func (db *DB) SetPromoExpired(ctx context.Context, id int64) error {
+	_, err := db.pool.Exec(ctx, `
+		UPDATE promo_codes SET status = 'expired' WHERE id = $1 AND status = 'aktif'
+	`, id)
+	return err
+}
+
 // TandaiPromoExpired mengubah status promo menjadi 'expired' kalau tanggal/kuota
 // sudah lewat. Dipanggil saat GET list supaya daftar selalu konsisten dengan
 // logika kadaluarsa.

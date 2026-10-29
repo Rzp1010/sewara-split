@@ -53,6 +53,8 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	// Promo.
 	mux.HandleFunc("GET /api/promo", s.requireAuth(s.handlePromoGet))
 	mux.HandleFunc("POST /api/promo", s.requireAuth(s.handlePromoPost))
+	mux.HandleFunc("POST /api/promo/validate", s.requireAuth(s.handlePromoValidate))
+	mux.HandleFunc("POST /api/promo/use", s.requireAuth(s.handlePromoUse))
 	mux.HandleFunc("PATCH /api/promo/{id}", s.requireAuth(s.handlePromoPatch))
 	mux.HandleFunc("DELETE /api/promo/{id}", s.requireAuth(s.handlePromoDelete))
 
