@@ -352,6 +352,13 @@ validasi, owner/staf, isolasi dua tenant, normalisasi HP, duplikat, dan guard
 prefix. Upload/proxy bucket nyata belum diuji: storage sengaja off; respons 503,
 400, dan 403 guard terverifikasi.
 
+### 25.1 Wajib sebelum blacklist Go dinyatakan parity
+
+Tunda sampai frontend dapat mengarahkan `/api/blacklist*` ke API Go lokal.
+Pakai bucket dev `sewara-dev`, bukan produksi. Dari UI uji upload JPG/PDF, baca
+proxy header, tenant lain `403`, snapshot dokumen member saat create, dan hapus
+file setelah ganti/hapus entri. Bersihkan seluruh object uji prefix `blacklist/`.
+
 Deviasi positif: guard prefix dan validasi `path` pada header dijalankan sebelum
 cek storage. Tenant tidak pernah mendapat 503 sebagai pengganti 403 untuk path
 milik tenant lain.
