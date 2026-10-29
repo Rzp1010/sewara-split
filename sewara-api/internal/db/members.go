@@ -64,12 +64,10 @@ func (db *DB) ListMembers(ctx context.Context, tenantID string) ([]Member, error
 			return nil, err
 		}
 
-		// Parse foto_jaminan dari jsonb.
 		if len(fotoJSON) > 0 && string(fotoJSON) != "null" {
 			_ = json.Unmarshal(fotoJSON, &m.FotoJaminan)
 		}
 
-		// Join tipe: hanya pakai kalau tipe aktif.
 		if tipeNama != nil && tipeStatus != nil && *tipeStatus == "aktif" {
 			m.TipeNama = tipeNama
 			if tipeDiskon != nil {
@@ -116,7 +114,10 @@ func (db *DB) InsertMember(ctx context.Context, tenantID, nama, hp, alamat strin
 	diskonPersen float64, status string, tipeID *int64, email, catatan *string,
 	fotoJaminan []FotoJaminanMember) (Member, error) {
 
-	fotoJSON, _ := json.Marshal(fotoJaminan)
+	fotoJSON := []byte("[]")
+	if len(fotoJaminan) > 0 {
+		fotoJSON, _ = json.Marshal(fotoJaminan)
+	}
 
 	var m Member
 	var fotoOut []byte

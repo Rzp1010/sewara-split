@@ -98,7 +98,7 @@ try {
         }
     }
 
-    # Seed punya 2 member_types A (aktif), 2 member_types B (aktif), dan 3 members A.
+    # Seed punya 2 member_types A (aktif), 2 member_types B (aktif), dan 3 members A, 3 members B.
     # =========================================================================
     # GET /api/members — list awal (seed 3 member tenant A)
     # =========================================================================
@@ -151,7 +151,7 @@ try {
 
     $r = Invoke-Api 'GET' '/api/members' $ownerB ''
     $n = ([regex]::Matches($r.Body, '"id":')).Count
-    Add-Hasil 'GET owner B -> 3 member (seed 2 + baru 1, isolasi)' ($n -eq 3) "count=$n"
+    Add-Hasil 'GET owner B -> 4 member (seed 3 + baru 1, isolasi)' ($n -eq 4) "count=$n"
 
     # =========================================================================
     # PATCH /api/members/{id}

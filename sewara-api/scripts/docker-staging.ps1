@@ -43,21 +43,25 @@ function Start-Container {
         # Load skema
         Write-Host "Memuat skema..."
         
+        # Suppress PowerShell error dari NOTICE/WARNING psql
+        $oldErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        
         # Bootstrap files
         Get-ChildItem $bootDir -Filter *.sql | Sort-Object Name | ForEach-Object {
-            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1
+            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
         }
         
         # Baseline dump (filter pg_net)
         $filtered = Join-Path $env:TEMP 'schema_staging_docker.sql'
         Get-Content $dump | Where-Object { $_ -notmatch 'CREATE EXTENSION IF NOT EXISTS pg_net' } | 
             Set-Content -Path $filtered -Encoding UTF8
-        Get-Content $filtered -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1
+        Get-Content $filtered -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
         Remove-Item $filtered -Force
         
-        # Migrations
+        # Migrations (suppress NOTICE/WARNING agar tidak stop execution)
         Get-ChildItem $migDir -Filter *.sql | Sort-Object Name | ForEach-Object {
-            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1
+            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
         }
         
         # Seed (optional, load jika ada)
@@ -66,6 +70,9 @@ function Start-Container {
             Write-Host "Memuat seed..."
             Get-Content $seedFile -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName | Out-Null
         }
+        
+        # Restore error action
+        $ErrorActionPreference = $oldErrorAction
         
         # Record ledger
         $allFiles = @()
