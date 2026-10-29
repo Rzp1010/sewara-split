@@ -72,6 +72,10 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/transactions/{id}", s.requireAuth(s.handleTransactionsDetailGet))
 	mux.HandleFunc("PATCH /api/transactions/{id}", s.requireAuth(s.handleTransactionsDetailPatch))
 
+	// Transaction items.
+	mux.HandleFunc("GET /api/transaction-items", s.requireAuth(s.handleTransactionItemsGet))
+	mux.HandleFunc("POST /api/transaction-items", s.requireAuth(s.handleTransactionItemsPost))
+
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
 
