@@ -487,15 +487,21 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 16 smoke scripts, 354 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 17 smoke scripts, 371 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
-logs/login, lalu domain manajemen):** 16 smoke scripts Docker, exit 0 semua,
-354 skenario lulus.
+logs/login, domain manajemen, lalu domain invoice admin):** 17 smoke scripts
+Docker, exit 0 semua, 371 skenario lulus.
+
+Syarat menjalankan batch: mulai dari container yang dibuat ulang
+(`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
+`smoke-settings.ps1` menuntut settings seed apa adanya; tanpa reset, sisa state
+batch sebelumnya membuat batch berhenti di skrip itu (terjadi 2026-10-30, bukan
+regresi kode: setelah reset, 17/17 hijau).
 
 | Skrip | Skenario | Hasil |
 |---|---:|---|
@@ -515,8 +521,22 @@ logs/login, lalu domain manajemen):** 16 smoke scripts Docker, exit 0 semua,
 | `smoke-transaction-items.ps1` | 20 | PASS |
 | `smoke-logs.ps1` | 26 | PASS |
 | `smoke-manajemen.ps1` | 49 | PASS |
+| `smoke-invoice.ps1` | 17 | PASS |
 
 Catatan batch:
+
+- `smoke-invoice.ps1` baru (17 skenario): `POST /api/invoice-counter` memakai RPC
+  `increment_invoice_counter` (versi per-tenant, migration 20260913) sehingga
+  owner dan staf tenant yang sama berbagi satu counter — dibuktikan dengan
+  urutan `INV-000001` (owner A) → `INV-000002` (owner A) → `INV-000003` (staf A)
+  plus cek ledger `settings.invoice_counter` di DB, dan tenant B tetap mulai dari
+  `INV-000001`. `GET/POST/DELETE /api/invoice/header` diuji dengan storage
+  dimatikan: guard prefix `headers/<tenantId>.` (403) diperiksa sebelum cek
+  storage, jadi 403 tetap kembali tanpa R2; 404 (belum diatur), 503 (storage off)
+  dan 400 (path kosong) ikut diverifikasi, termasuk nilai settings ber-kutip JSON.
+  Jalur sukses upload/stream byte R2 belum diuji (menunggu rotasi secret R2).
+  Skrip membersihkan jejak settings-nya di akhir supaya skrip lain dalam batch
+  yang sama tetap melihat seed apa adanya.
 
 - `smoke-manajemen.ps1` baru (49 skenario): `GET /api/dashboard/manajemen` (agregat
   global lintas tenant), `GET/POST/PATCH/DELETE /api/admin/users` (isolasi list owner

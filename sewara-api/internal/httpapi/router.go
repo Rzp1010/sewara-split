@@ -93,6 +93,12 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/admin/logs", s.requireAuth(s.handleAdminLogsGet))
 	mux.HandleFunc("POST /api/admin/data", s.requireAuth(s.handleAdminDataPost))
 
+	// Invoice.
+	mux.HandleFunc("POST /api/invoice-counter", s.requireAuth(s.handleInvoiceCounterPost))
+	mux.HandleFunc("GET /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderGet))
+	mux.HandleFunc("POST /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderPost))
+	mux.HandleFunc("DELETE /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderDelete))
+
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
 

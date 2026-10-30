@@ -147,10 +147,14 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | DELETE /api/admin/users | `handlers_admin.go` | 49 |
 | GET /api/admin/logs | `handlers_admin.go` | 49 |
 | POST /api/admin/data | `handlers_admin.go` | 49 |
+| POST /api/invoice-counter | `handlers_invoice.go` | 17 |
+| GET /api/invoice/header | `handlers_invoice.go` | 17 (storage off + guard prefix) |
+| POST /api/invoice/header | `handlers_invoice.go` | 17 (storage off) |
+| DELETE /api/invoice/header | `handlers_invoice.go` | 17 (storage off + guard prefix) |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **17 path / 19 metode**
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **15 path / 15 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
-belum dikurangi port domain logs dan manajemen). Deviasi kontrak yang
+belum dikurangi port domain logs, manajemen, dan invoice). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
 
 ## Pemakaian endpoint di frontend (audit 2026-10-28)
@@ -207,8 +211,6 @@ kini melaporkan **47 path / 68 metode** tanpa satu pun pembungkus mati.
 | `/api/blacklist/upload` | POST | FILE | app/dashboard/blacklist/page.js, components/BlacklistModal.jsx |
 | `/api/inventory/:id` | PATCH, DELETE | LOGIKA | app/dashboard/booking/page.js, app/dashboard/inventaris/page.js, app/dashboard/status/page.js |
 | `/api/inventory/bulk-delete` | POST | CRUD | app/dashboard/inventaris/page.js |
-| `/api/invoice-counter` | POST | LOGIKA | app/dashboard/booking/page.js |
-| `/api/invoice/header` | GET, POST, DELETE | FILE | components/InvoiceLayoutEditor.jsx, app/dashboard/pengaturan/page.js, components/InvoiceBody.jsx [url] |
 | `/api/logs` | GET, POST, DELETE | CRUD | app/dashboard/booking/page.js, app/dashboard/status/page.js |
 | `/api/logs/login` | GET | CRUD | app/dashboard/loginlog/page.js |
 | `/api/member-types` | GET, POST | CRUD | app/dashboard/member/page.js, app/dashboard/member/page.js [url] |
@@ -270,8 +272,8 @@ data lama tetap utuh sampai cutover.
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Tiga puluh path di antaranya sudah diport (termasuk domain
-  logs dan manajemen), jadi sisa **17 path / 19 metode**. Empat path
+  (68 metode)**. Tiga puluh dua path di antaranya sudah diport (termasuk domain
+  logs, manajemen, dan invoice), jadi sisa **15 path / 15 metode**. Empat path
   ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja
@@ -284,6 +286,8 @@ data lama tetap utuh sampai cutover.
   `DELETE /api/inventory/{id}` (`api.inventory.delete` tak pernah dipanggil; hapus
   inventaris selalu lewat `bulk-delete`), serta `GET /api/invoice/header` lewat
   `api.invoice.headerGet` (yang dipakai adalah URL langsungnya di komponen).
+  Keduanya tetap diport untuk paritas: `handlers_inventory.go` dan
+  `handlers_invoice.go`.
 - `/api/logs` (dikoreksi 2026-10-29): `GET` hidup — dipakai `getLogsTerbaru` di
   `log/page.js`; `POST` hidup — `tambahLogs` dipanggil dari booking/status.
   Hanya `DELETE` (pembungkus `deleteLogs`/`deleteOldLogs`) yang belum ada pemanggil
