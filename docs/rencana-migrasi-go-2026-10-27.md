@@ -487,7 +487,7 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 19 smoke scripts, 415 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 20 smoke scripts, 444 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
@@ -495,10 +495,10 @@ check, tetapi semua package tidak punya test file.
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
 logs/login, domain manajemen, domain invoice admin, grup pembayaran, lalu domain
-eksternal telegram + webhook):** 19
-smoke scripts Docker, exit 0 semua, 415 skenario lulus. `go build ./...`,
-`go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go` +
-`telegram_test.go`) juga lulus.
+eksternal telegram + webhook, lalu domain auth):** 20
+smoke scripts Docker, exit 0 semua, 444 skenario lulus. `go build ./...`,
+`go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go`,
+`telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`) juga lulus.
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -527,6 +527,7 @@ regresi kode: setelah reset, 17/17 hijau).
 | `smoke-invoice.ps1` | 17 | PASS |
 | `smoke-pembayaran.ps1` | 24 | PASS |
 | `smoke-eksternal.ps1` | 20 | PASS |
+| `smoke-auth-extra.ps1` | 29 | PASS |
 
 Catatan batch:
 
@@ -588,12 +589,44 @@ Catatan batch:
   karena format timestamp memang tidak dijaga kontrak); `record:null`
   diperlakukan sebagai absen (Zod `.optional()` bisa menganggapnya invalid);
   method selain POST dibalas 405 tanpa body lewat `hanyaPOST`.
+- `smoke-auth-extra.ps1` baru (29 skenario) menutup `POST /api/auth/register`,
+  `POST /api/auth/logout`, `GET /api/auth/callback`, `POST
+  /api/auth/resend-verification`. Supabase Auth digantikan auth sendiri: user
+  ditulis langsung ke `auth.users` (bcrypt lewat `auth.HashPassword`), profilnya
+  `role='owner'`, `status='menunggu'`, `is_active=false`; email verifikasi dikirim
+  lewat seam `MAIL_DRIVER` (`log` di luar produksi → satu baris stdout berisi
+  tautan; `smtp` di produksi) sehingga smoke bisa membaca tautan
+  `/api/auth/callback?token=` dari log API tanpa jaringan luar. Token verifikasi =
+  HMAC-SHA256 stateless (`EMAIL_TOKEN_SECRET`, TTL `EMAIL_TOKEN_TTL` default 24 j)
+  → tidak ada tabel token/migration baru. `resend-verification` memakai RPC yang
+  sudah ada di baseline (`public.rpc_reserve_verification_resend`, batas 3/jam per
+  email, cooldown 60 s, 20/jam per IP) sehingga 429 `RATE_LIMIT_EXCEEDED`
+  terbukti nyata dari DB, bukan state proses. Bukti lain: password hasil register
+  bisa dipakai login (hash terbaca), `logout` menghapus baris `auth.sessions` +
+  mengosongkan cookie + mencatat `login_logs` `event='logout'`, dan cookie lama
+  kembali 401.
+- Deviasi auth dari Next (disengaja): (1) rate limit `register` 5/10 menit TIDAK
+  diport — di Next ia `Map` di memori proses, sementara aturan portabilitas
+  melarang state di memori proses dan tidak ada tabel khusus untuk itu; (2)
+  `callback` memakai parameter `token`, bukan `code` Supabase, dan TIDAK membuat
+  sesi — akun hasil register masih `is_active=false` sampai disetujui superadmin,
+  jadi login belum bisa dipakai; (3) `error_code` HANYA diambil dari parameter
+  `error_code` (paritas `resultRedirect()` Next; tidak pernah diturunkan dari
+  `error`); (4) log `logout` ditulis sinkron (Next fire-and-forget) supaya bisa
+  diassert; (5) kegagalan DB saat register dibalas 500 mentah `{"error":...}`
+  (Next membalas 200 untuk semua kegagalan signup), sedangkan jalur validasi tetap
+  400 `{"error":...}` mentah dan jalur sukses tetap amplop `{"ok":true,"data":
+  {"ok":true}}`; (6) `Max-Age=-1` cookie pembersih diserialkan Go sebagai
+  `Max-Age=0` (efek sama: cookie langsung kedaluwarsa).
 - Env baru yang harus ada saat deploy Go API: `PURGE_SECRET` (pembayaran/purge),
   `WEBHOOK_TELEGRAM_SECRET` (telegram webhook), `TELEGRAM_CHAT_ID` (default
   `-1003838354394`), `TELEGRAM_API_BASE` (default `https://api.telegram.org`),
-  `TELEGRAM_TIMEOUT` (default `10s`) — semuanya opsional di `internal/config`
-  (kosong = endpoint terkait menolak/memakai default), di samping `R2_*` yang
-  sudah ada.
+  `TELEGRAM_TIMEOUT` (default `10s`), dan untuk auth: `FRONTEND_URL` (basis
+  redirect callback), `PUBLIC_API_URL` (basis tautan verifikasi), `MAIL_DRIVER`
+  (`log`|`smtp`), `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`,
+  `EMAIL_TOKEN_SECRET` (wajib di produksi), `EMAIL_TOKEN_TTL` (default `24h`) —
+  di samping `R2_*` yang sudah ada. Di produksi konfigurasi gagal-cepat:
+  `EMAIL_TOKEN_SECRET` wajib dan `SMTP_HOST`/`SMTP_FROM` wajib bila driver smtp.
 - Pelajaran harness: PowerShell TIDAK membedakan besar-kecil huruf pada variabel,
   sehingga `$A` (UUID tenant) bisa tertimpa `$a` (cookie sesi) dan SQL berikutnya
   gagal `invalid input syntax for type uuid`. Skrip smoke memakai nama panjang

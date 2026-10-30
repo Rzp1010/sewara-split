@@ -6,20 +6,34 @@ import (
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/mail"
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/storage"
 )
 
 // Server memegang dependensi secara eksplisit. Tidak ada global atau singleton.
 type Server struct {
-	cfg   config.Config
-	log   *slog.Logger
-	db    *db.DB
-	store *storage.Store
-	tg    *telegramSender
+	cfg    config.Config
+	log    *slog.Logger
+	db     *db.DB
+	store  *storage.Store
+	tg     *telegramSender
+	mailer mail.Sender
 }
 
 func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.Store) http.Handler {
-	s := &Server{cfg: cfg, log: log, db: database, store: store, tg: newTelegramSender(cfg)}
+	sender, err := mail.New(mail.Config{
+		Driver: cfg.MailDriver,
+		Host:   cfg.SMTPHost,
+		Port:   cfg.SMTPPort,
+		User:   cfg.SMTPUser,
+		Pass:   cfg.SMTPPass,
+		From:   cfg.SMTPFrom,
+	})
+	if err != nil {
+		log.Warn("pengirim email tidak aktif", "err", err)
+	}
+
+	s := &Server{cfg: cfg, log: log, db: database, store: store, tg: newTelegramSender(cfg), mailer: sender}
 
 	mux := http.NewServeMux()
 
@@ -27,6 +41,10 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	// dan harus terdaftar di docs/endpoint-matrix.md.
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("POST /api/auth/login", s.handleLogin)
+	mux.HandleFunc("POST /api/auth/register", s.handleRegister)
+	mux.HandleFunc("POST /api/auth/logout", s.requireAuth(s.handleLogout))
+	mux.HandleFunc("GET /api/auth/callback", s.handleAuthCallback)
+	mux.HandleFunc("POST /api/auth/resend-verification", s.handleResendVerification)
 	mux.HandleFunc("GET /api/auth/me", s.requireAuth(s.handleMe))
 	mux.HandleFunc("GET /api/settings", s.requireAuth(s.handleSettingsGet))
 	mux.HandleFunc("POST /api/settings", s.requireAuth(s.handleSettingsPost))

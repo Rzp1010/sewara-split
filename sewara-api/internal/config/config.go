@@ -27,6 +27,18 @@ type Config struct {
 	TelegramChatID        string        // chat_id default notifikasi
 	TelegramAPIBase       string        // basis Bot API; seam uji menunjuk stub lokal
 	TelegramTimeout       time.Duration // timeout klien HTTP Telegram
+
+	// Email verifikasi akun.
+	FrontendURL      string        // basis redirect callback (mis. https://app.sewara.my.id)
+	PublicAPIURL     string        // basis tautan verifikasi; kosong → diturunkan dari request
+	MailDriver       string        // "log" | "smtp"
+	SMTPHost         string        //
+	SMTPPort         string        //
+	SMTPUser         string        //
+	SMTPPass         string        //
+	SMTPFrom         string        //
+	EmailTokenSecret string        // kunci HMAC token verifikasi
+	EmailTokenTTL    time.Duration // masa berlaku token verifikasi
 }
 
 // StorageConfig menampung kredensial R2. Bucket kosong berarti fitur file mati;
@@ -110,6 +122,44 @@ func Load() (Config, error) {
 		tgChatID = "-1003838354394"
 	}
 
+	// Email. Default driver: smtp di produksi, log di luar produksi (agar
+	// pengembangan/uji tidak perlu SMTP).
+	mailDriver := strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_DRIVER")))
+	if mailDriver == "" {
+		if env == EnvProd {
+			mailDriver = "smtp"
+		} else {
+			mailDriver = "log"
+		}
+	}
+	if mailDriver != "log" && mailDriver != "smtp" {
+		return Config{}, fmt.Errorf("MAIL_DRIVER tidak dikenal: %q (pakai \"log\" atau \"smtp\")", mailDriver)
+	}
+
+	tokenTTL := 24 * time.Hour
+	if raw := strings.TrimSpace(os.Getenv("EMAIL_TOKEN_TTL")); raw != "" {
+		parsed, err := time.ParseDuration(raw)
+		if err != nil {
+			return Config{}, fmt.Errorf("EMAIL_TOKEN_TTL tidak valid: %w", err)
+		}
+		if parsed <= 0 {
+			return Config{}, fmt.Errorf("EMAIL_TOKEN_TTL harus lebih dari nol")
+		}
+		tokenTTL = parsed
+	}
+
+	smtpHost := strings.TrimSpace(os.Getenv("SMTP_HOST"))
+	smtpFrom := strings.TrimSpace(os.Getenv("SMTP_FROM"))
+	tokenSecret := strings.TrimSpace(os.Getenv("EMAIL_TOKEN_SECRET"))
+	if env == EnvProd {
+		if tokenSecret == "" {
+			return Config{}, fmt.Errorf("EMAIL_TOKEN_SECRET wajib diisi di produksi")
+		}
+		if mailDriver == "smtp" && (smtpHost == "" || smtpFrom == "") {
+			return Config{}, fmt.Errorf("konfigurasi SMTP wajib di produksi: isi SMTP_HOST dan SMTP_FROM")
+		}
+	}
+
 	return Config{
 		Addr:                  addr,
 		DatabaseURL:           dbURL,
@@ -122,6 +172,16 @@ func Load() (Config, error) {
 		TelegramChatID:        tgChatID,
 		TelegramAPIBase:       tgBase,
 		TelegramTimeout:       tgTimeout,
+		FrontendURL:           strings.TrimRight(strings.TrimSpace(os.Getenv("FRONTEND_URL")), "/"),
+		PublicAPIURL:          strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_API_URL")), "/"),
+		MailDriver:            mailDriver,
+		SMTPHost:              smtpHost,
+		SMTPPort:              strings.TrimSpace(os.Getenv("SMTP_PORT")),
+		SMTPUser:              strings.TrimSpace(os.Getenv("SMTP_USER")),
+		SMTPPass:              os.Getenv("SMTP_PASS"),
+		SMTPFrom:              smtpFrom,
+		EmailTokenSecret:      tokenSecret,
+		EmailTokenTTL:         tokenTTL,
 	}, nil
 }
 

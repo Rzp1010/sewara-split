@@ -160,8 +160,12 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/telegram/test | `handlers_eksternal.go` | 20 (role + stub Telegram lokal) |
 | POST /api/telegram/webhook | `handlers_eksternal.go` | 20 (secret + stub Telegram lokal) |
 | POST /api/webhooks/payment | `handlers_eksternal.go` | 20 (stub 503) |
+| POST /api/auth/register | `handlers_auth_extra.go` | 29 (seam MAIL_DRIVER=log) |
+| POST /api/auth/logout | `handlers_auth_extra.go` | 29 |
+| GET /api/auth/callback | `handlers_auth_extra.go` | 29 (token HMAC) |
+| POST /api/auth/resend-verification | `handlers_auth_extra.go` | 29 (RPC limit DB) |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **6 path / 6 metode**
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **2 path / 2 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
 belum dikurangi port domain logs, manajemen, invoice, dan pembayaran). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
@@ -274,7 +278,7 @@ data lama tetap utuh sampai cutover.
 
 | Endpoint | Metode | Pemanggil |
 |---|---|---|
-| `/api/auth/callback` | GET | Tautan verifikasi email: `emailRedirectTo` di `/api/auth/register` |
+| `/api/auth/callback` | GET | Tautan verifikasi email: `emailRedirectTo` di `/api/auth/register`. Di Go: parameter `token` (HMAC stateless), tanpa Supabase Auth, dan TIDAK membuat sesi (akun hasil register `is_active=false`) |
 | `/api/pembayaran/purge` | POST | Cron VPS (README backend, `PURGE_SECRET`). Di Go: ticker internal `cmd/api/main.go` (hari WIB 15, jam ≥3, idempoten), endpoint tetap ada untuk paritas + pemicu manual |
 | `/api/telegram/webhook` | POST | Bukan update Bot API: pemanggil di luar repo mengirim event gaya DB `{table,type,record,old_record}` (dulu trigger pg_net Supabase; trigger ber-secret hardcoded sudah dihapus di staging). Verifikasi lewat header `x-webhook-secret` |
 | `/api/webhooks/payment` | POST | Belum ada pemanggil aktif: endpoint masih stub 503 fail-closed (`payment_webhook_not_configured`); skeleton Midtrans/Xendit/Stripe di file itu kode mati. Di Go diport sebagai stub yang sama |
@@ -283,9 +287,9 @@ data lama tetap utuh sampai cutover.
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Empat puluh satu path di antaranya sudah diport (termasuk domain
-  logs, manajemen, invoice, pembayaran, dan eksternal telegram + webhook), jadi
-  sisa **6 path / 6 metode** (auth 4, member upload/photo 2). Empat path
+  (68 metode)**. Empat puluh lima path di antaranya sudah diport (termasuk domain
+  logs, manajemen, invoice, pembayaran, eksternal telegram + webhook, dan auth),
+  jadi sisa **2 path / 2 metode** (`member/upload`, `member/photo`). Empat path
   ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja
