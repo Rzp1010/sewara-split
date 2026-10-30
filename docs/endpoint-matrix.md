@@ -140,9 +140,17 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/logs | `handlers_logs.go` | 26 |
 | DELETE /api/logs | `handlers_logs.go` | 26 |
 | GET /api/logs/login | `handlers_logs.go` | 26 |
+| GET /api/dashboard/manajemen | `handlers_admin.go` | 49 |
+| GET /api/admin/users | `handlers_admin.go` | 49 |
+| POST /api/admin/users | `handlers_admin.go` | 49 |
+| PATCH /api/admin/users | `handlers_admin.go` | 49 |
+| DELETE /api/admin/users | `handlers_admin.go` | 49 |
+| GET /api/admin/logs | `handlers_admin.go` | 49 |
+| POST /api/admin/data | `handlers_admin.go` | 49 |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **24 path / 36 metode**
-(angka "61" sebelumnya belum dikurangi endpoint mati). Deviasi kontrak yang
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **17 path / 19 metode**
+(angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
+belum dikurangi port domain logs dan manajemen). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
 
 ## Pemakaian endpoint di frontend (audit 2026-10-28)
@@ -262,8 +270,9 @@ data lama tetap utuh sampai cutover.
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Sembilan path di antaranya sudah diport, jadi sisa **38 path
-  / 55 metode**. Empat path ber-pembungkus mati tidak perlu diport sama sekali.
+  (68 metode)**. Tiga puluh path di antaranya sudah diport (termasuk domain
+  logs dan manajemen), jadi sisa **17 path / 19 metode**. Empat path
+  ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja
   dibiarkan; drop menyusul setelah cutover.

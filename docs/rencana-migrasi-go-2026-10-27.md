@@ -487,14 +487,15 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 15 smoke scripts, 305 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 16 smoke scripts, 354 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
-logs/login):** 15 smoke scripts Docker, exit 0 semua, 305 skenario lulus.
+logs/login, lalu domain manajemen):** 16 smoke scripts Docker, exit 0 semua,
+354 skenario lulus.
 
 | Skrip | Skenario | Hasil |
 |---|---:|---|
@@ -513,8 +514,35 @@ logs/login):** 15 smoke scripts Docker, exit 0 semua, 305 skenario lulus.
 | `smoke-transactions.ps1` | 26 | PASS |
 | `smoke-transaction-items.ps1` | 20 | PASS |
 | `smoke-logs.ps1` | 26 | PASS |
+| `smoke-manajemen.ps1` | 49 | PASS |
 
 Catatan batch:
+
+- `smoke-manajemen.ps1` baru (49 skenario): `GET /api/dashboard/manajemen` (agregat
+  global lintas tenant), `GET/POST/PATCH/DELETE /api/admin/users` (isolasi list owner
+  vs superadmin + `jumlah_staff`, gerbang role per aksi, `DURASI_VALID` 1/3/6/12,
+  strict decode body, 404 seragam untuk target di luar wewenang), `GET /api/admin/logs`
+  (superadmin saja), `POST /api/admin/data` (wipe tenant B: transactions -> inventory ->
+  activity_logs -> members/member_types/promo_codes, lalu reset `invoice_counter`).
+  Aksi destruktif (DELETE cascade, wipe tenant B, `tolak_registrasi`) dijalankan paling
+  akhir agar tidak merusak akun/sesi skenario sebelumnya.
+- Domain manajemen memakai `InTenant` untuk seluruh operasi per-tenant (RLS
+  `profiles_select_allowed`/`profiles_write_allowed` plus trigger
+  `protect_profile_self_escalation` sebagai lapis kedua). Akses `auth.users` (buat akun,
+  hapus akun, ubah password) lewat jalur sistem — `authenticated` tidak punya grant di
+  schema `auth`. Audit `admin_logs` di-INSERT langsung, bukan lewat
+  `rpc_tambah_admin_log` (RPC itu menuntut GUC `app.jwt` yang tidak di-set Go).
+- Deviasi sengaja dari Next: rate limit per user (`checkRateLimit`) dilewati — belum ada
+  padanannya di Go; akun nonaktif ditolak `requireAuth` dengan 401 `UNAUTHORIZED`, bukan
+  403 `"Akun Anda dinonaktifkan."`; `invoice_counter` ditulis sebagai teks biasa
+  (`0`), bukan JSON string ber-kutip seperti `JSON.stringify(String(mulai-1))` di Next —
+  sama dengan nilai seed dan `setSetting` frontend.
+- `scripts/docker-staging.ps1` diperkuat setelah insiden C: penuh (Docker Desktop
+  read-only): pembuatan container kini menunggu `pg_isready` **di dalam** container
+  (proxy Docker Desktop menerima TCP dari host sebelum Postgres siap, jadi cek dari host
+  menyesatkan) dan tiap pemuatan berkas SQL memeriksa exit code `psql -v ON_ERROR_STOP=1`.
+  Sebelumnya kegagalan muat skema hanya muncul sebagai "Tabel: 0" dan batch lanjut
+  dengan DB kosong.
 
 - `smoke-logs.ps1` baru (26 skenario): CRUD log aktivitas (stamp `user_id` tenant,
   isolasi RLS, hapus by ids / `olderThanDays` / semua) + log login (owner = tenant

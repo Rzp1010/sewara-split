@@ -37,8 +37,22 @@ function Start-Container {
             -e POSTGRES_DB=$dbName `
             -p "${port}:5432" `
             postgres:16-alpine | Out-Null
-        
-        Start-Sleep -Seconds 5
+
+        # Tunggu server FINAL, bukan server sementara milik entrypoint. Server
+        # sementara hanya mendengarkan socket unix (listen_addresses=''), jadi
+        # pg_isready lewat TCP di dalam container baru berhasil setelah
+        # inisialisasi selesai. Cek dari host tidak bisa dipakai: proxy Docker
+        # Desktop menerima koneksi TCP sebelum Postgres benar-benar siap.
+        $siap = $false
+        for ($i = 0; $i -lt 240; $i++) {
+            docker exec $containerName pg_isready -h 127.0.0.1 -p 5432 -U $dbUser -d $dbName *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $siap = $true
+                break
+            }
+            Start-Sleep -Milliseconds 500
+        }
+        if (-not $siap) { throw "Postgres tidak siap di dalam container" }
         
         # Load skema
         Write-Host "Memuat skema..."
@@ -46,29 +60,34 @@ function Start-Container {
         # Suppress PowerShell error dari NOTICE/WARNING psql
         $oldErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
+
+        function Invoke-SqlFile([string]$path, [string]$label) {
+            $out = Get-Content $path -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "$label gagal: $out" }
+        }
         
         # Bootstrap files
         Get-ChildItem $bootDir -Filter *.sql | Sort-Object Name | ForEach-Object {
-            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
+            Invoke-SqlFile $_.FullName "bootstrap $($_.Name)"
         }
         
         # Baseline dump (filter pg_net)
         $filtered = Join-Path $env:TEMP 'schema_staging_docker.sql'
         Get-Content $dump | Where-Object { $_ -notmatch 'CREATE EXTENSION IF NOT EXISTS pg_net' } | 
             Set-Content -Path $filtered -Encoding UTF8
-        Get-Content $filtered -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
+        Invoke-SqlFile $filtered 'dump baseline'
         Remove-Item $filtered -Force
         
         # Migrations (suppress NOTICE/WARNING agar tidak stop execution)
         Get-ChildItem $migDir -Filter *.sql | Sort-Object Name | ForEach-Object {
-            Get-Content $_.FullName -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName -v ON_ERROR_STOP=1 2>&1 | Out-Null
+            Invoke-SqlFile $_.FullName "migration $($_.Name)"
         }
         
         # Seed (optional, load jika ada)
         $seedFile = Join-Path $root 'seeds\staging_seed.sql'
         if (Test-Path $seedFile) {
             Write-Host "Memuat seed..."
-            Get-Content $seedFile -Raw | docker exec -i $containerName psql -U $dbUser -d $dbName | Out-Null
+            Invoke-SqlFile $seedFile 'seed'
         }
         
         # Restore error action

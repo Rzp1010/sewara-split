@@ -83,6 +83,16 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("DELETE /api/logs", s.requireAuth(s.handleLogsDelete))
 	mux.HandleFunc("GET /api/logs/login", s.requireAuth(s.handleLogsLoginGet))
 
+	// Manajemen (dashboard/admin). `GET /api/admin/logs` tidak bentrok dengan
+	// `GET /api/admin/users` — pola ServeMux eksak tanpa trailing slash.
+	mux.HandleFunc("GET /api/dashboard/manajemen", s.requireAuth(s.handleManajemenGet))
+	mux.HandleFunc("GET /api/admin/users", s.requireAuth(s.handleAdminUsersGet))
+	mux.HandleFunc("POST /api/admin/users", s.requireAuth(s.handleAdminUsersPost))
+	mux.HandleFunc("PATCH /api/admin/users", s.requireAuth(s.handleAdminUsersPatch))
+	mux.HandleFunc("DELETE /api/admin/users", s.requireAuth(s.handleAdminUsersDelete))
+	mux.HandleFunc("GET /api/admin/logs", s.requireAuth(s.handleAdminLogsGet))
+	mux.HandleFunc("POST /api/admin/data", s.requireAuth(s.handleAdminDataPost))
+
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
 
