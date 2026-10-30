@@ -96,6 +96,41 @@ services:
     cpus: 1.0
     logging: *logging
 
+  # Konsol DB untuk owner (padanan phpMyAdmin). Profil `admin` -> TIDAK ikut
+  # jalan kecuali diminta, karena mesin ini hanya 1 GB:
+  #   docker compose -f docker-compose.prod.yml --profile admin up -d
+  #   docker compose -f docker-compose.prod.yml --profile admin stop
+  # Dua pintu: SSH tunnel ke 127.0.0.1:8081 (cadangan) dan Cloudflare Access
+  # (pintu utama lewat cloudflared). Login Adminer tetap butuh kredensial DB.
+  adminer:
+    image: adminer:4
+    profiles: ["admin"]
+    environment:
+      ADMINER_DEFAULT_SERVER: db     # form login langsung menunjuk service db
+    ports:
+      - "127.0.0.1:8081:8080"
+    mem_limit: 96m
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+
+  # Tunnel khusus konsol DB — DITUNDA atas permintaan user (sementara cukup SSH
+  # tunnel). Tetap di sini supaya tinggal dihidupkan saat Cloudflare Access siap:
+  #   docker compose -f docker-compose.prod.yml --profile admin --profile tunnel up -d
+  # Ingress diatur di dashboard Cloudflare (remotely managed), jadi tidak ada
+  # config.yml di host -- hanya berkas token mode 600. Hostname yang direncanakan:
+  # dbadmin.sewara.my.id (terpisah dari vhost aplikasi).
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.6
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "run", "--token-file", "/etc/cloudflared/token"]
+    volumes:
+      - ${SEWARA_CLOUDFLARED_DIR:-/etc/sewara/cloudflared}:/etc/cloudflared:ro
+    mem_limit: 96m
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+
 networks:
   internal:
     driver: bridge
