@@ -1,6 +1,16 @@
 BEGIN;
 TRUNCATE TABLE public.transaction_payments, public.transaction_items, public.transactions, public.inventory_units, public.inventory, public.members, public.member_types, public.promo_codes, public.settings, public.profiles CASCADE;
 
+-- Akun auth untuk login staging. Tanpa baris ini profil seed ada tapi tidak bisa
+-- login. Hash bcrypt = 'Rahasia123' (sama dengan hash yang dipakai skrip smoke).
+INSERT INTO auth.users (id,email,encrypted_password,email_confirmed_at,created_at) VALUES
+('a0000000-0000-0000-0000-000000000001','owner-a@staging.local','$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu',now(),'2026-01-10T08:00:00Z'),
+('a0000000-0000-0000-0000-000000000002','cs-a@staging.local','$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu',now(),'2026-01-10T08:01:00Z'),
+('a0000000-0000-0000-0000-000000000003','superadmin@staging.local','$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu',now(),'2026-01-10T08:02:00Z'),
+('b0000000-0000-0000-0000-000000000001','owner-b@staging.local','$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu',now(),'2026-01-10T08:03:00Z'),
+('b0000000-0000-0000-0000-000000000002','cs-b@staging.local','$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu',now(),'2026-01-10T08:04:00Z')
+ON CONFLICT (id) DO UPDATE SET encrypted_password=EXCLUDED.encrypted_password, email_confirmed_at=EXCLUDED.email_confirmed_at;
+
 INSERT INTO public.profiles (user_id,email,role,nama_lengkap,created_at,updated_at,owner_id,status) VALUES
 ('a0000000-0000-0000-0000-000000000001','owner-a@staging.local','owner','Owner A','2026-01-10T08:00:00Z','2026-01-10T08:00:00Z',NULL,'aktif'),
 ('a0000000-0000-0000-0000-000000000002','cs-a@staging.local','cs','CS A','2026-01-10T08:01:00Z','2026-01-10T08:01:00Z','a0000000-0000-0000-0000-000000000001','aktif'),

@@ -1,0 +1,12 @@
+.data/
+.git/
+.env*
+
+# Tidak dipakai runtime (skema/seed dijalankan service db-init, skrip dijalankan di host)
+bootstrap/
+migrations/
+seeds/
+scripts/
+docker/
+testdata/
+*.md

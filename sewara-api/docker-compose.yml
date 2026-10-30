@@ -1,0 +1,104 @@
+# Stack staging Sewara: Postgres + API Go.
+# ==============================================================================
+# BUKAN UNTUK PRODUKSI. Password di sini kredensial dev; produksi memakai file
+# env sendiri di VPS (lihat "Delta produksi" di docs/docker-runbook.md).
+# Frontend/Next SENGAJA belum di sini — cutover frontend ditunda.
+# ==============================================================================
+#
+#   cp .env.example .env
+#   docker compose up -d db
+#   docker compose --profile init run --rm db-init     # sekali, saat volume kosong
+#   docker compose up -d api
+#
+# JANGAN `docker compose down -v` — itu menghapus volume DB.
+name: sewara-staging
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    # Debian, bukan alpine: musl tidak punya locale sistem sungguhan
+    # ("no usable system locales were found"), sehingga urutan/banding teks
+    # menyimpang dari Postgres produksi (glibc). Lihat docs/docker-runbook.md.
+    image: postgres:16
+    shm_size: 256m          # /dev/shm untuk query paralel (default container 64m)
+    environment:
+      POSTGRES_USER: sewara
+      POSTGRES_DB: sewara
+      # Dari .env kalau ada; default hanya untuk staging lokal.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sewara_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U sewara -d sewara"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 60s   # biar fast-shutdown Postgres selesai, bukan SIGKILL
+    logging: *logging
+
+  # Inisialisasi skema sekali pakai. Sengaja service terpisah, bukan hook
+  # /docker-entrypoint-initdb.d, supaya tidak bergantung pada bit executable yang
+  # hilang saat mount dari Windows. Lihat docs/docker-runbook.md.
+  db-init:
+    image: postgres:16
+    profiles: ["init"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: sewara
+      PGDATABASE: sewara
+      PGPASSWORD: ${POSTGRES_PASSWORD:-sewara_dev}
+    volumes:
+      - ./docker/db-init:/init-src:ro
+      - ./bootstrap:/init/bootstrap:ro
+      - ./migrations:/init/migrations:ro
+      - ./seeds:/init/seeds:ro
+      - ../sewara-backend/supabase/schema_prod_20260930.sql:/init/schema_prod.sql:ro
+    entrypoint: ["bash", "/init-src/init.sh"]
+    networks: [internal]
+    restart: "no"
+
+  api:
+    build: .
+    # Opsional: .env boleh tidak ada (staging cukup nilai di bawah).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://sewara:${POSTGRES_PASSWORD:-sewara_dev}@db:5432/sewara?sslmode=disable
+      ADDR: 0.0.0.0:4000
+      APP_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # 127.0.0.1 = pola yang sama seperti produksi (edge nginx di host).
+      # 8099 dipakai harness smoke, 5433 dipakai sewara-staging-db.
+      - "127.0.0.1:8098:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    stop_grace_period: 20s   # shutdown app menunggu 15 detik
+    restart: unless-stopped
+    networks: [internal]
+    logging: *logging
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata:
