@@ -487,16 +487,18 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 18 smoke scripts, 395 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 19 smoke scripts, 415 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
-logs/login, domain manajemen, domain invoice admin, lalu grup pembayaran):** 18
-smoke scripts Docker, exit 0 semua, 395 skenario lulus. `go build ./...`,
-`go vet ./...`, dan `go test ./...` (pembayaran_test.go) juga lulus.
+logs/login, domain manajemen, domain invoice admin, grup pembayaran, lalu domain
+eksternal telegram + webhook):** 19
+smoke scripts Docker, exit 0 semua, 415 skenario lulus. `go build ./...`,
+`go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go` +
+`telegram_test.go`) juga lulus.
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -524,6 +526,7 @@ regresi kode: setelah reset, 17/17 hijau).
 | `smoke-manajemen.ps1` | 49 | PASS |
 | `smoke-invoice.ps1` | 17 | PASS |
 | `smoke-pembayaran.ps1` | 24 | PASS |
+| `smoke-eksternal.ps1` | 20 | PASS |
 
 Catatan batch:
 
@@ -552,6 +555,45 @@ Catatan batch:
 - Jalur sukses berkas masih belum berbukti: ZIP `export`, stream byte `photo`,
   dan unggah ke R2 butuh bucket hidup (menunggu rotasi secret R2). Yang terbukti
   baru kontrak: validasi, guard prefix, 404, 503.
+- `smoke-eksternal.ps1` baru (20 skenario) menutup tiga endpoint eksternal.
+  `POST /api/telegram/test` digerbangi `requireAuth` + role superadmin (403
+  `FORBIDDEN` untuk owner/staf) dan membaca `settings.telegram_login_notif` milik
+  user sendiri; cabang suksesnya benar-benar terbukti karena klien Telegram
+  diarahkan ke **stub `HttpListener` lokal** lewat seam env `TELEGRAM_API_BASE`
+  (default `https://api.telegram.org`), jadi smoke TIDAK menyentuh jaringan luar:
+  stub membuktikan path `/bot<token>/sendMessage` beserta `chat_id`,
+  `message_thread_id`, dan teks `✅ Notifikasi Telegram aktif!`. Gagal kirim
+  dibalas 502 `EXTERNAL_SERVICE_ERROR` (paritas `externalServiceErrorResponse`).
+  `POST /api/telegram/webhook` (tanpa auth cookie; header `x-webhook-secret` vs
+  env `WEBHOOK_TELEGRAM_SECRET` dibanding `subtle.ConstantTimeCompare`) diuji:
+  tanpa header dan secret salah (panjang sama maupun beda) → 401; body invalid →
+  400; `skip` dibalas mentah `{"ok":true,"skip":"..."}`; `table='transactions'`
+  → thread 6 + `{"ok":true,"data":{"ok":true,"to":"backup"}}`; `table='profiles'`
+  status `menunggu` role `owner` → thread 25 + `to:"daftar"`. Endpoint ini BUKAN
+  handler update Bot API: payloadnya event gaya DB `{table,type,record,old_record}`.
+  `POST /api/webhooks/payment` tetap stub fail-closed seperti Next — 503 body
+  persis `{"error":"payment_webhook_not_configured","message":...}` (tanpa
+  envelope `ok`), GET 405.
+- Keputusan domain eksternal: (1) base URL Telegram jadi env `TELEGRAM_API_BASE`
+  (seam uji; Next menulis URL hardcoded di route/lib) dan timeout dari
+  `TELEGRAM_TIMEOUT` default 10 s (paritas `TELEGRAM.REQUEST_TIMEOUT`); (2) chat
+  id dari env `TELEGRAM_CHAT_ID` default `-1003838354394`, thread 4/6/25 sebagai
+  konstanta; (3) route Next memakai `NextResponse.json` mentah untuk `skip` dan
+  `{error}` 500, jadi handler Go ikut mentah, bukan envelope; (4) skeleton
+  provider pembayaran (Midtrans/Xendit/Stripe) dan tabel `sewara_subscription_*`
+  TIDAK diport: tabel itu tidak ada di skema staging Go dan itu ranah langganan
+  Sewara, bukan aplikasi tenant.
+- Deviasi kecil yang belum diuji kontrak: `waktuID` memakai format `dd/mm/yy,
+  HH.MM` (pendekatan deterministik, bukan salinan ICU `toLocaleString('id-ID')`,
+  karena format timestamp memang tidak dijaga kontrak); `record:null`
+  diperlakukan sebagai absen (Zod `.optional()` bisa menganggapnya invalid);
+  method selain POST dibalas 405 tanpa body lewat `hanyaPOST`.
+- Env baru yang harus ada saat deploy Go API: `PURGE_SECRET` (pembayaran/purge),
+  `WEBHOOK_TELEGRAM_SECRET` (telegram webhook), `TELEGRAM_CHAT_ID` (default
+  `-1003838354394`), `TELEGRAM_API_BASE` (default `https://api.telegram.org`),
+  `TELEGRAM_TIMEOUT` (default `10s`) — semuanya opsional di `internal/config`
+  (kosong = endpoint terkait menolak/memakai default), di samping `R2_*` yang
+  sudah ada.
 - Pelajaran harness: PowerShell TIDAK membedakan besar-kecil huruf pada variabel,
   sehingga `$A` (UUID tenant) bisa tertimpa `$a` (cookie sesi) dan SQL berikutnya
   gagal `invalid input syntax for type uuid`. Skrip smoke memakai nama panjang

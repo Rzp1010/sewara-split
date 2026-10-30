@@ -15,10 +15,11 @@ type Server struct {
 	log   *slog.Logger
 	db    *db.DB
 	store *storage.Store
+	tg    *telegramSender
 }
 
 func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.Store) http.Handler {
-	s := &Server{cfg: cfg, log: log, db: database, store: store}
+	s := &Server{cfg: cfg, log: log, db: database, store: store, tg: newTelegramSender(cfg)}
 
 	mux := http.NewServeMux()
 
@@ -106,6 +107,13 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderGet))
 	mux.HandleFunc("POST /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderPost))
 	mux.HandleFunc("DELETE /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderDelete))
+
+	// Eksternal (telegram + webhook). Pola tanpa method + hanyaPOST supaya
+	// GET/PUT membalas 405 (bukan tertelan fallback "/"), meniru route Next yang
+	// hanya mengekspor POST.
+	mux.HandleFunc("/api/telegram/test", hanyaPOST(s.requireAuth(s.handleTelegramTest)))
+	mux.HandleFunc("/api/telegram/webhook", hanyaPOST(s.handleTelegramWebhook))
+	mux.HandleFunc("/api/webhooks/payment", hanyaPOST(s.handlePaymentWebhook))
 
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)

@@ -157,8 +157,11 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | GET /api/pembayaran/reminder | `handlers_pembayaran.go` | 24 |
 | POST /api/pembayaran/reminder-ack | `handlers_pembayaran.go` | 24 |
 | POST /api/pembayaran/upload | `handlers_pembayaran.go` | 24 (storage off) |
+| POST /api/telegram/test | `handlers_eksternal.go` | 20 (role + stub Telegram lokal) |
+| POST /api/telegram/webhook | `handlers_eksternal.go` | 20 (secret + stub Telegram lokal) |
+| POST /api/webhooks/payment | `handlers_eksternal.go` | 20 (stub 503) |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **9 path / 9 metode**
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **6 path / 6 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
 belum dikurangi port domain logs, manajemen, invoice, dan pembayaran). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
@@ -273,15 +276,16 @@ data lama tetap utuh sampai cutover.
 |---|---|---|
 | `/api/auth/callback` | GET | Tautan verifikasi email: `emailRedirectTo` di `/api/auth/register` |
 | `/api/pembayaran/purge` | POST | Cron VPS (README backend, `PURGE_SECRET`). Di Go: ticker internal `cmd/api/main.go` (hari WIB 15, jam ≥3, idempoten), endpoint tetap ada untuk paritas + pemicu manual |
-| `/api/telegram/webhook` | POST | Server Telegram |
-| `/api/webhooks/payment` | POST | Payment gateway |
+| `/api/telegram/webhook` | POST | Bukan update Bot API: pemanggil di luar repo mengirim event gaya DB `{table,type,record,old_record}` (dulu trigger pg_net Supabase; trigger ber-secret hardcoded sudah dihapus di staging). Verifikasi lewat header `x-webhook-secret` |
+| `/api/webhooks/payment` | POST | Belum ada pemanggil aktif: endpoint masih stub 503 fail-closed (`payment_webhook_not_configured`); skeleton Midtrans/Xendit/Stripe di file itu kode mati. Di Go diport sebagai stub yang sama |
 
 ### Catatan hasil audit
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Tiga puluh delapan path di antaranya sudah diport (termasuk domain
-  logs, manajemen, invoice, dan pembayaran), jadi sisa **9 path / 9 metode**. Empat path
+  (68 metode)**. Empat puluh satu path di antaranya sudah diport (termasuk domain
+  logs, manajemen, invoice, pembayaran, dan eksternal telegram + webhook), jadi
+  sisa **6 path / 6 metode** (auth 4, member upload/photo 2). Empat path
   ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja

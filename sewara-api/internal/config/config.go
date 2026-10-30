@@ -21,6 +21,12 @@ type Config struct {
 	// boleh kosong; di produksi wajib lengkap karena upload foto jaminan, foto
 	// member, bukti bayar, dan header invoice bergantung padanya.
 	Storage StorageConfig
+
+	// Eksternal Telegram + webhook.
+	TelegramWebhookSecret string        // secret header x-webhook-secret untuk /api/telegram/webhook
+	TelegramChatID        string        // chat_id default notifikasi
+	TelegramAPIBase       string        // basis Bot API; seam uji menunjuk stub lokal
+	TelegramTimeout       time.Duration // timeout klien HTTP Telegram
 }
 
 // StorageConfig menampung kredensial R2. Bucket kosong berarti fitur file mati;
@@ -80,14 +86,42 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	// Timeout default menyamai TELEGRAM.REQUEST_TIMEOUT di
+	// sewara-backend/lib/api/constants.ts (10 detik).
+	tgTimeout := 10 * time.Second
+	if raw := strings.TrimSpace(os.Getenv("TELEGRAM_TIMEOUT")); raw != "" {
+		parsed, err := time.ParseDuration(raw)
+		if err != nil {
+			return Config{}, fmt.Errorf("TELEGRAM_TIMEOUT tidak valid: %w", err)
+		}
+		if parsed <= 0 {
+			return Config{}, fmt.Errorf("TELEGRAM_TIMEOUT harus lebih dari nol")
+		}
+		tgTimeout = parsed
+	}
+
+	// Seam uji: TELEGRAM_API_BASE bisa diarahkan ke stub lokal.
+	tgBase := strings.TrimSpace(os.Getenv("TELEGRAM_API_BASE"))
+	if tgBase == "" {
+		tgBase = "https://api.telegram.org"
+	}
+	tgChatID := strings.TrimSpace(os.Getenv("TELEGRAM_CHAT_ID"))
+	if tgChatID == "" {
+		tgChatID = "-1003838354394"
+	}
+
 	return Config{
-		Addr:         addr,
-		DatabaseURL:  dbURL,
-		Env:          env,
-		CookieSecure: env == EnvProd,
-		SessionTTL:   ttl,
-		PurgeSecret:  os.Getenv("PURGE_SECRET"),
-		Storage:      storageCfg,
+		Addr:                  addr,
+		DatabaseURL:           dbURL,
+		Env:                   env,
+		CookieSecure:          env == EnvProd,
+		SessionTTL:            ttl,
+		PurgeSecret:           os.Getenv("PURGE_SECRET"),
+		Storage:               storageCfg,
+		TelegramWebhookSecret: strings.TrimSpace(os.Getenv("WEBHOOK_TELEGRAM_SECRET")),
+		TelegramChatID:        tgChatID,
+		TelegramAPIBase:       tgBase,
+		TelegramTimeout:       tgTimeout,
 	}, nil
 }
 
