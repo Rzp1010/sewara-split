@@ -67,12 +67,16 @@ systemd-analyze verify /etc/systemd/system/sewara-backup.service /etc/systemd/sy
 
 Hasil uji 2026-10-30: dump 170.504 byte, `tabel_data=31`, sha256 tertulis; rotasi
 menghapus duplikat hari yang sama dan yang lebih tua dari 28 hari; jalan dua kali
-berturut-turut `exit 0` (dump hari ini tidak dihapus).
+berturut-turut `exit 0` (dump hari ini tidak dihapus). Unit systemd-nya sudah lolos
+`systemd-analyze verify` di homelab (bersih).
 
-**Yang belum ada dan wajib sebelum cutover:** menyalin dump **keluar dari host**
-(kini hanya lokal). Contoh langkah berikutnya: `rclone copy /backup r2:sewara-backup/db/`
-dijalankan setelah skrip di atas. Ini juga pengganti `sewara-backup` yang sekarang
-masih memakai REST Supabase/PostgREST dan akan mati setelah Go menjadi edge.
+**Menyalin dump keluar host — sudah ada skripnya:** `sewara-api/scripts/backup-rclone.sh`
+dipanggil sebagai `ExecStartPost` di `deploy/systemd/sewara-backup.service`
+(image `rclone/rclone:1.75`, konfigurasi dari `/etc/sewara/rclone.conf`).
+Alur: `copy` → `check` (bandingkan hash, bukan cuma keberadaan berkas) → rotasi di
+sisi tujuan. Detail + cara mengisi kredensial: `docs/docker-runbook.md`
+§Backup ke luar host. Ini juga pengganti `sewara-backup` yang sekarang masih
+memakai REST Supabase/PostgREST dan akan mati setelah Go menjadi edge.
 
 Catatan penempatan: folder backup jangan satu disk dengan `pgdata` kalau bisa.
 

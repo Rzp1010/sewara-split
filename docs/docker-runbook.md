@@ -255,6 +255,73 @@ Catatan operasional dari uji ini:
   Kalau menjalankan init/psql manual, isi `PGPASSWORD` dari berkas:
   `-e PGPASSWORD="$(cat /etc/sewara/pg_password)"`.
 
+## Backup ke luar host (rclone → R2 akun terpisah)
+
+Tujuan backup **sebaiknya akun R2 terpisah** dari bucket aplikasi (produksi):
+kunci produksi tidak boleh bisa menghapus backup, dan `.env` produksi tidak perlu
+memuat kunci yang tidak dipakai aplikasi.
+
+Alur: `scripts/backup.sh` (dump -Fc + verifikasi + sha256 + rotasi lokal) →
+`ExecStartPost` di `deploy/systemd/sewara-backup.service` menjalankan
+`scripts/backup-rclone.sh` (copy → check hash → rotasi remote).
+
+### Isi kredensial (kamu sendiri; jangan pernah dikirim ke chat)
+
+`/etc/sewara/rclone.conf`, mode 600:
+
+```ini
+[r2backup]
+type = s3
+provider = Cloudflare
+access_key_id = <dari akun backup>
+secret_access_key = <dari akun backup>
+endpoint = https://<account-id-akun-backup>.r2.cloudflarestorage.com
+acl = private
+```
+
+- Buat token R2 khusus bucket backup (idealnya hanya bucket itu) — bukan token
+  akun. Bucket dump terpisah, mis. `sewara-backup`, prefix `db`.
+- Nama remote (`r2backup`) bebas; samakan dengan `RCLONE_REMOTE` di unit.
+- Supaya backup tahan hapus: aktifkan Object Lock/retention di bucket backup —
+  `--min-age` hanya rotasi normal, bukan proteksi dari penghapusan.
+
+### Verifikasi jalur (sebelum diandalkan)
+
+```bash
+sudo systemctl start sewara-backup.service
+systemctl status sewara-backup.service --no-pager
+journalctl -u sewara-backup.service -n 30 --no-pager
+```
+
+Harus terlihat `[backup] ok dump=...` lalu `[rclone] ... 0 differences found`
+beserta daftar isi tujuan. Upload gagal atau hash beda → unit FAILED.
+
+### Unduh balik (drill restore dari tujuan)
+
+```bash
+rclone --config /etc/sewara/rclone.conf copy r2backup:sewara-backup/db/<berkas>.dump /srv/sewara/restore/
+rclone --config /etc/sewara/rclone.conf check /srv/sewara/restore r2backup:sewara-backup/db
+```
+
+Restore ke DB scratch dulu (prosedur di `runbook-migrasi-mesin.md`), jangan
+langsung ke DB produksi.
+
+### Hasil uji 2026-10-30
+
+Diuji dengan remote `:local:` palsu (tanpa kredensial asli), di laptop (Windows)
+dan di homelab (Linux + Docker): `copy` + `check` → `0 differences found` /
+`2 matching files`; rotasi remote benar-benar mengosongkan tujuan; berkas sumber
+utuh dan `sha256sum -c` OK; `RCLONE_REMOTE` kosong → pesan jelas + exit 2
+(gagal cepat, bukan diam-diam sukses).
+
+Temuan saat uji: image `rclone/rclone` berbasis **alpine tanpa bash** → skrip
+ditulis POSIX `sh` dan unit memakai `--entrypoint sh` (kalau tidak:
+`bash: executable file not found`). `--user root` perlu untuk membaca kunci mode
+600; folder backup di-mount **read-only**.
+
+Lapis ketiga (GitHub Actions menarik dari R2 → artifact 90 hari) menyusul setelah
+bucket backup terbukti terisi.
+
 ## Deploy produksi (urutan, belum dijalankan)
 
 Berkas: `docker-compose.prod.yml`, `.env.prod.example` (jadi `/etc/sewara/api.env`),

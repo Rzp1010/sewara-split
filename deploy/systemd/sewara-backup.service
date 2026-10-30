@@ -20,6 +20,20 @@ ExecStart=/usr/bin/docker run --rm --user root \
   -v /srv/sewara/backup:/backup \
   -v /home/sewara-apps-production/sewara-split/sewara-api/scripts/backup.sh:/s/backup.sh:ro \
   postgres:16 bash /s/backup.sh
-# Salin keluar host (WAJIB, sekali rclone remote sudah diatur di /etc/sewara/rclone.conf):
-# ExecStartPost=/usr/bin/rclone --config /etc/sewara/rclone.conf copy /srv/sewara/backup r2:sewara-backup/db/
+# Salin keluar host (rclone -> R2 akun terpisah). Berkas konfigurasi rclone di
+# /etc/sewara/rclone.conf (600) berisi endpoint + kunci akun backup; nama remote
+# `r2backup` bebas. RCLONE_REMOTE = <remote>:<bucket>/<prefix>.
+# Gagal upload / hash tidak sama -> unit FAILED (kelihatan di systemctl status).
+ExecStartPost=/usr/bin/docker run --rm --user root --memory 192m --entrypoint sh \
+  -e RCLONE_REMOTE=r2backup:sewara-backup/db \
+  -e BACKUP_DIR=/backup \
+  -e RCLONE_CONFIG=/etc/rclone/rclone.conf \
+  -e RETENSI_HARI=28 \
+  -v /etc/sewara/rclone.conf:/etc/rclone/rclone.conf:ro \
+  -v /srv/sewara/backup:/backup:ro \
+  -v /home/sewara-apps-production/sewara-split/sewara-api/scripts/backup-rclone.sh:/s/backup-rclone.sh:ro \
+  rclone/rclone:1.75 /s/backup-rclone.sh
+# Catatan: image rclone/rclone berbasis alpine (tanpa bash) — pakai --entrypoint sh.
+# --user root perlu karena berkas kredensial mode 600. Folder backup di-mount
+# read-only: upload tidak boleh mengubah arsip lokal.
 TimeoutStartSec=900
