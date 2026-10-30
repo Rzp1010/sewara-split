@@ -27,7 +27,24 @@ x-logging: &logging
 services:
   db:
     image: postgres:16          # Debian: locale glibc, sama dengan produksi Supabase
-    shm_size: 256m
+    shm_size: 128m              # /dev/shm query paralel; 256m = 26% RAM (1 GB)
+    # Tuning RAM 1 GB + batas eksplisit: satu query liar tidak boleh menelan sisa
+    # RAM dan memicu OOM killer. Angka sama dengan staging (yang diuji = produksi).
+    # Hitungan: docs/docker-runbook.md §Anggaran sumber daya.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=96MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=48MB
+      - -c
+      - max_connections=30       # pool Go = 10 (internal/db/db.go) + admin
+    mem_limit: 384m
+    cpus: 1.0                   # t3.micro: baseline CPU 10%/vCPU, jangan dihabiskan
     environment:
       POSTGRES_USER: sewara
       POSTGRES_DB: sewara
@@ -75,6 +92,8 @@ services:
     stop_grace_period: 20s
     restart: unless-stopped
     networks: [internal]
+    mem_limit: 192m             # Go: RSS normal ~30-50 MB, sisanya bantalan
+    cpus: 1.0
     logging: *logging
 
 networks:

@@ -159,6 +159,102 @@ invoice). Berkas itu hidup di bucket R2 dan harus punya jalur backup sendiri
 (PostgREST). Setelah Go dipakai, jalur itu mati. Harus diganti `pg_dump -Fc`
 terjadwal (cron 12 jam) yang menyimpan hasil ke luar host aplikasi.
 
+## Anggaran sumber daya (t3.micro: 2 vCPU / 1 GB RAM)
+
+Mesin produksi = AWS EC2 **t3.micro** (1 GB), lebih kecil dari homelab (1,4 GB).
+Kode Go sudah mengasumsikan ini (`internal/db/db.go:40` → `MaxConns = 10`); yang
+belum ada batas untuk sisi Postgres, dan itu yang ditambahkan di compose.
+
+| Komponen | Perkiraan |
+|---|---|
+| OS + nginx host + sshd (+ cloudflared kalau dipakai) | ~180 MB |
+| dockerd + containerd | ~150 MB |
+| container `db` (`mem_limit: 384m`) | **terukur 18,6-22,7 MB** (23,8 MB saat `pg_dump`); langit-langit ~96 MB shared_buffers + ~10 MB × koneksi |
+| container `api` (`mem_limit: 192m`) | **terukur 4,8 MB** (laptop) / **14,5 MB** (homelab, `APP_ENV=production`)|
+| **Total** | **~560-640 MB** dari ~950 MB efektif |
+
+Terukur 2026-10-30 di staging (DB kecil, 6 member): seluruh stack **~24 MB** RSS —
+jadi batas 384m/192m itu bantalan lebar, bukan target. Angka "langit-langit"
+penting untuk nanti kalau DB membesar: RSS Postgres naik sampai ~96 MB saat
+`shared_buffers` benar-benar tersentuh. Swap 2 GB tetap jadi lapis terakhir,
+bukan alasan menghapus batas.
+
+- `shm_size` diturunkan 256m → 128m: 256 MB itu 26% dari total RAM.
+- Tuning Postgres (`command: postgres -c ...`): `shared_buffers=96MB`,
+  `effective_cache_size=384MB`, `work_mem=4MB`, `maintenance_work_mem=48MB`,
+  `max_connections=30` (pool Go 10 + admin).
+- Swap host 2 GB sudah tersedia di semua mesin (produksi + homelab). Docker
+  memberi `memory-swap` default = 2 × `mem_limit`, jadi `db` masih boleh tumpah
+  sampai ~768 MB sebelum OOM killer — jaring pengaman, bukan pengganti tuning.
+- `cpus: 1.0` per container dipasang di produksi saja: t3.micro punya CPU credit
+  (baseline 10%/vCPU). Staging sengaja tidak dibatasi CPU — membatasi di sana
+  hanya memperlambat suite smoke tanpa mengubah kebenaran hasil.
+
+Dua larangan di t3.micro:
+
+- **Jangan build image di produksi** (`go build` butuh ~1 GB dan menembus CPU
+  credit): kirim image siap pakai (`docker save` + scp, atau registry GHCR).
+- **Jangan `pg_restore` data produksi di sana**: restore penuh dilakukan di mesin
+  besar, VPS hanya menerima dump yang sudah dipindah/dimuat.
+
+## Pasang Docker di mesin baru (homelab/VPS)
+
+Sudah dijalankan di homelab 2026-10-30 oleh user: Docker 29.1.3 + Compose
+2.40.3 dari paket Ubuntu, user masuk grup `docker`, `systemd-analyze verify`
+pada ketiga unit **bersih tanpa keluaran** setelah Docker ada.
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"   # berlaku setelah login ulang
+newgrp docker                     # jalan pintas untuk sesi sekarang
+docker run --rm hello-world
+docker compose version            # harus v2.x
+```
+
+Kalau paket Ubuntu terlalu tua, alternatif repo resmi:
+`curl -fsSL https://get.docker.com | sudo sh` (menambah apt repo pihak ketiga +
+kunci GPG — satu dependensi eksternal lebih banyak).
+
+Periksa setelah pasang:
+
+```bash
+systemctl is-active docker
+docker info --format '{{.ServerVersion}} cgroup={{.CgroupVersion}}'
+free -m | head -2   # daemon ~100-150 MB; stack db+api terukur ~37 MB (lihat §Anggaran)
+```
+
+Mesin homelab: Ubuntu 26.04, 2 vCPU, RAM 1,4 GB (631 MB available sebelum
+hermes dimatikan), disk 49 GB sisa. Jangan jalankan backup bersamaan dengan
+build image di mesin sekecil ini.
+
+## Hasil uji homelab 2026-10-30 (bentuk produksi di Linux)
+
+Yang diuji: `docker-compose.prod.yml` apa adanya, di `~/sewara-test` (bukan
+`/srv`, supaya tidak perlu sudo), image dikirim lewat `docker save`/pscp.
+
+| Yang diperiksa | Hasil |
+|---|---|
+| `docker compose config` di Linux | valid; `mem_limit` 384m/192m, `shm_size` 128m, `cpus: 1` terbaca |
+| Folder data | `bind /home/rizki/sewara-test/run/pgdata -> /var/lib/postgresql/data` |
+| Postgres boleh nulis (uid 999) | ya; `chown 999:999` + `chmod 700` di folder uji |
+| Init skema lewat `db-init` | `tabel=29 policy=27 ledger=5 members=6 users=5` |
+| API `APP_ENV=production` | healthy; `health=200 login=200 members=200 dashboard=200` |
+| Memori nyata | `db 22,7 MiB / 384 MiB`, `api 14,5 MiB / 192 MiB` → stack ~37 MiB |
+| `backup.sh` pola unit systemd | dump 170.585 byte + `.sha256`, rotasi jalan |
+| `down -v` | network dihapus, **0 volume Docker bernama sewara**; `PG_VERSION` (mtime 13:00:34) utuh sesudahnya |
+| `systemd-analyze verify` | ketiga unit bersih |
+
+Catatan operasional dari uji ini:
+
+- `pgdata` itu `700 root:999` — user biasa (rizki/sewara) tidak bisa membacanya,
+  itu memang benar. Untuk memeriksa isinya, baca lewat container:
+  `docker run --rm -v /srv/sewara/pgdata:/d:ro alpine sh -c 'du -sh /d; ls /d | head'`.
+- `psql` tidak mengenal `PGPASSWORD_FILE` (hanya `backup.sh` yang mendukungnya).
+  Kalau menjalankan init/psql manual, isi `PGPASSWORD` dari berkas:
+  `-e PGPASSWORD="$(cat /etc/sewara/pg_password)"`.
+
 ## Deploy produksi (urutan, belum dijalankan)
 
 Berkas: `docker-compose.prod.yml`, `.env.prod.example` (jadi `/etc/sewara/api.env`),
@@ -180,9 +276,11 @@ menyusul saat cutover).
 Urutannya mengikat: container hidup dulu, lalu routing dialihkan per-path.
 Rollback = balikkan blok `location` ke Next, tanpa menyentuh container.
 
-**Belum diverifikasi di Linux:** unit systemd (harus lewat `systemd-analyze verify`
-di VPS/homelab) dan bind mount produksi (di Windows hanya mekanismenya yang
-terbukti: folder host bertahan setelah `down -v`).
+**Sudah diverifikasi di Linux 2026-10-30** (lihat §Hasil uji homelab): unit systemd
+lewat `systemd-analyze verify`, bind mount + uid 999, init skema, API
+`APP_ENV=production`, backup, dan ketahanan `down -v`. Yang masih menunggu: langkah
+yang butuh sudo di mesin tujuan (`/srv/sewara`, `/etc/sewara`, pasang unit) dan
+salinan dump ke luar host.
 
 ## Delta produksi (belum dikerjakan)
 
@@ -196,16 +294,18 @@ terbukti: folder host bertahan setelah `down -v`).
   R2 wajib lengkap — `config.Load()` gagal cepat kalau kurang.
 - Port API jangan dipublikasikan ke publik: bind `127.0.0.1:8098:4000`, nginx
   host yang jadi edge (Cloudflare Full strict + HSTS tidak diubah).
-- Volume `pgdata` di disk khusus + monitoring disk; `logging` json-file sudah
-  dibatasi (10m × 3) supaya tidak menelan disk VPS.
+- `pgdata` di **bind mount folder host** (`/srv/sewara/pgdata`, uid 999) +
+  monitoring disk; `logging` json-file dibatasi (10m × 3) supaya tidak menelan disk VPS.
+  Bind mount inilah yang membuat data kebal `down -v`, `volume prune`, dan
+  `system prune --volumes` (terbukti di homelab).
 - Password DB produksi jangan lewat `environment:` compose (bisa dibaca
   `docker inspect`): pakai `POSTGRES_PASSWORD_FILE` + file mode `600` di VPS,
   dan `DATABASE_URL` di file env aplikasi (mode `600`, bukan di repo).
 - Jadwal backup: `pg_dump -Fc` harian/12 jam ke luar host (R2 atau host lain),
   drill restore berkala. RPO mengikuti jadwal dump — sebelum cutover, tulis
   angkanya di runbook produksi supaya tidak diasumsikan.
-- Sebaiknya tambah batas resource (`mem_limit`, `cpus`) setelah kapasitas VPS
-  diketahui.
+- Batas resource sudah dipasang setelah kapasitas VPS diketahui (t3.micro 1 GB):
+  `mem_limit` 384m/192m + `cpus: 1` — lihat §Anggaran sumber daya.
 - `docker compose up -d` dijalankan oleh systemd unit saat boot (supervisi
   proses, bukan cron aplikasi — timer aplikasi tetap ticker di dalam Go).
 - Rollback cutover = balikkan routing nginx per-path ke Next, bukan mengubah
@@ -222,11 +322,26 @@ terbukti: folder host bertahan setelah `down -v`).
 
 ## Sisa pekerjaan
 
-1. Verifikasi stack compose di laptop (health, login, endpoint baca, drill pg_dump).
-2. Homelab staging (Ubuntu + cloudflared) sebagai tempat gate **G1** dievaluasi.
-3. Cutover frontend + nginx per-path (ditunda atas permintaan user).
-4. Ganti `sewara-backup` REST → `pg_dump`; tambah backup R2.
+1. ~~Verifikasi stack compose di laptop (health, login, endpoint baca, drill
+   pg_dump)~~ — selesai 2026-10-30.
+2. Homelab staging: **Docker sudah terpasang** (29.1.3 + Compose 2.40.3) dan
+   bentuk produksi sudah diuji di sana (§Hasil uji homelab 2026-10-30). Sisa:
+   pindahkan uji ke lokasi sungguhan (`/srv/sewara`, `/etc/sewara`, unit systemd
+   butuh sudo) dan pastikan cloudflared mengarah ke stack ini kalau mau dipakai
+   sebagai staging ber-URL.
+   Kondisi mesin: `rizkiserver`, Ubuntu 26.04, 2 vCPU, RAM 1,4 GB, disk 49 GB
+   sisa; `~/sewara-split` salinan lama tanpa `.git` dan tanpa `sewara-api`
+   (kode uji ditaruh di `~/sewara-test`). Sudah jalan di sana: nginx,
+   `postgresql@18` host, cloudflared, tailscaled, samba, hermes (RSS 310 MB).
+3. Cutover frontend + nginx per-path (ditunda atas permintaan user) — butuh
+   vhost produksi sekarang (`nginx -T`) supaya per-path flip menyalin perilaku,
+   bukan menebak.
+4. Ganti `sewara-backup` REST → `pg_dump`; tambah backup R2 (rclone, matikan
+   `ExecStartPost` di `deploy/systemd/sewara-backup.service` saat sudah siap).
 5. Migrasi data produksi (dump dari Supabase produksi → restore ke DB produksi baru)
-   dengan urutan drift-check seperti `AGENTS.md` aturan 5.
+   dengan urutan drift-check seperti `AGENTS.md` aturan 5; restore dilakukan di
+   mesin besar, bukan di t3.micro.
 6. Jalur belum terbukti: SMTP nyata (`auth/callback`), ZIP export pembayaran,
    stream `photo`, unggah bukti bayar ke R2.
+7. Ukuran root volume EBS produksi belum diketahui — perlu dicek sebelum
+   menetapkan lokasi `/srv/sewara/pgdata` + rotasi dump.

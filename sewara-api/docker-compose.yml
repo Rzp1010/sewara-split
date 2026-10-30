@@ -25,7 +25,22 @@ services:
     # ("no usable system locales were found"), sehingga urutan/banding teks
     # menyimpang dari Postgres produksi (glibc). Lihat docs/docker-runbook.md.
     image: postgres:16
-    shm_size: 256m          # /dev/shm untuk query paralel (default container 64m)
+    shm_size: 128m          # /dev/shm query paralel; 256m = 26% RAM t3.micro (1 GB)
+    # Tuning RAM 1 GB. Disamakan di staging supaya yang diuji = angka produksi.
+    # Alasan + hitungan: docs/docker-runbook.md §Anggaran sumber daya.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=96MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=48MB
+      - -c
+      - max_connections=30       # pool Go = 10 (internal/db/db.go) + admin
+    mem_limit: 384m
     environment:
       POSTGRES_USER: sewara
       POSTGRES_DB: sewara
@@ -94,6 +109,7 @@ services:
     stop_grace_period: 20s   # shutdown app menunggu 15 detik
     restart: unless-stopped
     networks: [internal]
+    mem_limit: 192m          # Go: RSS normal ~30-50 MB, sisanya bantalan
     logging: *logging
 
 networks:
