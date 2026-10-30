@@ -43,21 +43,28 @@ Isi `/etc/sewara/api.env`:
 - `APP_ENV=production`, `FRONTEND_URL`/`PUBLIC_API_URL` = domain aplikasi,
   `MAIL_DRIVER=smtp` + `SMTP_HOST`/`SMTP_FROM` wajib. `config.Load()` gagal cepat
   kalau kurang — jadi API tidak akan "hidup setengah jalan".
+- **Email pakai Resend lewat SMTP** (sama seperti yang sudah dipakai di produksi
+  sekarang; tidak ada perubahan kode):
+  `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=587`, `SMTP_USER=resend`,
+  `SMTP_PASS=<API key Resend>`, `SMTP_FROM=<pengirim terverifikasi>`.
+  Port **587 (STARTTLS)** — Go `smtp.SendMail` (`internal/mail/mail.go:78`) tidak
+  bisa TLS implisit, jadi **jangan port 465**.
 
-### A3. Kirim kode + image (JANGAN build di VPS)
+### A3. Ambil kode di VPS (build di VPS, alasannya diukur)
 
-Di laptop:
-
-```powershell
-git archive --format=tar -o sewara.tar dev          # atau clone di VPS dari repo
-docker save sewara-api:prod -o sewara-api-image.tar
-```
-
-Salin keduanya ke VPS (scp/rsync), lalu di VPS:
+Pola sama dengan Next yang sudah jalan: `git pull` → build → restart. Build Go
+diukur 2026-10-30 di mesin sekelas VPS (2 vCPU, 1,4 GB + swap 2 GB):
+**207 detik, RAM naik 669 MB, swap terpakai puncak 387 MB, tanpa OOM.**
+Syaratnya: **swap 2 GB aktif** (tanpa swap, build ini OOM — sama seperti
+pengalaman build Next sebelumnya) dan dijalankan saat traffic kosong.
 
 ```bash
-tar -xf sewara.tar -C ~/sewara && cd ~/sewara/sewara-api
-docker load -i ~/sewara-api-image.tar && docker images | grep sewara-api
+cd ~/sewara && git clone <repo> . && git checkout main   # sekali saja
+# rilis berikutnya cukup: git pull origin main
+```
+
+```bash
+swapon --show        # WAJIB ada isinya sebelum build
 ```
 
 ### A4. Hidupkan DB (kosong), tanpa seed staging
@@ -76,14 +83,36 @@ itu khusus latihan. Produksi: skema dari bootstrap + dump data asli (Fase B).
 
 ### A5. Hidupkan API
 
+Cara paling ringkas — satu perintah dari akar repo (`git pull` → build → uji sehat
+sudah termasuk):
+
 ```bash
+cd ~/sewara && ./sewara-api/scripts/deploy-vps.sh
+# rollback: ./sewara-api/scripts/deploy-vps.sh --ke <commit-lama|tag-image-lama>
+```
+
+Skrip itu: cek drift ledger dulu (berhenti kalau ada berkas migration belum
+tercatat), build image bertag `sewara-api:<commit>`, naikkan, lalu uji
+`/api/health`. Kalau tidak sehat dalam 60 detik ia **balik sendiri ke image
+sebelumnya** — image lama tidak ditimpa, jadi rollback instan (tanpa build).
+Image lama per commit ±40 MB; bersihkan yang tidak dipakai lagi:
+`docker rmi sewara-api:<sha>` (sisakan 2-3 untuk rollback).
+
+Setara manualnya, kalau tidak mau pakai skrip:
+
+```bash
+cd ~/sewara/sewara-api
+docker compose -f docker-compose.prod.yml build api
 docker compose -f docker-compose.prod.yml up -d api
 docker compose -f docker-compose.prod.yml logs --tail 20 api
 curl -s -o /dev/null -w "health=%{http_code}\n" http://127.0.0.1:8098/api/health   # 200
 ```
 
 Catatan: tanpa data produksi, login masih akan gagal (belum ada akun) — health 200
-sudah cukup sebagai bukti stack hidup.
+sudah cukup sebagai bukti stack hidup. Peringatan
+`Docker Compose is configured to build using Bake, but buildx isn't installed`
+itu wajar di VPS (paket `docker.io` Ubuntu tidak membawa buildx) — build tetap
+jalan, sudah terbukti di homelab.
 
 ### A6. Unit systemd
 

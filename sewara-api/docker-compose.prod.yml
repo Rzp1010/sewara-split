@@ -70,7 +70,9 @@ services:
 
   api:
     build: .
-    image: sewara-api:prod
+    # Tag per commit supaya rollback = sebut tag lama (image lama TIDAK ditimpa).
+    # deploy-vps.sh yang mengisi; default `sewara-api:prod` untuk pemakaian manual.
+    image: ${SEWARA_API_IMAGE:-sewara-api:prod}
     env_file:
       - ${SEWARA_ENV_FILE:-/etc/sewara/api.env}
     environment:

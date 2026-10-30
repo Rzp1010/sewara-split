@@ -190,10 +190,15 @@ bukan alasan menghapus batas.
   (baseline 10%/vCPU). Staging sengaja tidak dibatasi CPU — membatasi di sana
   hanya memperlambat suite smoke tanpa mengubah kebenaran hasil.
 
-Dua larangan di t3.micro:
+Batas di t3.micro (dikoreksi 2026-10-30 setelah diukur, bukan diperkirakan):
 
-- **Jangan build image di produksi** (`go build` butuh ~1 GB dan menembus CPU
-  credit): kirim image siap pakai (`docker save` + scp, atau registry GHCR).
+- **Build image di VPS: BOLEH** — diukur di homelab (2 vCPU, 1,4 GB + swap 2 GB):
+  build dingin **207 detik**, RAM naik **669 MB**, swap terpakai puncak **387 MB**,
+  **tanpa OOM** di kernel. Ini lebih ringan dari build Next yang sudah rutin
+  dijalankan di VPS yang sama. Syaratnya dua: **swap 2 GB aktif** (tanpa swap,
+  build ini OOM) dan dijalankan **saat traffic kosong**. Karena itu jalur rilisnya
+  cukup `git pull` → build → restart (lihat `docs/checklist-deploy-vps.md`), tanpa
+  registry dan tanpa CI.
 - **Jangan `pg_restore` data produksi di sana**: restore penuh dilakukan di mesin
   besar, VPS hanya menerima dump yang sudah dipindah/dimuat.
 
@@ -335,8 +340,9 @@ ditulis POSIX `sh` dan unit memakai `--entrypoint sh` (kalau tidak:
 `bash: executable file not found`). `--user root` perlu untuk membaca kunci mode
 600; folder backup di-mount **read-only**.
 
-Lapis ketiga (GitHub Actions menarik dari R2 → artifact 90 hari) menyusul setelah
-bucket backup terbukti terisi.
+Lapis ketiga (menarik dari R2 → artifact 90 hari) bersifat opsional dan
+**ditunda**: jalur backup resmi sekarang tetap manual/sederhana (dump → R2 akun
+terpisah), tanpa CI.
 
 ## Konsol DB (Adminer)
 
@@ -414,7 +420,10 @@ menyusul saat cutover).
    dari env Next produksi yang sudah ada di VPS) → `sudo chmod 600 /etc/sewara/pg_password /etc/sewara/api.env`
 5. `docker compose -f docker-compose.prod.yml up -d db` → buat role
    (`anon`, `authenticated`, `service_role`) → restore dump data produksi
-6. `docker compose -f docker-compose.prod.yml up -d api` → cek `/api/health` + login
+6. `docker compose -f docker-compose.prod.yml up -d api` → cek `/api/health` + login.
+   Rilis berikutnya cukup satu perintah: `./sewara-api/scripts/deploy-vps.sh`
+   (cek drift ledger → build → naikkan → uji sehat → **rollback otomatis** kalau
+   gagal; image lama tidak ditimpa sehingga rollback instan).
 7. `sudo cp deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/` →
    `systemd-analyze verify` → `systemctl enable --now sewara.service sewara-backup.timer`
 8. nginx: tanam vhost produksi (per-path) → `nginx -t` → reload
@@ -424,9 +433,12 @@ Rollback = balikkan blok `location` ke Next, tanpa menyentuh container.
 
 **Sudah diverifikasi di Linux 2026-10-30** (lihat §Hasil uji homelab): unit systemd
 lewat `systemd-analyze verify`, bind mount + uid 999, init skema, API
-`APP_ENV=production`, backup, dan ketahanan `down -v`. Yang masih menunggu: langkah
-yang butuh sudo di mesin tujuan (`/srv/sewara`, `/etc/sewara`, pasang unit) dan
-salinan dump ke luar host.
+`APP_ENV=production`, backup, dan ketahanan `down -v`. Jalur rilis **juga sudah
+dilatih di homelab** (repo git + bare sebagai origin): deploy normal hijau
+(`drift 0`, build 207 detik, health 200), lalu deploy sengaja dirusak → health gagal
+→ **rollback otomatis hijau** (kembali ke image sebelumnya, health 200, RC=1).
+Yang masih menunggu: langkah yang butuh sudo di mesin tujuan (`/srv/sewara`,
+`/etc/sewara`, pasang unit) dan pemindahan data (Fase B).
 
 ## Delta produksi (belum dikerjakan)
 
@@ -482,12 +494,22 @@ salinan dump ke luar host.
 3. Cutover frontend + nginx per-path (ditunda atas permintaan user) — butuh
    vhost produksi sekarang (`nginx -T`) supaya per-path flip menyalin perilaku,
    bukan menebak.
-4. Ganti `sewara-backup` REST → `pg_dump`; tambah backup R2 (rclone, matikan
-   `ExecStartPost` di `deploy/systemd/sewara-backup.service` saat sudah siap).
+4. ~~Ganti `sewara-backup` REST → `pg_dump`; tambah backup R2 (rclone)~~ — selesai
+   2026-10-30: dump + `.sha256` + rotasi lokal, copy ke R2 **akun terpisah** dengan
+   verifikasi hash dan unduh-balik terbukti. Sisa saat deploy: pasang `rclone.conf`
+   di VPS, jalankan unit backup manual sekali, lalu `systemctl enable --now
+   sewara-backup.timer` dan matikan jalur REST lama supaya tidak ada dua isi backup.
 5. Migrasi data produksi (dump dari Supabase produksi → restore ke DB produksi baru)
    dengan urutan drift-check seperti `AGENTS.md` aturan 5; restore dilakukan di
    mesin besar, bukan di t3.micro.
-6. Jalur belum terbukti: SMTP nyata (`auth/callback`), ZIP export pembayaran,
-   stream `photo`, unggah bukti bayar ke R2.
+6. Jalur belum terbukti: SMTP nyata (`auth/callback`) — **keputusan 2026-10-30:
+   pakai Resend lewat SMTP port 587**, nilai diambil dari produksi sekarang (tanpa
+   perubahan kode); juga belum terbukti: ZIP export pembayaran, stream `photo`,
+   unggah bukti bayar ke R2.
 7. Ukuran root volume EBS produksi belum diketahui — perlu dicek sebelum
    menetapkan lokasi `/srv/sewara/pgdata` + rotasi dump.
+8. Jalur rilis sudah ditetapkan dan dilatih: `git pull` → build **di VPS** →
+   `deploy-vps.sh` (cek drift ledger, health, rollback otomatis). CI/GHCR **tidak
+   dipakai** — berkas `.github/workflows/build-image.yml` dihapus 2026-10-30 atas
+   keputusan user (manual, hindari otomatisasi). Build di VPS terukur 207 detik /
+   669 MB / swap 387 MB, tanpa OOM.
