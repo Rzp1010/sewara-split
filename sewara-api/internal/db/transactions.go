@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -122,42 +124,187 @@ type TransactionPaymentInput struct {
 	Notes         *string   `json:"notes"`
 }
 
-// GetTransactions membaca daftar transaksi tenant, dengan filter opsional.
-func (d *DB) GetTransactions(ctx context.Context, userID string, opts TransactionQueryOptions) ([]Transaction, error) {
-	// ponytail: pagination/filter kompleks belum lengkap; tambah saat frontend butuh
-	var transactions []Transaction
-	err := d.InTenant(ctx, userID, func(q Querier) error {
-		rows, err := q.Query(ctx, `
-			SELECT id, id_transaksi, no_invoice, penyewa, hp_penyewa, alamat_penyewa, jaminan_sewa,
-			       waktu_ambil_rencana, waktu_kembali_rencana, waktu_ambil_aktual, waktu_kembali_aktual,
-			       status, items, denda, biaya, durasi_teks, total_akhir, pembayaran, "riwayatDilayani",
-			       dilayani_oleh, diskon, member_id, created_by, updated_by, dp_hangus, dp_hangus_aturan,
-			       printilan, user_id::text, created_at, updated_at
-			FROM transactions
-			ORDER BY created_at DESC`)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
+// presetKolomTransaksi menyalin konstanta KOLOM di
+// app/api/transactions/route.ts. Urutan nama = urutan kunci JSON hasil, jadi
+// bentuk baris per preset sama persis dengan backend Next.
+var presetKolomTransaksi = map[string][]string{
+	"ringkas": {"id", "no_invoice", "penyewa", "status", "total_akhir", "biaya", "denda",
+		"waktu_ambil_rencana", "waktu_kembali_rencana", "waktu_kembali_aktual"},
+	"kartu": {"id", "no_invoice", "penyewa", "hp_penyewa", "alamat_penyewa", "jaminan_sewa", "status",
+		"items", "waktu_ambil_rencana", "waktu_kembali_rencana", "durasi_teks", "total_akhir",
+		"pembayaran", "biaya", "denda", "diskon", "dilayani_oleh", "riwayatDilayani", "printilan"},
+	"laporan": {"id", "no_invoice", "penyewa", "hp_penyewa", "alamat_penyewa", "jaminan_sewa", "status",
+		"waktu_kembali_rencana", "waktu_kembali_aktual", "biaya", "denda", "total_akhir", "pembayaran",
+		"dp_hangus", "dp_hangus_aturan", "printilan"},
+	"statistik": {"id", "status", "total_akhir"},
+}
 
-		for rows.Next() {
-			var t Transaction
-			if err := rows.Scan(&t.ID, &t.IDTransaksi, &t.NoInvoice, &t.Penyewa, &t.HPPenyewa, &t.AlamatPenyewa,
-				&t.JaminanSewa, &t.WaktuAmbilRencana, &t.WaktuKembaliRencana, &t.WaktuAmbilAktual, &t.WaktuKembaliAktual,
-				&t.Status, &t.Items, &t.Denda, &t.Biaya, &t.DurasiTeks, &t.TotalAkhir, &t.Pembayaran, &t.RiwayatDilayani,
-				&t.DilayaniOleh, &t.Diskon, &t.MemberID, &t.CreatedBy, &t.UpdatedBy, &t.DPHangus, &t.DPHangusAturan,
-				&t.Printilan, &t.UserID, &t.CreatedAt, &t.UpdatedAt); err != nil {
-				return err
-			}
-			transactions = append(transactions, t)
-		}
-		return rows.Err()
+// kolomTransaksiDefault adalah `*` (kolom preset tidak dikenal): seluruh kolom
+// tabel, urutan sama dengan backend Next.
+var kolomTransaksiDefault = []string{
+	"id", "id_transaksi", "no_invoice", "penyewa", "hp_penyewa", "alamat_penyewa", "jaminan_sewa",
+	"waktu_ambil_rencana", "waktu_kembali_rencana", "waktu_ambil_aktual", "waktu_kembali_aktual",
+	"status", "items", "denda", "biaya", "durasi_teks", "total_akhir", "pembayaran", "riwayatDilayani",
+	"dilayani_oleh", "diskon", "member_id", "created_by", "updated_by", "dp_hangus", "dp_hangus_aturan",
+	"printilan", "user_id", "created_at", "updated_at",
+}
+
+// exprKolomTransaksi menerjemahkan nama kolom preset menjadi ekspresi SQL.
+// Hanya nama dari preset di atas yang pernah masuk ke sini, jadi tidak ada input
+// pemanggil yang disambung ke SQL.
+func exprKolomTransaksi(nama string) string {
+	switch nama {
+	case "user_id":
+		return "t.user_id::text"
+	case "riwayatDilayani":
+		return `t."riwayatDilayani"`
+	default:
+		return "t." + nama
+	}
+}
+
+// GetTransactions membaca daftar transaksi tenant sebagai array JSON mentah.
+//
+// Dikembalikan sebagai json.RawMessage, bukan []Transaction, karena `kolom`
+// memilih subset kolom (preset) yang tidak bisa diwakili struct tetap tanpa
+// menambah kunci yang tidak diminta. json_build_object menulis tepat kolom yang
+// diminta, dan array_to_json merangkainya jadi satu array JSON.
+func (d *DB) GetTransactions(ctx context.Context, userID string, opts TransactionQueryOptions) (json.RawMessage, error) {
+	kolom := kolomTransaksiDefault
+	if preset, ok := presetKolomTransaksi[opts.Kolom]; ok {
+		kolom = preset
+	}
+
+	bagian := make([]string, 0, len(kolom)*2+4)
+	for _, nama := range kolom {
+		bagian = append(bagian, "'"+nama+"'", exprKolomTransaksi(nama))
+	}
+	if opts.Nested {
+		bagian = append(bagian,
+			"'transaction_items'", `(SELECT coalesce(json_agg(row_to_json(i) ORDER BY i.id), '[]'::json) FROM transaction_items i WHERE i.transaction_id = t.id)`,
+			"'transaction_payments'", `(SELECT coalesce(json_agg(row_to_json(p) ORDER BY p.id), '[]'::json) FROM transaction_payments p WHERE p.transaction_id = t.id)`,
+		)
+	}
+
+	where, args := susunFilterTransaksi(opts)
+	sql := "SELECT coalesce(array_to_json(array(SELECT json_build_object(" +
+		strings.Join(bagian, ", ") + ") FROM transactions t" + where + susunUrutanTransaksi(opts) + ")), '[]'::json)"
+
+	var raw json.RawMessage
+	err := d.InTenant(ctx, userID, func(q Querier) error {
+		return q.QueryRow(ctx, sql, args...).Scan(&raw)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("membaca transactions: %w", err)
 	}
-	return transactions, nil
+	return raw, nil
 }
+
+// susunFilterTransaksi menyusun klausa WHERE + argumen, meniru urutan filter
+// route Next. IDsAktif/StatusAktif membedakan "parameter tidak ada" (tanpa
+// filter) dari "ada tapi kosong" (nol baris).
+func susunFilterTransaksi(opts TransactionQueryOptions) (string, []any) {
+	var conds []string
+	var args []any
+	add := func(format string, v any) {
+		args = append(args, v)
+		conds = append(conds, fmt.Sprintf(format, len(args)))
+	}
+
+	if opts.IDsAktif {
+		if len(opts.IDs) == 0 {
+			conds = append(conds, "FALSE")
+		} else {
+			add("t.id = ANY($%d::bigint[])", opts.IDs)
+		}
+	}
+	if opts.StatusAktif {
+		if len(opts.Status) == 0 {
+			conds = append(conds, "FALSE")
+		} else {
+			add("t.status::text = ANY($%d::text[])", opts.Status)
+		}
+	}
+	if opts.Cari != "" {
+		add("t.penyewa ILIKE $%d", "%"+opts.Cari+"%")
+	}
+	if opts.HideRiwayat {
+		conds = append(conds, "t.status::text NOT IN ('Selesai','Dibatalkan')")
+	}
+	if opts.Mulai != "" && opts.Akhir != "" {
+		switch {
+		case opts.TanggalKolom == "ambil":
+			add("t.waktu_ambil_rencana >= $%d::timestamptz", opts.Mulai)
+			add("t.waktu_ambil_rencana <= $%d::timestamptz", opts.Akhir)
+		case opts.RentangKolom == "kembali":
+			add("t.waktu_kembali_rencana >= $%d::timestamptz", opts.Mulai)
+			add("t.waktu_kembali_rencana <= $%d::timestamptz", opts.Akhir)
+		default:
+			// default Next: overlap (mulai <= kembali_rencana dan ambil_rencana <= akhir)
+			add("t.waktu_ambil_rencana <= $%d::timestamptz", opts.Akhir)
+			add("t.waktu_kembali_rencana >= $%d::timestamptz", opts.Mulai)
+		}
+	}
+
+	if len(conds) == 0 {
+		return "", args
+	}
+	return " WHERE " + strings.Join(conds, " AND "), args
+}
+
+// susunUrutanTransaksi meniru cabang order/limit route Next: cari -> id DESC
+// batas 100; limit -> id ASC + range; selain itu created_at DESC tanpa batas.
+func susunUrutanTransaksi(opts TransactionQueryOptions) string {
+	switch {
+	case opts.Cari != "":
+		return " ORDER BY t.id DESC LIMIT 100"
+	case opts.Limit > 0:
+		offset := opts.Offset
+		if offset < 0 {
+			offset = 0
+		}
+		return fmt.Sprintf(" ORDER BY t.id ASC LIMIT %d OFFSET %d", opts.Limit, offset)
+	default:
+		return " ORDER BY t.created_at DESC"
+	}
+}
+
+// KondisiSNInventory membaca map kondisi_sn (jsonb) untuk daftar barang.
+// Barang milik tenant lain tidak muncul (RLS), sehingga guard SN fail-open.
+func (d *DB) KondisiSNInventory(ctx context.Context, userID string, ids []int64) (map[int64]json.RawMessage, error) {
+	hasil := map[int64]json.RawMessage{}
+	if len(ids) == 0 {
+		return hasil, nil
+	}
+	err := d.InTenant(ctx, userID, func(q Querier) error {
+		rows, err := q.Query(ctx, `SELECT id, kondisi_sn FROM inventory WHERE id = ANY($1::bigint[])`, ids)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id int64
+			var raw json.RawMessage
+			if err := rows.Scan(&id, &raw); err != nil {
+				return err
+			}
+			hasil[id] = raw
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("membaca kondisi_sn: %w", err)
+	}
+	return hasil, nil
+}
+
+// ErrMemberLainTenant / ErrInventoryLainTenant meniru penolakan referensi lintas
+// tenant oleh rpc_save_transaction (SQLSTATE 42501). Pesan disamakan persis
+// dengan rpc supaya respons Go identik dengan backend Next.
+var (
+	ErrMemberLainTenant    = errors.New("Member does not belong to tenant")
+	ErrInventoryLainTenant = errors.New("Inventory does not belong to tenant")
+)
 
 // SaveTransaction menyimpan transaksi + items + payments atomic (INSERT atau UPDATE, replace children).
 func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionInput, items []TransactionItemInput, payments []TransactionPaymentInput) (*Transaction, error) {
@@ -165,8 +312,6 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 	if err != nil {
 		return nil, fmt.Errorf("membaca tenant id: %w", err)
 	}
-
-	// ponytail: validasi FK member_id + inventory_id belum ada; tambah setelah smoke jalan
 
 	pgTx, err := d.pool.Begin(ctx)
 	if err != nil {
@@ -181,6 +326,35 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 	// GUC app.* tidak terima placeholder; pakai format langsung (userID sudah UUID tervalidasi).
 	if _, err := pgTx.Exec(ctx, fmt.Sprintf("SET LOCAL app.user_id = '%s'", userID)); err != nil {
 		return nil, fmt.Errorf("set app.user_id: %w", err)
+	}
+
+	// G2: cegah referensi lintas tenant, sama dengan rpc_save_transaction
+	// (SQLSTATE 42501). Dijalankan di transaksi yang sama, jadi kegagalan tidak
+	// menyisakan baris separuh tersimpan.
+	if tx.MemberID != nil {
+		var milik bool
+		if err := pgTx.QueryRow(ctx,
+			"SELECT EXISTS(SELECT 1 FROM members WHERE id=$1 AND user_id=$2)",
+			*tx.MemberID, tenantID).Scan(&milik); err != nil {
+			return nil, fmt.Errorf("cek member tenant: %w", err)
+		}
+		if !milik {
+			return nil, ErrMemberLainTenant
+		}
+	}
+	for _, item := range items {
+		if item.InventoryID == nil {
+			continue
+		}
+		var milik bool
+		if err := pgTx.QueryRow(ctx,
+			"SELECT EXISTS(SELECT 1 FROM inventory WHERE id=$1 AND user_id=$2)",
+			*item.InventoryID, tenantID).Scan(&milik); err != nil {
+			return nil, fmt.Errorf("cek inventory tenant: %w", err)
+		}
+		if !milik {
+			return nil, ErrInventoryLainTenant
+		}
 	}
 
 	var result Transaction
@@ -446,8 +620,19 @@ func (d *DB) UpdateTransaction(ctx context.Context, userID string, id int64, fie
 }
 
 // TransactionQueryOptions adalah parameter filter GetTransactions.
-// ponytail: tambah field saat filter kompleks dibutuhkan (status, rentang tanggal, nested join)
 type TransactionQueryOptions struct {
-	Limit  int
-	Offset int
+	Kolom        string   // preset kolom (ringkas|kartu|laporan|statistik); kosong = semua
+	Nested       bool     // sertakan transaction_items + transaction_payments
+	IDs          []int64  // filter id (hanya bila IDsAktif)
+	IDsAktif     bool     // parameter ids ada (walau kosong)
+	Status       []string // filter status (hanya bila StatusAktif)
+	StatusAktif  bool     // parameter status ada (walau kosong)
+	Cari         string   // ilike penyewa, batas 100 baris
+	HideRiwayat  bool     // kecualikan Selesai/Dibatalkan
+	Mulai        string   // awal rentang (dipakai bila Mulai & Akhir terisi)
+	Akhir        string   // akhir rentang
+	RentangKolom string   // "kembali" -> pakai waktu_kembali_rencana
+	TanggalKolom string   // "ambil" -> pakai waktu_ambil_rencana
+	Limit        int
+	Offset       int
 }

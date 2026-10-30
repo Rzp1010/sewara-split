@@ -10,6 +10,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -308,7 +309,10 @@ func (s *Server) handlePembayaranUpload(w http.ResponseWriter, r *http.Request, 
 	}
 	defer file.Close()
 	transaksiID := strings.TrimSpace(r.FormValue("transaksiId"))
-	if transaksiID == "" || !uuidPattern.MatchString(transaksiID) {
+	// transactions.id adalah bigint (dikirim frontend sebagai string angka).
+	// Kosong/bukan angka → 400, sama seperti Next untuk kasus setara.
+	idTransaksi, err := strconv.ParseInt(transaksiID, 10, 64)
+	if err != nil {
 		writeValidationError(w, "File atau transaksi ID tidak valid.", nil)
 		return
 	}
@@ -343,7 +347,7 @@ func (s *Server) handlePembayaranUpload(w http.ResponseWriter, r *http.Request, 
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
 		return
 	}
-	ada, err := s.db.TransaksiMilikTenant(r.Context(), me.UserID, tenant, transaksiID)
+	ada, err := s.db.TransaksiMilikTenant(r.Context(), me.UserID, tenant, idTransaksi)
 	if err != nil {
 		s.log.Error("gagal memeriksa transaksi bukti bayar", "err", err)
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")

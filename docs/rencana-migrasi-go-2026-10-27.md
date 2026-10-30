@@ -841,3 +841,55 @@ Perbaikan:
 - Pelajaran operasional: kalau smoke tiba-tiba gagal massal dengan 0 skenario,
   periksa ruang disk dan jumlah volume Docker lebih dulu, bukan kode.
 
+## 32. Audit paritas Go vs Next + penutupan gap (2026-10-30)
+
+Dilakukan setelah port dinyatakan 47/47 path & 68/68 metode selesai: bandingkan
+perilaku setiap endpoint Go terhadap backend Next (acuan produksi), bukan sekadar
+"route ada". Metode: audit per domain (auth/settings/dashboard, inventory/members/
+berkas, transaksi/promo/blacklist, logs/admin/invoice/pembayaran/eksternal), lalu
+setiap temuan diverifikasi ulang langsung ke sumber oleh orchestrator.
+
+Hasil lengkap: `docs/paritas-go-vs-next.md` (tabel per endpoint + 11 beda
+non-mematahkan + cakupan yang belum tuntas).
+
+### Gap yang ditemukan dan ditutup
+
+| # | Gap | Inti | Perbaikan |
+|---|---|---|---|
+| G1 | `GET /api/transactions` abaikan semua query param | Go mengirim `TransactionQueryOptions{}` kosong; Next mendukung `kolom` preset, `nested`, `ids`, `status`, `cari`, `hideRiwayat`, `mulai`/`akhir` + `rentangKolom`/`tanggalKolom`, `limit`/`offset` | parse param + preset kolom + nested (`handlers_transactions.go`, `db/transactions.go`) |
+| G2 | Referensi lintas tenant | Go tidak menolak `member_id`/item `inventory_id` milik tenant lain; RPC Next menolak 42501 | cek `EXISTS ... user_id=tenantID` di dalam transaksi `SaveTransaction` → 403 dengan pesan sama RPC |
+| G3 | `guardMaintenance` | Next menolak simpan bila SN `kondisi_sn.status = maintenance`; Go belum ada | port `pecahSN`/`cekMaintenance` (fail-open) di POST + PATCH detail |
+| G4 | Scope tenant POST `/api/settings` | Go memakai `me.UserID`; Next memakai `owner_id` tenant → setting staf tidak menempel tenant | resolusi `s.db.TenantID` di GET/POST settings |
+| G5 | `POST /api/pembayaran/upload` cari kolom salah | Go cari `id_transaksi` **dan** wajibkan format UUID; Next cari `transactions.id` (bigint), sedangkan frontend mengirim `trx.id` | lookup `transactions.id` + tenant; parse int64 → 400, 404 tidak ada |
+| G6 | `POST /api/transactions` menolak body flat | Go hanya terima `{transaction, items, payments}`; frontend mengirim objek transaksi flat (termasuk `items` bentuk `nama`/`harga`/`sn`/`assignedSNs`/`ref.id`) | terima `tx = body.transaction ?? body` (pola Next), normalisasi item/payment seperti RPC (`NormalizeTransactionItems`/`NormalizeTransactionPayments`) |
+
+### Pelajaran penting
+
+Tiga gap (G2, G5, G6) tidak tertangkap suite sebelumnya karena smoke menguji
+**bentuk model Go sendiri**, bukan payload yang benar-benar dikirim frontend.
+Contoh: `smoke-pembayaran.ps1` menyemai `id_transaksi` berisi UUID lalu mengirim
+UUID itu, padahal frontend mengirim `transactions.id` numerik; `smoke-transactions.ps1`
+memakai wrapper `{transaction, items, payments}` yang tidak pernah dikirim UI.
+Skrip kini memakai payload bentuk frontend (flat + kunci asli) dan menambah assert
+ke baris DB (`transaction_items`, `settings`).
+
+### Verifikasi
+
+- `go build ./...`, `go vet ./...`, `go test -count=1 ./...` bersih.
+- Batch smoke Docker staging: **22 skrip / 504 skenario hijau** (sebelumnya 477),
+  termasuk skenario baru G1 (kolom/ids/nested/cari/status/hideRiwayat/limit),
+  G2 (member & inventory tenant lain → 403, tidak ada parent tersisa),
+  G3 (SN maintenance → 400 pesan persis), G4 (staf tulis → baris owner tenant),
+  G5 (upload `transaksiId` numerik), G6 (POST flat + assert item/payment di DB).
+- Pengecualian resmi tidak dihitung mismatch: rate limit in-memory, storage mati →
+  503, purge ticker internal, `TELEGRAM_API_BASE`, stub `webhooks/payment`,
+  `FRONTEND_URL` wajib produksi, blacklist notif-only.
+
+### Sisa cakupan audit (belum tuntas, bukan blocker)
+
+`GET /api/logs/login` padanan Next, detail `POST`/`DELETE /api/logs`,
+`POST`/`PATCH`/`DELETE /api/admin/users` cabang lengkap, `pembayaran/export`,
+`pembayaran/photo`, `pembayaran/reminder-ack`, `DELETE /api/invoice/header`, dan
+semantik kegagalan DB pada registrasi (Go 500 vs Next 200 generik) — dicatat di
+`docs/paritas-go-vs-next.md`.
+

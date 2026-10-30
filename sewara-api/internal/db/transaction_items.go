@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // GetTransactionItems membaca item transaksi dalam konteks tenant.
@@ -283,4 +284,106 @@ func itemJSON(m map[string]any, key string) json.RawMessage {
 		return json.RawMessage("[]")
 	}
 	return b
+}
+
+// itemStringPtrKeys seperti itemStringPtr tapi menerima beberapa kandidat kunci.
+func itemStringPtrKeys(m map[string]any, keys ...string) *string {
+	if s := itemString(m, keys...); s != "" {
+		return &s
+	}
+	return nil
+}
+
+// itemJSONKeys mengembalikan json.RawMessage dari kunci pertama yang ada.
+func itemJSONKeys(m map[string]any, keys ...string) json.RawMessage {
+	for _, k := range keys {
+		v, ok := itemLookup(m, k)
+		if !ok || v == nil {
+			continue
+		}
+		if b, err := json.Marshal(v); err == nil {
+			return b
+		}
+	}
+	return json.RawMessage("[]")
+}
+
+// NormalizeTransactionItems mengubah array item payload client menjadi
+// TransactionItemInput siap insert, menerima bentuk frontend (nama/harga/sn/
+// assignedSNs/ref.id, sama seperti rpc_save_transaction + ReplaceTransactionItems)
+// maupun bentuk kolom lama (item_name/unit_price/serial_number/dst). Fallback
+// mengikuti RPC: nama "Unknown", jenis "satuan", qty 0 -> 1, harga 0,
+// subtotal = qty*harga bila subtotal tidak dikirim, assigned default [].
+func NormalizeTransactionItems(raw []any) []TransactionItemInput {
+	out := make([]TransactionItemInput, 0, len(raw))
+	for _, v := range raw {
+		m, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		out = append(out, normalizeTransactionItem(m))
+	}
+	return out
+}
+
+func normalizeTransactionItem(m map[string]any) TransactionItemInput {
+	nama := itemString(m, "nama", "ref.nama", "item_name")
+	if nama == "" {
+		nama = "Unknown"
+	}
+	jenis := itemString(m, "jenis", "ref.jenis", "item_type")
+	if jenis == "" {
+		jenis = "satuan"
+	}
+	qty := int(itemFloat(m, "qty"))
+	if qty == 0 {
+		qty = 1
+	}
+	harga := itemFloat(m, "harga", "ref.harga", "unit_price")
+	subtotal := float64(qty) * harga
+	if v, ok := itemLookup(m, "subtotal"); ok && v != nil {
+		subtotal = itemFloat(m, "subtotal")
+	}
+	return TransactionItemInput{
+		InventoryID:        itemInt64(m, "inventory_id", "ref.id"),
+		ItemName:           nama,
+		ItemType:           &jenis,
+		Qty:                qty,
+		UnitPrice:          harga,
+		Subtotal:           subtotal,
+		RateType:           itemStringPtrKeys(m, "tarif", "rate_type"),
+		SerialNumber:       itemStringPtrKeys(m, "sn", "serial_number"),
+		AssignedComponents: itemJSONKeys(m, "assignedSNs", "assigned_components"),
+	}
+}
+
+// NormalizeTransactionPayments mengubah array payment payload client, menerima
+// bentuk frontend (jumlah/tanggal/metode/catatan) maupun bentuk lama
+// (amount/payment_date/payment_method/notes). Default metode "Tunai" dan
+// tanggal now bila kosong (validasi jumlah <= 0 dilakukan pemanggil).
+func NormalizeTransactionPayments(raw []any) []TransactionPaymentInput {
+	out := make([]TransactionPaymentInput, 0, len(raw))
+	for _, v := range raw {
+		m, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		method := itemString(m, "metode", "payment_method")
+		if method == "" {
+			method = "Tunai"
+		}
+		var tanggal time.Time
+		if s := itemString(m, "tanggal", "payment_date"); s != "" {
+			if t, err := time.Parse(time.RFC3339, s); err == nil {
+				tanggal = t
+			}
+		}
+		out = append(out, TransactionPaymentInput{
+			Amount:        itemFloat(m, "jumlah", "amount"),
+			PaymentMethod: method,
+			PaymentDate:   tanggal,
+			Notes:         itemStringPtrKeys(m, "catatan", "notes"),
+		})
+	}
+	return out
 }

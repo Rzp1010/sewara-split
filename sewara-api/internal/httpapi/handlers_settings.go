@@ -36,6 +36,15 @@ func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request, me db
 	key := r.URL.Query().Get("key")
 	owner := isOwnerRole(me.Role)
 
+	// Resolusi tenant sekali: owner_id kalau staf, kalau tidak user id sendiri —
+	// meniru getTenantId() backend Next. Dipakai untuk baca DAN tulis settings.
+	tenantID, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		s.log.Error("gagal membaca tenant id", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
 	if key != "" {
 		// GET /api/settings?key=xxx
 		if !owner && keyPrivat[key] {
@@ -44,7 +53,7 @@ func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request, me db
 			return
 		}
 
-		setting, err := s.db.GetSettingByKey(r.Context(), me.UserID, key)
+		setting, err := s.db.GetSettingByKey(r.Context(), tenantID, key)
 		if err != nil {
 			s.log.Error("gagal membaca setting by key", "err", err, "key", key)
 			writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
@@ -55,7 +64,7 @@ func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request, me db
 	}
 
 	// GET /api/settings (semua)
-	settings, err := s.db.GetSettings(r.Context(), me.UserID)
+	settings, err := s.db.GetSettings(r.Context(), tenantID)
 	if err != nil {
 		s.log.Error("gagal membaca settings", "err", err)
 		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
@@ -125,6 +134,16 @@ func (s *Server) handleSettingsPost(w http.ResponseWriter, r *http.Request, me d
 		return
 	}
 
+	// Resolusi tenant sekali: owner_id kalau staf, kalau tidak user id sendiri —
+	// meniru getTenantId() backend Next. Baris ditulis dengan user_id tenant (owner),
+	// bukan id staf, supaya owner/staf lain melihatnya.
+	tenantID, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		s.log.Error("gagal membaca tenant id", "err", err)
+		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+
 	// Convert ke db.Setting. Value dikirim sebagai string JSON (pola Next).
 	settings := []db.Setting{}
 	now := time.Now()
@@ -154,14 +173,14 @@ func (s *Server) handleSettingsPost(w http.ResponseWriter, r *http.Request, me d
 		}
 
 		settings = append(settings, db.Setting{
-			UserID:    me.UserID,
+			UserID:    tenantID,
 			Key:       k,
 			Value:     val,
 			UpdatedAt: updatedAt,
 		})
 	}
 
-	result, err := s.db.UpsertSettings(r.Context(), me.UserID, settings)
+	result, err := s.db.UpsertSettings(r.Context(), tenantID, settings)
 	if err != nil {
 		s.log.Error("gagal upsert settings", "err", err)
 		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")

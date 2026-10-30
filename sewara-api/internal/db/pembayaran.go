@@ -45,10 +45,12 @@ func (d *DB) UpsertPembayaranAck(ctx context.Context, userID, tenantID, bulan st
 	})
 }
 
-func (d *DB) TransaksiMilikTenant(ctx context.Context, userID, tenantID, transaksiID string) (bool, error) {
+// TransaksiMilikTenant mencocokkan transactions.id (bigint) milik tenant, sama
+// seperti Next (`transactions.id` string dari mapper frontend). Bukan id_transaksi.
+func (d *DB) TransaksiMilikTenant(ctx context.Context, userID, tenantID string, transaksiID int64) (bool, error) {
 	found := false
 	err := d.InTenant(ctx, userID, func(q Querier) error {
-		return q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM transactions WHERE id_transaksi=$1 AND user_id=$2::uuid)`, transaksiID, tenantID).Scan(&found)
+		return q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM transactions WHERE id=$1 AND user_id=$2::uuid)`, transaksiID, tenantID).Scan(&found)
 	})
 	return found, err
 }

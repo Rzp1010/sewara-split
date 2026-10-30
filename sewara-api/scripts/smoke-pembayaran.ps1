@@ -42,14 +42,14 @@ try {
  $r=Invoke-Api POST '/api/pembayaran/reminder-ack' $cs '{"bulan":"2026-10"}';$aa=Sql "SELECT user_id::text||':'||value FROM settings WHERE user_id='$OWNER_A' AND key='bukti_backup_ack'";$bb=Sql "SELECT count(*) FROM settings WHERE user_id='$OWNER_B' AND key='bukti_backup_ack'";Add 'ack staf owner tenant + isolasi B' ($r.Status-eq 200 -and $r.Body -match '"data":\{"ok":true\}' -and $aa-eq "$OWNER_A`:2026-10" -and $bb-eq '0') "$($r.Body) DB=$aa B=$bb"
  $r=Invoke-Api POST '/api/pembayaran/upload' $a $null;Add 'upload tanpa file' ($r.Status-eq 400 -and (Msg $r)-eq 'File atau transaksi ID tidak valid.') $r.Body
  # Transaksi seed milik tenant A supaya cabang "transaksi ada + storage off" bisa diuji.
- $tx='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
- Sql "INSERT INTO transactions (id,id_transaksi,penyewa,hp_penyewa,status,items,user_id,total_akhir,member_id,created_at,updated_at) VALUES (9001,'$tx','Penyewa Smoke','081100000099','Booking','[]','$OWNER_A',10000,1,now(),now());" | Out-Null
+ # id 9001 (bigint) — frontend mengirim transactions.id, bukan id_transaksi.
+ Sql "INSERT INTO transactions (id,penyewa,hp_penyewa,status,items,user_id,total_akhir,member_id,created_at,updated_at) VALUES (9001,'Penyewa Smoke','081100000099','Booking','[]','$OWNER_A',10000,1,now(),now());" | Out-Null
  # multipart memakai CRLF nyata, bukan string kutip-tunggal berisi escape literal.
  $crlf="`r`n";$mp=Join-Path $tmpDir 'pay-multipart.bin';$out=Join-Path $tmpDir 'pay-upload.out'
  function Upload([string]$tid){ $pl=@('--bound','Content-Disposition: form-data; name="file"; filename="a.png"','Content-Type: image/png','','abc','--bound','Content-Disposition: form-data; name="transaksiId"','',$tid,'--bound--','') -join $crlf; [IO.File]::WriteAllBytes($mp,[Text.Encoding]::ASCII.GetBytes($pl)); return [int](curl.exe -s -o $out -w '%{http_code}' -H "Cookie: sewara_session=$a" -H 'Content-Type: multipart/form-data; boundary=bound' --data-binary "@$mp" "$apiURL/api/pembayaran/upload") }
- $st=Upload 'bukan-uuid';$body=Get-Content $out -Raw;Add 'upload id bukan UUID' ($st-eq 400 -and $body -match 'File atau transaksi ID tidak valid.') $body
- $st=Upload 'ffffffff-ffff-ffff-ffff-ffffffffffff';$body=Get-Content $out -Raw;Add 'upload transaksi tidak ada' ($st-eq 404 -and $body -match 'Transaksi tidak ditemukan.') $body
- $st=Upload $tx;$body=Get-Content $out -Raw;Add 'upload transaksi ada + storage off' ($st-eq 503 -and $body -match 'Penyimpanan berkas belum dikonfigurasi di server ini.') $body
+ $st=Upload 'bukan-angka';$body=Get-Content $out -Raw;Add 'upload id bukan angka' ($st-eq 400 -and $body -match 'File atau transaksi ID tidak valid.') $body
+ $st=Upload '999999';$body=Get-Content $out -Raw;Add 'upload transaksi tidak ada' ($st-eq 404 -and $body -match 'Transaksi tidak ditemukan.') $body
+ $st=Upload '9001';$body=Get-Content $out -Raw;Add 'upload transaksi ada + storage off' ($st-eq 503 -and $body -match 'Penyimpanan berkas belum dikonfigurasi di server ini.') $body
 }
 catch { Write-Error $_; Add 'persiapan/eksekusi' $false $_.ToString() }
 finally {

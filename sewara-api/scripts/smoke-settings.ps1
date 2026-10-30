@@ -1,4 +1,4 @@
-# smoke-settings.ps1 — uji /api/settings (GET/POST + tenant isolation)
+﻿# smoke-settings.ps1 — uji /api/settings (GET/POST + tenant isolation)
 #
 # Prasyarat: Docker staging jalan + seed termuat
 
@@ -26,6 +26,12 @@ function Invoke-Api([string]$method, [string]$path, [string]$cookie, [string]$bo
     $status = [int](curl.exe @curlArgs)
     $respBody = Get-Content $outFile -Raw -ErrorAction SilentlyContinue
     return [pscustomobject]@{ Status = $status; Body = $respBody }
+}
+
+function Invoke-Sql([string]$sql) {
+    $out = docker exec sewara-staging-db psql -U sewara -d sewara -At -c $sql
+    if ($LASTEXITCODE -ne 0) { throw "psql gagal: $sql" }
+    return ($out -join "`n").Trim()
 }
 
 function Get-SessionCookie([string]$email, [string]$password) {
@@ -167,6 +173,17 @@ try {
     $r = Invoke-Api 'POST' '/api/settings' $cookieStaf '{"key":"kalender_selesai","value":"2026-12-31"}'
     $staffWriteOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok
     Add-Hasil 'Staf tulis key allowlist -> tersimpan' ([int]$staffWriteOK) 1 "HTTP=$($r.Status)"
+
+    # G4: baris kalender_selesai staf harus memakai user_id OWNER tenant, bukan id staf.
+    $kalOwner  = Invoke-Sql "SELECT value FROM settings WHERE key='kalender_selesai' AND user_id='d0000000-0000-0000-0000-000000000001';"
+    $kalStafRow = Invoke-Sql "SELECT count(*) FROM settings WHERE key='kalender_selesai' AND user_id='d0000000-0000-0000-0000-000000000002';"
+    $kalTenantOK = $kalOwner -eq '2026-12-31' -and $kalStafRow -eq '0'
+    Add-Hasil 'Staf tulis kalender_selesai -> baris di OWNER tenant' ([int]$kalTenantOK) 1 "ownerValue=$kalOwner stafRow=$kalStafRow"
+
+    # Owner tenant membaca kalender_selesai yang ditulis staf.
+    $r = Invoke-Api 'GET' '/api/settings?key=kalender_selesai' $cookieOwner $null
+    $ownerKalOK = $r.Status -eq 200 -and $r.Body -match '2026-12-31'
+    Add-Hasil 'Owner baca kalender_selesai dari staf' ([int]$ownerKalOK) 1 "HTTP=$($r.Status)"
 
     # Owner tulis key privat -> 200
     $r = Invoke-Api 'POST' '/api/settings' $cookieOwner '{"key":"telegram_login_notif","value":"true"}'

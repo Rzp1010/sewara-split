@@ -316,3 +316,10 @@ data lama tetap utuh sampai cutover.
   `GET` dipakai dua halaman (`getTransactionItemsSemua` di laporan/page.js,
   `getTransactionItemsBulk` di status/page.js), dan `POST` sudah diport sebagai
   paritas meski pembungkus `saveTransactionItems` belum dipanggil halaman mana pun.
+- Audit paritas perilaku Go vs Next (2026-10-30) menutup 6 gap tanpa mengubah daftar
+  path/metode: G1 filter/pagination/nested `GET /api/transactions`, G2 isolasi tenant
+  `member_id`/`inventory_id` item, G3 `guardMaintenance` saat SN maintenance,
+  G4 scope tenant `POST /api/settings`, G5 lookup ID `POST /api/pembayaran/upload`
+  (kini `transactions.id`), G6 body flat `POST /api/transactions` + normalisasi item/
+  payment bentuk frontend. Rincian + sisa cakupan: `docs/paritas-go-vs-next.md`.
+  Verifikasi: batch smoke 22 skrip / 504 skenario hijau.
