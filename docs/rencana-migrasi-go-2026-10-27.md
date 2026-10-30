@@ -487,7 +487,7 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 21 smoke scripts, 472 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 22 smoke scripts, 477 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
@@ -495,8 +495,9 @@ check, tetapi semua package tidak punya test file.
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
 logs/login, domain manajemen, domain invoice admin, grup pembayaran, lalu domain
-eksternal telegram + webhook, domain auth, lalu berkas member):** 21
-smoke scripts Docker, exit 0 semua, 472 skenario lulus. `go build ./...`,
+eksternal telegram + webhook, domain auth, berkas member, lalu skrip sesi auth
+yang terakhir masuk batch):** 22
+smoke scripts Docker, exit 0 semua, 477 skenario lulus. `go build ./...`,
 `go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go`,
 `telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`,
 `member_file_test.go`) juga lulus.
@@ -510,6 +511,7 @@ regresi kode: setelah reset, 17/17 hijau).
 | Skrip | Skenario | Hasil |
 |---|---:|---|
 | `smoke-login.ps1` | 18 | PASS |
+| `smoke-auth.ps1` | 5 | PASS (Docker; sesi kedaluwarsa + cleanup) |
 | `smoke-settings.ps1` | 13 | PASS |
 | `smoke-member-types.ps1` | 8 | PASS |
 | `smoke-member-types-crud.ps1` | 15 | PASS |
@@ -738,8 +740,11 @@ Catatan batch:
   bersama) dan satu run tampil GAGAL karena kontaminasi data; rerun berurutan
   tunggal 8/8 bersih. Smoke tidak boleh paralel — port 5433 & container dipakai
   bersama.
-- `smoke-auth.ps1` tetap dikecualikan dari batch: target portable DB, belum
-  dimigrasi ke Docker (lihat known issue AGENTS.md 2026-10-29).
+- `smoke-auth.ps1` SUDAH masuk batch Docker (5 skenario). Catatan lama AGENTS.md
+  yang menyebutnya masih menargetkan portable DB sudah tidak berlaku: skrip kini
+  memuat skema lewat `docker-staging.ps1`, mengosongkan `R2_*` + `R2_BUCKET_NAME`,
+  mengassert body (`UNAUTHORIZED` untuk 401, `owner` untuk sesi sah), dan
+  menghapus baris `auth.sessions` uji di akhir. Cakupan uniknya: sesi kedaluwarsa.
 
 **Audit cakupan lanjutan 2026-10-29:**
 

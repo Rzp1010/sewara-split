@@ -168,8 +168,8 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | GET /api/member/photo | `handlers_member_file.go` | 28 (fase 1 + fase 2 R2 hidup) |
 
 **Sisa kerja port: 0 path / 0 metode** — seluruh 47 path / 68 metode sudah punya
-implementasi Go. Sisa 1 skrip smoke (`smoke-auth.ps1`) masih menunjuk portable
-PostgreSQL sehingga tetap dikecualikan dari batch Docker.
+implementasi Go. Seluruh suite smoke (22 skrip) kini menargetkan Docker staging,
+tanpa skrip yang dikecualikan.
 (Catatan angka: hitungan "61 path" dan "24/36" pada versi awal matriks belum
 dikurangi endpoint mati dan domain yang kemudian diport.) Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.

@@ -46,6 +46,7 @@ function New-InsertedSession([int]$daysValid) {
 
 Write-Host 'Menyiapkan binari...'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $apiExe) | Out-Null
+New-Item -ItemType Directory -Force -Path "$env:TEMP\opencode" | Out-Null
 
 # Toolchain Go tidak selalu ada di PATH proses ini; cari di lokasi pemasangan standar.
 $goExe = $null
@@ -73,6 +74,10 @@ try {
     $env:DATABASE_URL = 'postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable'
     $env:ADDR = '127.0.0.1:8099'
     $env:APP_ENV = 'development'
+    # Kosongkan storage: nama bucket juga dikosongkan karena config Go menerima
+    # R2_BUCKET_NAME sebagai fallback (kalau tidak, shell yang mengekspornya bisa
+    # menyalakan storage tanpa sengaja).
+    $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''; $env:R2_BUCKET_NAME = ''; $env:R2_REGION = ''
 
     $api = Start-Process -FilePath $apiExe -PassThru -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $root '.data\api.out.log') `
@@ -93,11 +98,14 @@ try {
     $expiredToken = New-InsertedSession -1
 
     $hasil = @()
+    # $Kode: potongan body yang wajib cocok — status HTTP saja tidak cukup.
+    # 401 wajib membawa error.code UNAUTHORIZED; sesi sah wajib membawa role owner
+    # (bukti identitas terbaca lewat RLS, bukan hanya sesi ditemukan).
     $uji = @(
-        @{ Nama = 'tanpa cookie'; Cookie = $null; Harap = 401 },
-        @{ Nama = 'cookie palsu'; Cookie = 'token-palsu-tidak-ada'; Harap = 401 },
-        @{ Nama = 'sesi kedaluwarsa'; Cookie = $expiredToken; Harap = 401 },
-        @{ Nama = 'sesi sah'; Cookie = $validToken; Harap = 200 }
+        @{ Nama = 'tanpa cookie'; Cookie = $null; Harap = 401; Kode = 'UNAUTHORIZED' },
+        @{ Nama = 'cookie palsu'; Cookie = 'token-palsu-tidak-ada'; Harap = 401; Kode = 'UNAUTHORIZED' },
+        @{ Nama = 'sesi kedaluwarsa'; Cookie = $expiredToken; Harap = 401; Kode = 'UNAUTHORIZED' },
+        @{ Nama = 'sesi sah'; Cookie = $validToken; Harap = 200; Kode = 'owner' }
     )
 
     foreach ($u in $uji) {
@@ -106,12 +114,21 @@ try {
         $status = [int](curl.exe @curlArgs)
         $body = Get-Content "$env:TEMP\opencode\auth.bin" -Raw -ErrorAction SilentlyContinue
 
-        $ok = $status -eq $u.Harap
         $kode = ''
         if ($body -and $body -match '"code"\s*:\s*"([A-Z_]+)"') { $kode = $Matches[1] }
-        if ($body -and $body -match '"role"\s*:\s*"([a-z]+)"') { $kode = "role=$($Matches[1])" }
+        if ($body -and $body -match '"role"\s*:\s*"([a-z]+)"') { $kode = $Matches[1] }
 
+        $ok = $status -eq $u.Harap -and $kode -eq $u.Kode
         $hasil += [pscustomobject]@{ Skenario = $u.Nama; Status = $status; Harap = $u.Harap; Hasil = $(if ($ok) { 'LOLOS' } else { 'GAGAL' }); Info = $kode }
+    }
+
+    # Bersihkan sesi uji lalu buktikan tidak ada sisa (harness tidak boleh
+    # meninggalkan baris yang bisa membuat skrip lain lolos palsu).
+    Invoke-Sql "DELETE FROM auth.sessions WHERE user_id = '$ownerA'::uuid" | Out-Null
+    $sisaSesi = (Invoke-Sql "SELECT count(*) FROM auth.sessions WHERE user_id = '$ownerA'::uuid") -join ''
+    $hasil += [pscustomobject]@{
+        Skenario = 'bersih: sesi uji terhapus'; Status = $sisaSesi; Harap = '0'
+        Hasil = $(if ($sisaSesi.Trim() -eq '0') { 'LOLOS' } else { 'GAGAL' }); Info = ''
     }
 
     Write-Host ''
