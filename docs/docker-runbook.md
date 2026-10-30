@@ -159,6 +159,31 @@ invoice). Berkas itu hidup di bucket R2 dan harus punya jalur backup sendiri
 (PostgREST). Setelah Go dipakai, jalur itu mati. Harus diganti `pg_dump -Fc`
 terjadwal (cron 12 jam) yang menyimpan hasil ke luar host aplikasi.
 
+## Deploy produksi (urutan, belum dijalankan)
+
+Berkas: `docker-compose.prod.yml`, `.env.prod.example` (jadi `/etc/sewara/api.env`),
+`deploy/systemd/*`, `deploy/nginx.staging.conf` (bentuk cutover; versi produksi
+menyusul saat cutover).
+
+1. `sudo mkdir -p /srv/sewara/pgdata /srv/sewara/backup /etc/sewara`
+2. `sudo chown -R 999:999 /srv/sewara/pgdata && sudo chmod 700 /srv/sewara/pgdata`
+3. `printf '%s' '<password-kuat>' | sudo tee /etc/sewara/pg_password >/dev/null`
+4. `sudo cp .env.prod.example /etc/sewara/api.env` → isi nilai asli (boleh disalin
+   dari env Next produksi yang sudah ada di VPS) → `sudo chmod 600 /etc/sewara/pg_password /etc/sewara/api.env`
+5. `docker compose -f docker-compose.prod.yml up -d db` → buat role
+   (`anon`, `authenticated`, `service_role`) → restore dump data produksi
+6. `docker compose -f docker-compose.prod.yml up -d api` → cek `/api/health` + login
+7. `sudo cp deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/` →
+   `systemd-analyze verify` → `systemctl enable --now sewara.service sewara-backup.timer`
+8. nginx: tanam vhost produksi (per-path) → `nginx -t` → reload
+
+Urutannya mengikat: container hidup dulu, lalu routing dialihkan per-path.
+Rollback = balikkan blok `location` ke Next, tanpa menyentuh container.
+
+**Belum diverifikasi di Linux:** unit systemd (harus lewat `systemd-analyze verify`
+di VPS/homelab) dan bind mount produksi (di Windows hanya mekanismenya yang
+terbukti: folder host bertahan setelah `down -v`).
+
 ## Delta produksi (belum dikerjakan)
 
 - `docker-compose.yml` di repo ditandai **BUKAN UNTUK PRODUKSI** (password dev di

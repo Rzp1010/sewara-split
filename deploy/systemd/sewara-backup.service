@@ -1,0 +1,25 @@
+[Unit]
+Description=Backup DB Sewara (pg_dump -Fc + verifikasi + rotasi)
+Documentation=file:/home/sewara-apps-production/sewara-split/docs/runbook-migrasi-mesin.md
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/sewara-apps-production/sewara-split/sewara-api
+# --user root: berkas password mode 600 hanya bisa dibaca root.
+# Network `sewara_internal` = nama project (name: sewara) + network internal.
+# Skrip keluar exit 1 kalau dump tidak lolos verifikasi -> unit ini FAILED,
+# jadi kegagalan backup terlihat di `systemctl status`, bukan hilang diam-diam.
+ExecStart=/usr/bin/docker run --rm --user root \
+  --network sewara_internal \
+  -e PGHOST=db -e PGUSER=sewara -e PGDATABASE=sewara \
+  -e PGPASSWORD_FILE=/run/secrets/pg_password \
+  -e BACKUP_DIR=/backup \
+  -v /etc/sewara/pg_password:/run/secrets/pg_password:ro \
+  -v /srv/sewara/backup:/backup \
+  -v /home/sewara-apps-production/sewara-split/sewara-api/scripts/backup.sh:/s/backup.sh:ro \
+  postgres:16 bash /s/backup.sh
+# Salin keluar host (WAJIB, sekali rclone remote sudah diatur di /etc/sewara/rclone.conf):
+# ExecStartPost=/usr/bin/rclone --config /etc/sewara/rclone.conf copy /srv/sewara/backup r2:sewara-backup/db/
+TimeoutStartSec=900

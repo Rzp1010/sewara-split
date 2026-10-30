@@ -1,0 +1,86 @@
+# Stack PRODUKSI Sewara (VPS Linux).
+# ==============================================================================
+# File ini TERPISAH dari docker-compose.yml (staging) dengan sengaja: menggabung
+# dua file lewat overlay bisa menumpuk deklarasi volume untuk path yang sama —
+# lebih baik duplikat 30 baris yang terbaca daripada penggabungan yang tak terlihat.
+# Kalau port/healthcheck di docker-compose.yml berubah, samakan di sini.
+# ==============================================================================
+#
+# Sekali di VPS:
+#   sudo mkdir -p /srv/sewara/pgdata /etc/sewara
+#   sudo chown -R 999:999 /srv/sewara/pgdata && sudo chmod 700 /srv/sewara/pgdata
+#   printf '%s' '<password-kuat>' | sudo tee /etc/sewara/pg_password >/dev/null
+#   sudo tee /etc/sewara/api.env      # dari .env.prod.example
+#   sudo chmod 600 /etc/sewara/pg_password /etc/sewara/api.env
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# `down -v` di sini TIDAK menghapus data: pgdata ada di folder host, di luar
+# jangkauan Docker (kebal down -v, volume prune, system prune --volumes).
+name: sewara
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16          # Debian: locale glibc, sama dengan produksi Supabase
+    shm_size: 256m
+    environment:
+      POSTGRES_USER: sewara
+      POSTGRES_DB: sewara
+      # Password dari berkas, bukan environment: `docker inspect` tidak bisa
+      # membacanya.
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets:
+      - pg_password
+    volumes:
+      - ${SEWARA_DATA_DIR:-/srv/sewara}/pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U sewara -d sewara"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging: *logging
+    # Port DB sengaja TIDAK dipublikasikan. Masuk lewat:
+    #   docker compose -f docker-compose.prod.yml exec db psql -U sewara -d sewara
+
+  api:
+    build: .
+    image: sewara-api:prod
+    env_file:
+      - ${SEWARA_ENV_FILE:-/etc/sewara/api.env}
+    environment:
+      APP_ENV: production       # cookie Secure aktif; config wajib lengkap
+      ADDR: 0.0.0.0:4000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Hanya loopback: nginx host (atau container edge nanti) yang meneruskan
+      # dari Cloudflare. API tidak pernah terekspos langsung ke internet.
+      - "127.0.0.1:8098:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    stop_grace_period: 20s
+    restart: unless-stopped
+    networks: [internal]
+    logging: *logging
+
+networks:
+  internal:
+    driver: bridge
+
+secrets:
+  pg_password:
+    file: ${SEWARA_SECRETS_DIR:-/etc/sewara}/pg_password

@@ -1,0 +1,12 @@
+[Unit]
+Description=Jadwal backup DB Sewara (12 jam sekali)
+Documentation=file:/home/sewara-apps-production/sewara-split/docs/runbook-migrasi-mesin.md
+
+[Timer]
+OnCalendar=*-*-* 00,12:00:00
+# Kalau VPS mati saat jadwalnya, jalankan begitu hidup lagi.
+Persistent=true
+Unit=sewara-backup.service
+
+[Install]
+WantedBy=timers.target

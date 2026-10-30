@@ -54,8 +54,16 @@ docker run --rm --network sewara-staging_internal `
 ```
 
 Di VPS bentuknya sama; yang berbeda hanya `PGHOST=db` (nama service compose) dan
-folder tujuan. Jalankan dari systemd timer (supervisi proses, bukan cron aplikasi
-— timer aplikasi tetap ticker Go di dalam API).
+folder tujuan. Penjadwalan sudah disiapkan sebagai unit systemd:
+`deploy/systemd/sewara-backup.service` + `sewara-backup.timer` (12 jam sekali,
+`Persistent=true`). Timer aplikasi lain tetap ticker Go di dalam API — ini
+penjadwalan operasional, bukan logika aplikasi.
+
+Periksa unit dulu sebelum mengaktifkan (belum diuji di Linux):
+```bash
+systemd-analyze verify /etc/systemd/system/sewara-backup.service /etc/systemd/system/sewara-backup.timer
+```
+
 
 Hasil uji 2026-10-30: dump 170.504 byte, `tabel_data=31`, sha256 tertulis; rotasi
 menghapus duplikat hari yang sama dan yang lebih tua dari 28 hari; jalan dua kali
@@ -117,8 +125,11 @@ sudah terbukti.
 
 ## Sisa pekerjaan (jujur, belum selesai)
 
-1. Salin dump ke luar host (rclone ke R2) + buktikan bisa diunduh kembali.
-2. Jadwalkan `backup.sh` di VPS (systemd timer) dan tulis RPO nyatanya.
+1. Salin dump ke luar host (rclone ke R2) + buktikan bisa diunduh kembali —
+   langkahnya sudah dicontohkan di `deploy/systemd/sewara-backup.service`
+   (`ExecStartPost`, masih dimatikan).
+2. Deploy unit systemd di VPS (berkas sudah ada di `deploy/systemd/`, belum
+   dipasang) + tetapkan RPO nyatanya.
 3. Salinan terenkripsi env produksi + isi kotak darurat di atas.
 4. `docker-compose.prod.yml`: bind mount `pgdata`, `POSTGRES_PASSWORD_FILE`, port
    API hanya `127.0.0.1`, network internal.
