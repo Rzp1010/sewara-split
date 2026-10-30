@@ -232,6 +232,12 @@ func (s *Server) handleAdminUsersPatch(w http.ResponseWriter, r *http.Request, u
 			bad(w, "Role wajib diisi.")
 			return
 		}
+		// Daftar putih sama dengan zod Next (lib/api/validation.ts) dan
+		// rpc_set_role; tanpa ini `role:"superadmin"` bisa diberikan lewat API.
+		if role != "owner" && role != "cs" && role != "gudang" {
+			bad(w, "Role tidak valid.")
+			return
+		}
 		if t.UserID == u.UserID {
 			writeError(w, 403, CodeForbidden, "Anda tidak bisa mengubah role sendiri.")
 			return

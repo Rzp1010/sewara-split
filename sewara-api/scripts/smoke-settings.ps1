@@ -185,6 +185,16 @@ try {
     $ownerKalOK = $r.Status -eq 200 -and $r.Body -match '2026-12-31'
     Add-Hasil 'Owner baca kalender_selesai dari staf' ([int]$ownerKalOK) 1 "HTTP=$($r.Status)"
 
+    # T3: baca satu key selalu scope tenant (user_id), bukan baris pribadi pemanggil.
+    # Disemai baris kembar milik staf untuk key yang sama: tanpa scope eksplisit,
+    # urutan baris hasil RLS tidak dijamin. Baris tenant belum ada → harus null.
+    Invoke-Sql "INSERT INTO settings (user_id, key, value) VALUES ('d0000000-0000-0000-0000-000000000002','kalender_selesai','""bukan-tenant""') ON CONFLICT (user_id, key) DO UPDATE SET value=EXCLUDED.value;" | Out-Null
+    Invoke-Sql "DELETE FROM settings WHERE key='kalender_selesai' AND user_id='d0000000-0000-0000-0000-000000000001';" | Out-Null
+    $r = Invoke-Api 'GET' '/api/settings?key=kalender_selesai' $cookieStaf $null
+    $scopeNullOK = $r.Status -eq 200 -and $r.Body -match '"setting":\s*null'
+    Add-Hasil 'Staf GET key tanpa baris tenant -> null (bukan baris staf)' ([int]$scopeNullOK) 1 "HTTP=$($r.Status) body=$($r.Body)"
+    Invoke-Sql "INSERT INTO settings (user_id, key, value) VALUES ('d0000000-0000-0000-0000-000000000001','kalender_selesai','""2026-12-31""') ON CONFLICT (user_id, key) DO UPDATE SET value=EXCLUDED.value;" | Out-Null
+
     # Owner tulis key privat -> 200
     $r = Invoke-Api 'POST' '/api/settings' $cookieOwner '{"key":"telegram_login_notif","value":"true"}'
     $ownerPrivateWriteOK = $r.Status -eq 200 -and ($r.Body | ConvertFrom-Json).ok

@@ -469,6 +469,53 @@ try {
     $rows = @(($r.Body | ConvertFrom-Json).data.transactions)
     Add-Hasil 'G2: gagal -> tidak ada parent tersisa' ([int]($r.Status -eq 200 -and $rows.Count -eq 0)) 1 "HTTP=$($r.Status) count=$($rows.Count)"
 
+    # ===== G7: id milik tenant lain -> 403 =====
+    # (acuan: rpc_save_transaction, `IF EXISTS (...) THEN RAISE ... ERRCODE 42501`)
+    $txLintas = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 30
+    $bodyLintas = @{
+        id = $txLintas; penyewa = 'Milik B'; status = 'Booking'; biaya = 1000; total_akhir = 1000
+    } | ConvertTo-Json -Compress
+    $r = Invoke-Api 'POST' '/api/transactions' $cookieB $bodyLintas
+    Add-Hasil 'G7~setup: POST transaksi tenant B' ([int]($r.Status -eq 200)) 1 "HTTP=$($r.Status)"
+
+    $r = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyLintas
+    $pesanLintas = ($r.Body | ConvertFrom-Json).error.message
+    Add-Hasil 'G7: POST id tenant lain -> 403' ([int]($r.Status -eq 403 -and $pesanLintas -eq 'Transaction belongs to another tenant')) 1 "HTTP=$($r.Status) msg=$pesanLintas"
+
+    $nLintas = Get-Count "SELECT count(*) FROM transactions WHERE id=$txLintas AND penyewa='Milik B'"
+    Add-Hasil 'G7: baris tenant B tidak berubah' ([int]($nLintas -eq 1)) 1 "count=$nLintas"
+
+    # ===== G8: POST id sendiri dengan body parsial -> nilai lama bertahan =====
+    # (acuan: `p_transaction ? 'kunci'` + jsonb_typeof; tanpa ini denda/biaya/
+    #  status tertimpa jadi nol/kosong saat client kirim sebagian field)
+    $r = Invoke-Api 'GET' "/api/transactions?ids=$txID" $cookieA $null
+    $sebelum = @(($r.Body | ConvertFrom-Json).data.transactions)[0]
+    $r = Invoke-Api 'POST' '/api/transactions' $cookieA (@{ id = $txID; penyewa = 'Budi Santoso' } | ConvertTo-Json -Compress)
+    $nLama = Get-Count "SELECT count(*) FROM transactions WHERE id=$txID AND status='$($sebelum.status)' AND biaya=$([int]$sebelum.biaya) AND total_akhir=$([int]$sebelum.total_akhir)"
+    Add-Hasil 'G8: POST parsial -> status/biaya/total lama bertahan' ([int]($r.Status -eq 200 -and $nLama -eq 1)) 1 "HTTP=$($r.Status) status=$($sebelum.status) biaya=$($sebelum.biaya)"
+
+    # ===== G9: PATCH kolom di luar daftar putih -> 400 =====
+    $r = Invoke-Api 'PATCH' "/api/transactions/$txID" $cookieA '{"kolom_ngawur":1}'
+    $pesanKolom = ($r.Body | ConvertFrom-Json).error.message
+    Add-Hasil 'G9: PATCH kolom asing -> 400' ([int]($r.Status -eq 400 -and $pesanKolom -eq "Kolom 'kolom_ngawur' tidak dikenal.")) 1 "HTTP=$($r.Status) msg=$pesanKolom"
+
+    # ===== G10: no_invoice mengikuti v_invoice RPC (NULLIF + fallback) =====
+    $txInv = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 31
+    $bodyInvKosong = @{
+        id = $txInv; id_transaksi = 'TRX-INV-1'; no_invoice = ''; penyewa = 'Inv Null'; status = 'Booking'
+    } | ConvertTo-Json -Compress
+    $r = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyInvKosong
+    $nInvKosong = Get-Count "SELECT count(*) FROM transactions WHERE id=$txInv AND no_invoice IS NULL"
+    Add-Hasil 'G10: no_invoice "" -> NULL (menang atas id_transaksi)' ([int]($r.Status -eq 200 -and $nInvKosong -eq 1)) 1 "HTTP=$($r.Status) count=$nInvKosong"
+
+    $txInv2 = $txInv + 1
+    $bodyInvFallback = @{
+        id = $txInv2; id_transaksi = 'TRX-INV-2'; penyewa = 'Inv Fallback'; status = 'Booking'
+    } | ConvertTo-Json -Compress
+    $r = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyInvFallback
+    $nInvFallback = Get-Count "SELECT count(*) FROM transactions WHERE id=$txInv2 AND no_invoice='TRX-INV-2'"
+    Add-Hasil 'G10: tanpa no_invoice -> fallback id_transaksi' ([int]($r.Status -eq 200 -and $nInvFallback -eq 1)) 1 "HTTP=$($r.Status) count=$nInvFallback"
+
     Write-Host ''
     $hasil | Format-Table -AutoSize | Out-String | Write-Host
 

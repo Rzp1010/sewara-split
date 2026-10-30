@@ -322,4 +322,10 @@ data lama tetap utuh sampai cutover.
   G4 scope tenant `POST /api/settings`, G5 lookup ID `POST /api/pembayaran/upload`
   (kini `transactions.id`), G6 body flat `POST /api/transactions` + normalisasi item/
   payment bentuk frontend. Rincian + sisa cakupan: `docs/paritas-go-vs-next.md`.
-  Verifikasi: batch smoke 22 skrip / 504 skenario hijau.
+  Verifikasi: batch smoke 22 skrip / 514 skenario hijau (run final 2026-10-30).
+- Audit kedua (2026-10-30, temuan T1–T16) menutup 6 celah lagi pada path yang sama
+  (tanpa path/metode baru): T1 daftar putih kolom `PATCH /api/transactions/{id}`,
+  T2 daftar putih role `set_role`, T3 scope `user_id` saat baca satu setting
+  (Telegram internal, satu bot), T4 ack backup dibaca dengan id tenant,
+  T5 `POST /api/transactions` parsial mempertahankan nilai lama (presensi kunci ala
+  RPC), T6 id milik tenant lain → 403. T7–T16 kosmetik, ditunda.

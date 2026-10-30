@@ -101,6 +101,54 @@ type TransactionInput struct {
 	DPHangus            float64         `json:"dp_hangus"`
 	DPHangusAturan      *string         `json:"dp_hangus_aturan"`
 	Printilan           json.RawMessage `json:"printilan"`
+
+	// Present mencatat kunci yang benar-benar ada di body (diisi handler dari
+	// JSON mentah). rpc_save_transaction memakai `p_transaction ? 'kunci'` untuk
+	// beberapa kolom: kunci yang tidak dikirim berarti "pertahankan nilai lama",
+	// bukan "tulis nol". Tanpa peta ini perbedaan itu tidak bisa ditiru.
+	Present map[string]bool `json:"-"`
+}
+
+// ada melaporkan apakah kunci dikirim client.
+func (t TransactionInput) ada(kunci string) bool { return t.Present[kunci] }
+
+// invoiceEfektif meniru v_invoice RPC, yaitu
+// NULLIF(COALESCE(no_invoice, id_transaksi), "") — kunci yang ada tapi berisi
+// string kosong tetap menang dan menghasilkan NULL, bukan jatuh ke id_transaksi.
+func (t TransactionInput) invoiceEfektif() *string {
+	v := t.NoInvoice
+	if v == nil {
+		v = t.IDTransaksi
+	}
+	if v == nil || *v == "" {
+		return nil
+	}
+	return v
+}
+
+// jsonJenis melaporkan jenis JSON dari raw ("array", "object", atau "" bila
+// kosong/tidak sesuai). Dipakai supaya kolom jsonb hanya ditimpa saat tipenya
+// benar — sama dengan CASE WHEN jsonb_typeof(...) = 'array'/'object' di RPC.
+func jsonJenis(raw json.RawMessage) string {
+	isi := strings.TrimSpace(string(raw))
+	switch {
+	case isi == "":
+		return ""
+	case isi[0] == '[':
+		return "array"
+	case isi[0] == '{':
+		return "object"
+	}
+	return ""
+}
+
+// jsonbAwal mengembalikan raw bila tipenya sesuai, kalau tidak pakai nilai
+// bawaan kolom (RPC memakai CASE WHEN jsonb_typeof(...) ... ELSE '<default>').
+func jsonbAwal(raw json.RawMessage, jenis, def string) json.RawMessage {
+	if jsonJenis(raw) == jenis {
+		return raw
+	}
+	return json.RawMessage(def)
 }
 
 // TransactionItemInput adalah payload item dari client.
@@ -304,7 +352,49 @@ func (d *DB) KondisiSNInventory(ctx context.Context, userID string, ids []int64)
 var (
 	ErrMemberLainTenant    = errors.New("Member does not belong to tenant")
 	ErrInventoryLainTenant = errors.New("Inventory does not belong to tenant")
+	// ErrTransaksiLainTenant meniru pesan rpc_save_transaction saat id sudah
+	// dipakai tenant lain (SQLSTATE 42501).
+	ErrTransaksiLainTenant = errors.New("Transaction belongs to another tenant")
 )
+
+// ErrKolomAsing dikembalikan UpdateTransaction saat body memuat kunci yang bukan
+// kolom tabel transactions. Backend Next memakai PostgREST yang menolak kolom
+// tak dikenal; tanpa daftar putih, nama kunci JSON akan disambung mentah ke SQL.
+type ErrKolomAsing struct{ Kolom string }
+
+func (e ErrKolomAsing) Error() string { return "kolom transaksi tidak dikenal: " + e.Kolom }
+
+// kolomTransaksiBolehDiubah memetakan nama kolom JSON (seperti yang dikirim
+// frontend) ke ekspresi SQL-nya. `id`, `user_id`, `created_at`, dan `updated_at`
+// tidak ada di sini — handler sudah membuangnya sebelum sampai ke fungsi ini.
+var kolomTransaksiBolehDiubah = map[string]string{
+	"id_transaksi":          "id_transaksi",
+	"no_invoice":            "no_invoice",
+	"penyewa":               "penyewa",
+	"hp_penyewa":            "hp_penyewa",
+	"alamat_penyewa":        "alamat_penyewa",
+	"jaminan_sewa":          "jaminan_sewa",
+	"waktu_ambil_rencana":   "waktu_ambil_rencana",
+	"waktu_kembali_rencana": "waktu_kembali_rencana",
+	"waktu_ambil_aktual":    "waktu_ambil_aktual",
+	"waktu_kembali_aktual":  "waktu_kembali_aktual",
+	"status":                "status",
+	"items":                 "items",
+	"denda":                 "denda",
+	"biaya":                 "biaya",
+	"durasi_teks":           "durasi_teks",
+	"total_akhir":           "total_akhir",
+	"pembayaran":            "pembayaran",
+	"riwayatDilayani":       `"riwayatDilayani"`,
+	"dilayani_oleh":         "dilayani_oleh",
+	"diskon":                "diskon",
+	"member_id":             "member_id",
+	"created_by":            "created_by",
+	"updated_by":            "updated_by",
+	"dp_hangus":             "dp_hangus",
+	"dp_hangus_aturan":      "dp_hangus_aturan",
+	"printilan":             "printilan",
+}
 
 // SaveTransaction menyimpan transaksi + items + payments atomic (INSERT atau UPDATE, replace children).
 func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionInput, items []TransactionItemInput, payments []TransactionPaymentInput) (*Transaction, error) {
@@ -318,6 +408,24 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
 	defer pgTx.Rollback(ctx)
+
+	// Cek keberadaan transaksi SEBELUM role diubah: jalur ini memakai role
+	// pemilik DB (bypass RLS), jadi id milik tenant lain tetap terlihat dan bisa
+	// ditolak 42501 seperti rpc_save_transaction — bukan jatuh ke INSERT lalu
+	// unique_violation 500.
+	var adaTenant, adaGlobal bool
+	if err := pgTx.QueryRow(ctx,
+		"SELECT EXISTS(SELECT 1 FROM transactions WHERE id=$1 AND user_id=$2)",
+		tx.ID, tenantID).Scan(&adaTenant); err != nil {
+		return nil, fmt.Errorf("cek transaksi existing: %w", err)
+	}
+	if err := pgTx.QueryRow(ctx,
+		"SELECT EXISTS(SELECT 1 FROM transactions WHERE id=$1)", tx.ID).Scan(&adaGlobal); err != nil {
+		return nil, fmt.Errorf("cek transaksi lintas tenant: %w", err)
+	}
+	if adaGlobal && !adaTenant {
+		return nil, ErrTransaksiLainTenant
+	}
 
 	// Set role authenticated + app.user_id untuk RLS.
 	if _, err := pgTx.Exec(ctx, "SET LOCAL role = authenticated"); err != nil {
@@ -358,62 +466,103 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 	}
 
 	var result Transaction
-	// Cek apakah transaksi sudah ada (UPDATE) atau baru (INSERT).
-	var exists bool
-	err = pgTx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM transactions WHERE id=$1 AND user_id=$2)", tx.ID, tenantID).Scan(&exists)
-	if err != nil {
-		return nil, fmt.Errorf("cek transaksi existing: %w", err)
-	}
+	exists := adaTenant
 
-	if exists {
-		// UPDATE: merge field yang dikirim client.
-		err = pgTx.QueryRow(ctx, `
-			UPDATE transactions SET
-				id_transaksi = COALESCE($2, id_transaksi),
-				no_invoice = COALESCE($3, no_invoice),
-				penyewa = COALESCE($4, penyewa),
-				hp_penyewa = COALESCE($5, hp_penyewa),
-				alamat_penyewa = COALESCE($6, alamat_penyewa),
-				jaminan_sewa = COALESCE($7, jaminan_sewa),
-				waktu_ambil_rencana = COALESCE($8, waktu_ambil_rencana),
-				waktu_kembali_rencana = COALESCE($9, waktu_kembali_rencana),
-				waktu_ambil_aktual = COALESCE($10, waktu_ambil_aktual),
-				waktu_kembali_aktual = COALESCE($11, waktu_kembali_aktual),
-				status = $12,
-				items = $13,
-				denda = $14,
-				biaya = $15,
-				durasi_teks = COALESCE($16, durasi_teks),
-				total_akhir = $17,
-				pembayaran = $18,
-				"riwayatDilayani" = $19,
-				dilayani_oleh = COALESCE($20, dilayani_oleh),
-				diskon = $21,
-				member_id = $22,
-				dp_hangus = $23,
-				dp_hangus_aturan = COALESCE($24, dp_hangus_aturan),
-				printilan = $25,
-				updated_at = now()
-			WHERE id = $1 AND user_id = $26
-			RETURNING id, id_transaksi, no_invoice, penyewa, hp_penyewa, alamat_penyewa, jaminan_sewa,
-			          waktu_ambil_rencana, waktu_kembali_rencana, waktu_ambil_aktual, waktu_kembali_aktual,
-			          status, items, denda, biaya, durasi_teks, total_akhir, pembayaran, "riwayatDilayani",
-			          dilayani_oleh, diskon, member_id, created_by, updated_by, dp_hangus, dp_hangus_aturan,
-			          printilan, user_id::text, created_at, updated_at`,
-			tx.ID, tx.IDTransaksi, tx.NoInvoice, tx.Penyewa, tx.HPPenyewa, tx.AlamatPenyewa, tx.JaminanSewa,
-			tx.WaktuAmbilRencana, tx.WaktuKembaliRencana, tx.WaktuAmbilAktual, tx.WaktuKembaliAktual,
-			tx.Status, tx.Items, tx.Denda, tx.Biaya, tx.DurasiTeks, tx.TotalAkhir, tx.Pembayaran,
-			tx.RiwayatDilayani, tx.DilayaniOleh, tx.Diskon, tx.MemberID, tx.DPHangus, tx.DPHangusAturan,
-			tx.Printilan, tenantID).Scan(
+	const kolomHasil = `id, id_transaksi, no_invoice, penyewa, hp_penyewa, alamat_penyewa, jaminan_sewa,
+		waktu_ambil_rencana, waktu_kembali_rencana, waktu_ambil_aktual, waktu_kembali_aktual,
+		status, items, denda, biaya, durasi_teks, total_akhir, pembayaran, "riwayatDilayani",
+		dilayani_oleh, diskon, member_id, created_by, updated_by, dp_hangus, dp_hangus_aturan,
+		printilan, user_id::text, created_at, updated_at`
+
+	scanHasil := func(row interface{ Scan(dest ...any) error }) error {
+		return row.Scan(
 			&result.ID, &result.IDTransaksi, &result.NoInvoice, &result.Penyewa, &result.HPPenyewa, &result.AlamatPenyewa,
 			&result.JaminanSewa, &result.WaktuAmbilRencana, &result.WaktuKembaliRencana, &result.WaktuAmbilAktual,
 			&result.WaktuKembaliAktual, &result.Status, &result.Items, &result.Denda, &result.Biaya, &result.DurasiTeks,
 			&result.TotalAkhir, &result.Pembayaran, &result.RiwayatDilayani, &result.DilayaniOleh, &result.Diskon,
 			&result.MemberID, &result.CreatedBy, &result.UpdatedBy, &result.DPHangus, &result.DPHangusAturan,
 			&result.Printilan, &result.UserID, &result.CreatedAt, &result.UpdatedAt)
+	}
+
+	if exists {
+		// UPDATE: hanya kunci yang benar-benar dikirim yang ditimpa, sisanya
+		// dipertahankan — meniru rpc_save_transaction: COALESCE untuk teks/waktu,
+		// `? 'kunci'` untuk nilai yang boleh nol/null, jsonb_typeof untuk jsonb.
+		set := []string{"updated_at = now()"}
+		args := []any{tx.ID}
+		tambah := func(expr string, v any) {
+			args = append(args, v)
+			set = append(set, fmt.Sprintf(expr, len(args)))
+		}
+
+		tambah("id_transaksi = COALESCE($%d, id_transaksi)", tx.IDTransaksi)
+		tambah("no_invoice = COALESCE($%d, no_invoice)", tx.invoiceEfektif())
+		tambah("penyewa = COALESCE($%d, penyewa)", tx.Penyewa)
+		tambah("hp_penyewa = COALESCE($%d, hp_penyewa)", tx.HPPenyewa)
+		tambah("alamat_penyewa = COALESCE($%d, alamat_penyewa)", tx.AlamatPenyewa)
+		tambah("jaminan_sewa = COALESCE($%d, jaminan_sewa)", tx.JaminanSewa)
+		tambah("waktu_ambil_rencana = COALESCE($%d, waktu_ambil_rencana)", tx.WaktuAmbilRencana)
+		tambah("waktu_kembali_rencana = COALESCE($%d, waktu_kembali_rencana)", tx.WaktuKembaliRencana)
+		tambah("waktu_ambil_aktual = COALESCE($%d, waktu_ambil_aktual)", tx.WaktuAmbilAktual)
+		tambah("waktu_kembali_aktual = COALESCE($%d, waktu_kembali_aktual)", tx.WaktuKembaliAktual)
+
+		// status: kunci tidak ada / kosong = pertahankan nilai lama.
+		var status any
+		if tx.ada("status") && tx.Status != "" {
+			status = tx.Status
+		}
+		tambah("status = COALESCE($%d::enum_status_transaksi, status)", status)
+
+		// Nilai angka: ditulis hanya bila kunci ada (0 pun sah).
+		for _, angka := range []struct {
+			kunci, kolom string
+			nilai        float64
+		}{
+			{"denda", "denda", tx.Denda},
+			{"biaya", "biaya", tx.Biaya},
+			{"total_akhir", "total_akhir", tx.TotalAkhir},
+			{"dp_hangus", "dp_hangus", tx.DPHangus},
+		} {
+			if tx.ada(angka.kunci) {
+				tambah(angka.kolom+" = $%d", angka.nilai)
+			}
+		}
+
+		tambah("durasi_teks = COALESCE($%d, durasi_teks)", tx.DurasiTeks)
+		tambah("dilayani_oleh = COALESCE($%d, dilayani_oleh)", tx.DilayaniOleh)
+		tambah("dp_hangus_aturan = COALESCE($%d, dp_hangus_aturan)", tx.DPHangusAturan)
+
+		if tx.ada("member_id") {
+			tambah("member_id = $%d", tx.MemberID)
+		}
+		if jsonJenis(tx.Items) == "array" {
+			tambah("items = $%d::jsonb", tx.Items)
+		}
+		if jsonJenis(tx.Pembayaran) == "object" {
+			tambah("pembayaran = $%d::jsonb", tx.Pembayaran)
+		}
+		if jsonJenis(tx.Diskon) == "object" {
+			tambah("diskon = $%d::jsonb", tx.Diskon)
+		}
+		if jsonJenis(tx.RiwayatDilayani) == "array" {
+			tambah(`"riwayatDilayani" = $%d::jsonb`, tx.RiwayatDilayani)
+		}
+		if tx.ada("printilan") {
+			tambah("printilan = $%d::jsonb", jsonbAwal(tx.Printilan, "array", "[]"))
+		}
+
+		args = append(args, tenantID)
+		query := fmt.Sprintf("UPDATE transactions SET %s WHERE id = $1 AND user_id = $%d RETURNING %s",
+			strings.Join(set, ", "), len(args), kolomHasil)
+		err = scanHasil(pgTx.QueryRow(ctx, query, args...))
 	} else {
-		// INSERT baru.
-		err = pgTx.QueryRow(ctx, `
+		// INSERT: nilai bawaan seperti RPC — kolom jsonb tidak pernah NULL dan
+		// no_invoice jatuh ke id_transaksi.
+		status := tx.Status
+		if status == "" {
+			status = "Booking"
+		}
+		err = scanHasil(pgTx.QueryRow(ctx, `
 			INSERT INTO transactions (
 				id, id_transaksi, no_invoice, penyewa, hp_penyewa, alamat_penyewa, jaminan_sewa,
 				waktu_ambil_rencana, waktu_kembali_rencana, waktu_ambil_aktual, waktu_kembali_aktual,
@@ -421,23 +570,13 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 				dilayani_oleh, diskon, member_id, dp_hangus, dp_hangus_aturan, printilan, user_id
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
-			)
-			RETURNING id, id_transaksi, no_invoice, penyewa, hp_penyewa, alamat_penyewa, jaminan_sewa,
-			          waktu_ambil_rencana, waktu_kembali_rencana, waktu_ambil_aktual, waktu_kembali_aktual,
-			          status, items, denda, biaya, durasi_teks, total_akhir, pembayaran, "riwayatDilayani",
-			          dilayani_oleh, diskon, member_id, created_by, updated_by, dp_hangus, dp_hangus_aturan,
-			          printilan, user_id::text, created_at, updated_at`,
-			tx.ID, tx.IDTransaksi, tx.NoInvoice, tx.Penyewa, tx.HPPenyewa, tx.AlamatPenyewa, tx.JaminanSewa,
+			) RETURNING `+kolomHasil,
+			tx.ID, tx.IDTransaksi, tx.invoiceEfektif(), tx.Penyewa, tx.HPPenyewa, tx.AlamatPenyewa, tx.JaminanSewa,
 			tx.WaktuAmbilRencana, tx.WaktuKembaliRencana, tx.WaktuAmbilAktual, tx.WaktuKembaliAktual,
-			tx.Status, tx.Items, tx.Denda, tx.Biaya, tx.DurasiTeks, tx.TotalAkhir, tx.Pembayaran,
-			tx.RiwayatDilayani, tx.DilayaniOleh, tx.Diskon, tx.MemberID, tx.DPHangus, tx.DPHangusAturan,
-			tx.Printilan, tenantID).Scan(
-			&result.ID, &result.IDTransaksi, &result.NoInvoice, &result.Penyewa, &result.HPPenyewa, &result.AlamatPenyewa,
-			&result.JaminanSewa, &result.WaktuAmbilRencana, &result.WaktuKembaliRencana, &result.WaktuAmbilAktual,
-			&result.WaktuKembaliAktual, &result.Status, &result.Items, &result.Denda, &result.Biaya, &result.DurasiTeks,
-			&result.TotalAkhir, &result.Pembayaran, &result.RiwayatDilayani, &result.DilayaniOleh, &result.Diskon,
-			&result.MemberID, &result.CreatedBy, &result.UpdatedBy, &result.DPHangus, &result.DPHangusAturan,
-			&result.Printilan, &result.UserID, &result.CreatedAt, &result.UpdatedAt)
+			status, jsonbAwal(tx.Items, "array", "[]"), tx.Denda, tx.Biaya, tx.DurasiTeks, tx.TotalAkhir,
+			jsonbAwal(tx.Pembayaran, "object", "{}"), jsonbAwal(tx.RiwayatDilayani, "array", "[]"),
+			tx.DilayaniOleh, jsonbAwal(tx.Diskon, "object", "{}"), tx.MemberID, tx.DPHangus, tx.DPHangusAturan,
+			jsonbAwal(tx.Printilan, "array", "[]"), tenantID))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("simpan transaction parent: %w", err)
@@ -584,10 +723,15 @@ func (d *DB) UpdateTransaction(ctx context.Context, userID string, id int64, fie
 		args := []any{id}
 		i := 2
 		for k, v := range fields {
+			// Daftar putih wajib: kunci JSON tidak boleh disambung ke SQL.
+			kolom, boleh := kolomTransaksiBolehDiubah[k]
+			if !boleh {
+				return ErrKolomAsing{Kolom: k}
+			}
 			if setClauses != "" {
 				setClauses += ", "
 			}
-			setClauses += fmt.Sprintf("%s = $%d", k, i)
+			setClauses += fmt.Sprintf("%s = $%d", kolom, i)
 			args = append(args, v)
 			i++
 		}

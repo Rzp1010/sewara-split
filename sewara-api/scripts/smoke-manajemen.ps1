@@ -184,6 +184,12 @@ try {
     $r = Invoke-Api PATCH '/api/admin/users' $a '{"email":"staff-new@staging.local","action":"set_role"}'
     Add-Hasil 'PATCH set_role tanpa role: 400' ($r.Status -eq 400) $r.Body
 
+    # Role di luar daftar (owner/cs/gudang) harus ditolak sebelum menyentuh DB —
+    # tanpa ini superadmin bisa diberikan lewat API langsung.
+    $r = Invoke-Api PATCH '/api/admin/users' $a '{"email":"staff-new@staging.local","action":"set_role","role":"superadmin"}'
+    Add-Hasil 'PATCH set_role superadmin: 400 + role DB tetap gudang' `
+        ($r.Status -eq 400 -and (Sql "SELECT role FROM profiles WHERE email='staff-new@staging.local'") -eq 'gudang') $r.Body
+
     $r = Invoke-Api PATCH '/api/admin/users' $a '{"email":"owner-b@staging.local","action":"set_role","role":"cs"}'
     Add-Hasil 'PATCH target bukan bawahan: 404 (cegah enumerasi)' ($r.Status -eq 404) $r.Body
 

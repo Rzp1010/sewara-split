@@ -487,8 +487,9 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 22 smoke scripts, 477 skenario lulus (batch Docker
-berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
+**Cakupan verifikasi terakhir:** 22 smoke scripts, **514 skenario** lulus (batch
+Docker berurutan 2026-10-30 malam, setelah perbaikan T1–T6; angka per skrip di
+tabel bawah). Sebelumnya 477 (tanpa skenario G1–G6) dan 504 (pasca G1–G6). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
@@ -500,7 +501,8 @@ yang terakhir masuk batch):** 22
 smoke scripts Docker, exit 0 semua, 477 skenario lulus. `go build ./...`,
 `go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go`,
 `telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`,
-`member_file_test.go`, `config_test.go`) juga lulus.
+`member_file_test.go`, `config_test.go`) juga lulus. (Tabel per skrip di bawah
+sudah diperbarui ke run final 2026-10-30 malam: 514 skenario.)
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -512,9 +514,9 @@ regresi kode: setelah reset, 17/17 hijau).
 |---|---:|---|
 | `smoke-login.ps1` | 18 | PASS |
 | `smoke-auth.ps1` | 5 | PASS (Docker; sesi kedaluwarsa + cleanup) |
-| `smoke-settings.ps1` | 13 | PASS |
+| `smoke-settings.ps1` | 16 | PASS |
 | `smoke-member-types.ps1` | 8 | PASS |
-| `smoke-member-types-crud.ps1` | 15 | PASS |
+| `smoke-member-types-crud.ps1` | 14 | PASS |
 | `smoke-profiles.ps1` | 8 | PASS |
 | `smoke-dashboard.ps1` | 6 | PASS |
 | `smoke-inventory.ps1` | 20 | PASS |
@@ -524,14 +526,22 @@ regresi kode: setelah reset, 17/17 hijau).
 | `smoke-blacklist.ps1` | 41 | PASS |
 | `smoke-promo.ps1` | 30 | PASS |
 | `smoke-promo-logika.ps1` | 18 | PASS |
-| `smoke-transactions.ps1` | 26 | PASS |
+| `smoke-transactions.ps1` | 59 | PASS |
 | `smoke-transaction-items.ps1` | 20 | PASS |
 | `smoke-logs.ps1` | 26 | PASS |
-| `smoke-manajemen.ps1` | 49 | PASS |
-| `smoke-invoice.ps1` | 17 | PASS |
+| `smoke-manajemen.ps1` | 50 | PASS |
+| `smoke-invoice.ps1` | 18 | PASS |
 | `smoke-pembayaran.ps1` | 24 | PASS |
 | `smoke-eksternal.ps1` | 20 | PASS |
 | `smoke-auth-extra.ps1` | 29 | PASS |
+
+Angka di tabel = jumlah skenario yang benar-benar dieksekusi pada run final
+2026-10-30 (batch Docker berurutan, 22/22 exit 0, total **514**). Diukur dari
+jumlah pemanggilan `Add-Hasil` pada berkas skrip; untuk lima skrip yang memakai
+helper/loop (`smoke-auth`, `smoke-auth-extra`, `smoke-eksternal`,
+`smoke-member-file`, `smoke-pembayaran`) dipakai angka yang dicetak skrip. Tabel
+ini menggantikan angka lama yang sebagian sudah usang (`settings` 13,
+`transactions` 26, `manajemen` 49, `invoice` 17 sebelum skenario G/T ditambah).
 
 Catatan batch:
 
@@ -876,8 +886,8 @@ ke baris DB (`transaction_items`, `settings`).
 ### Verifikasi
 
 - `go build ./...`, `go vet ./...`, `go test -count=1 ./...` bersih.
-- Batch smoke Docker staging: **22 skrip / 504 skenario hijau** (sebelumnya 477),
-  termasuk skenario baru G1 (kolom/ids/nested/cari/status/hideRiwayat/limit),
+- Batch smoke Docker staging: **22 skrip / 514 skenario hijau** (sebelumnya 477
+  lalu 504), termasuk skenario baru G1 (kolom/ids/nested/cari/status/hideRiwayat/limit),
   G2 (member & inventory tenant lain → 403, tidak ada parent tersisa),
   G3 (SN maintenance → 400 pesan persis), G4 (staf tulis → baris owner tenant),
   G5 (upload `transaksiId` numerik), G6 (POST flat + assert item/payment di DB).
@@ -892,4 +902,36 @@ ke baris DB (`transaction_items`, `settings`).
 `pembayaran/photo`, `pembayaran/reminder-ack`, `DELETE /api/invoice/header`, dan
 semantik kegagalan DB pada registrasi (Go 500 vs Next 200 generik) — dicatat di
 `docs/paritas-go-vs-next.md`.
+
+### Audit kedua + perbaikan T1–T16 (2026-10-30)
+
+Setelah G1–G6 ditutup, route yang belum tuntas diaudit ulang baris demi baris
+(read-only, tanpa mengubah kode). Temuan lengkap + klasifikasi ada di
+`docs/paritas-go-vs-next.md` §"Audit kedua". Yang diperbaiki (serius):
+
+| # | Masalah | Perbaikan |
+|---|---|---|
+| T1 | `UpdateTransaction` (`PATCH /api/transactions/{id}`) menyambung nama kolom JSON mentah ke `SET` → kunci asing = error SQL 500 | daftar putih `kolomTransaksiBolehDiubah` + `ErrKolomAsing` → 400 `Kolom '<nama>' tidak dikenal.` |
+| T2 | `PATCH /api/admin/users` action `set_role` tanpa daftar putih nilai (`role:"superadmin"` bisa lolos) | hanya `owner|cs|gudang` (paritas zod Next) → 400 `Role tidak valid.`, DB tidak disentuh |
+| T4 | `handlePembayaranReminder` membaca ack dengan `me.UserID`, padahal ack disimpan atas nama tenant | baca dengan `tenant` (paritas `.eq('user_id', ownerId)` Next); staf tidak lagi selalu melihat banner |
+| T5 | `POST /api/transactions` body parsial menimpa nilai lama (denda/biaya/total/dp_hangus/member_id/printilan/status/jsonb jadi nol atau kosong) | `TransactionInput.Present` + UPDATE dinamis mengikuti RPC (`? 'kunci'`, `jsonb_typeof`), INSERT pakai default `'[]'`/`'{}'`, `no_invoice = NULLIF(COALESCE(no_invoice, id_transaksi),'')` |
+| T6 | POST dengan id milik tenant lain → 500 `unique_violation` | cek keberadaan sebelum `SET LOCAL role`: milik tenant lain → 403 `Transaction belongs to another tenant` (paritas RPC 42501) |
+
+**T3 (Telegram) juga sudah ditutup** setelah user meluruskan konteksnya:
+Telegram = internal use only (belum dan tidak berencana dibuka ke publik),
+hanya **satu bot**, dipakai superadmin untuk tiga hal — log login, backup
+transaksi bisnis harian, dan notif pendaftar baru yang menunggu persetujuan.
+Perbaikan: `GetSettingByKey` sekarang menyaring `user_id` eksplisit (paritas
+`.eq('user_id', ...)` Next), bukan hanya mengandalkan RLS. Pada data nyata
+perilakunya tidak berubah (RLS + pemanggil sudah meneruskan id tenant); ini
+pengetatan determinisme. Detail: `docs/paritas-go-vs-next.md` §T3.
+
+Ditunda: T7–T16 (kosmetik, lihat dokumen paritas).
+
+Skenario smoke baru: `smoke-transactions.ps1` G7 (id tenant lain → 403 + baris
+tenant B utuh), G8 (POST parsial → status/biaya/total lama bertahan),
+G9 (PATCH kolom asing → 400 pesan persis), G10 (`no_invoice` `""` → NULL dan
+fallback `id_transaksi`); `smoke-manajemen.ps1` (set_role `superadmin` → 400 +
+role DB tetap `gudang`); `smoke-settings.ps1` (baca satu key scope tenant →
+`null`, bukan baris pribadi staf).
 

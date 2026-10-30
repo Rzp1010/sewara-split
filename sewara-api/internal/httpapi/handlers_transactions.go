@@ -215,6 +215,14 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 		writeValidationError(w, "Body tidak valid.", nil)
 		return
 	}
+	// Catat kunci yang benar-benar dikirim: rpc_save_transaction mempertahankan
+	// nilai lama untuk kunci yang absen (CASE WHEN p_transaction ? 'x').
+	if objek, ok := txRaw.(map[string]any); ok {
+		tx.Present = make(map[string]bool, len(objek))
+		for k := range objek {
+			tx.Present[k] = true
+		}
+	}
 
 	itemsRaw, _ := raw["items"].([]any)
 	paymentsRaw, _ := raw["payments"].([]any)
@@ -292,7 +300,8 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 	result, err := s.db.SaveTransaction(r.Context(), me.UserID, tx, items, payments)
 	if err != nil {
 		// G2: referensi lintas tenant -> 403, pesan disamakan dengan rpc_save_transaction.
-		if errors.Is(err, db.ErrMemberLainTenant) || errors.Is(err, db.ErrInventoryLainTenant) {
+		if errors.Is(err, db.ErrMemberLainTenant) || errors.Is(err, db.ErrInventoryLainTenant) ||
+			errors.Is(err, db.ErrTransaksiLainTenant) {
 			writeError(w, http.StatusForbidden, CodeForbidden, err.Error())
 			return
 		}
@@ -384,6 +393,11 @@ func (s *Server) handleTransactionsDetailPatch(w http.ResponseWriter, r *http.Re
 
 	result, err := s.db.UpdateTransaction(r.Context(), me.UserID, id, body)
 	if err != nil {
+		var kolomAsing db.ErrKolomAsing
+		if errors.As(err, &kolomAsing) {
+			writeValidationError(w, "Kolom '"+kolomAsing.Kolom+"' tidak dikenal.", nil)
+			return
+		}
 		s.log.Error("gagal update transaksi", "err", err, "id", id)
 		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
 		return

@@ -265,7 +265,11 @@ func (s *Server) handlePembayaranReminder(w http.ResponseWriter, r *http.Request
 	n1 := countPaymentMonth(ts, target)
 	n2 := countPaymentMonth(ts, fallback)
 	bulan, n := bulanReminder(now, n1, n2)
-	setting, err := s.db.GetSettingByKey(r.Context(), me.UserID, "bukti_backup_ack")
+	// Ack disimpan atas nama tenant (owner), bukan user yang login — sama dengan
+	// route Next yang membaca `.eq('user_id', ownerId)`. Kalau staf (cs/gudang)
+	// yang memanggil, memakai me.UserID membuat ack owner tak terbaca dan banner
+	// muncul terus.
+	setting, err := s.db.GetSettingByKey(r.Context(), tenant, "bukti_backup_ack")
 	if err != nil {
 		s.log.Error("gagal membaca ack bukti bayar", "err", err)
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
@@ -276,7 +280,6 @@ func (s *Server) handlePembayaranReminder(w http.ResponseWriter, r *http.Request
 		ack = db.UnquoteSetting(setting.Value)
 	}
 	purgeTanggal := monthString(wib.Year(), wib.Month()) + "-15"
-	_ = tenant
 	writeSuccess(w, 200, map[string]any{"show": ack != bulan && (n1 > 0 || n2 > 0), "bulan": bulan, "purgeTanggal": purgeTanggal, "jumlah": n})
 }
 func (s *Server) handlePembayaranAck(w http.ResponseWriter, r *http.Request, me db.Identity) {

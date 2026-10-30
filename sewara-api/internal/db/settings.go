@@ -43,14 +43,23 @@ func (d *DB) GetSettings(ctx context.Context, userID string) ([]Setting, error) 
 	return settings, nil
 }
 
-// GetSettingByKey membaca satu setting. Tidak ditemukan bukan error — return nil.
+// GetSettingByKey membaca satu setting milik user (tenant) tertentu. Tidak
+// ditemukan bukan error — return nil.
+//
+// Scope `user_id` eksplisit, bukan sekadar RLS: backend Next selalu menambah
+// `.eq('user_id', ...)` saat membaca satu key (settings GET memakai
+// `getTenantId`, telegram/test memakai id pemanggil, invoice header memakai
+// `getTenantId`, dan lib/services/telegram.ts memakai service-role + `.eq`).
+// Tanpa filter ini, RLS masih mengizinkan lebih dari satu baris terlihat (baris
+// milik staf sendiri + baris owner tenant-nya), jadi baris yang terambil tidak
+// deterministik.
 func (d *DB) GetSettingByKey(ctx context.Context, userID, key string) (*Setting, error) {
 	var s Setting
 	err := d.InTenant(ctx, userID, func(q Querier) error {
 		return q.QueryRow(ctx, `
 			SELECT user_id::text, key, value, updated_at
 			FROM settings
-			WHERE key = $1`, key).
+			WHERE user_id = $1::uuid AND key = $2`, userID, key).
 			Scan(&s.UserID, &s.Key, &s.Value, &s.UpdatedAt)
 	})
 	if err != nil {

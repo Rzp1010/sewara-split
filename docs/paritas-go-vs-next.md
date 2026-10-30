@@ -18,6 +18,8 @@ terverifikasi memang seperti yang disepakati.
 
 **Status perbaikan (2026-10-30): G1–G6 sudah ditutup.** Batch smoke Docker staging
 22 skrip / 504 skenario hijau, termasuk skenario baru untuk masing-masing gap.
+Audit kedua hari yang sama (T1–T16 di bagian bawah) menutup 6 celah lagi; batch
+final 22 skrip / **514 skenario** hijau, exit 0 semua.
 Kode lulus `go build`/`go vet`/`go test`. Sisa cakupan audit yang belum tuntas ada
 di bagian akhir dokumen ini.
 
@@ -184,3 +186,97 @@ di bagian akhir dokumen ini.
    referensi lintas tenant, SN maintenance, setting staf, upload bukti bayar
    dengan ID numerik, POST flat bentuk frontend + assert `transaction_items`)
    lalu jalankan batch penuh.
+
+## Audit kedua (2026-10-30, setelah G1–G6) — temuan T1–T16
+
+Setelah G1–G6 ditutup, audit diulang baris demi baris untuk route yang belum
+tuntas (transactions GET/POST/PATCH, transaction-items, pembayaran, invoice,
+member, blacklist, promo, settings, auth, logs, admin, profiles, telegram).
+Kode tidak diubah saat audit. Klasifikasi: **T1, T2, T4, T5, T6 = serius**
+(diperbaiki), **T3 ditahan** (menunggu koreksi perilaku Telegram dari user),
+T7–T16 kosmetik (ditunda).
+
+### Serius — sudah diperbaiki
+
+- **T1. `UpdateTransaction` menyambung nama kolom JSON mentah ke SQL.**
+  `PATCH /api/transactions/{id}` dulu menyusun `SET <kunci> = $n` dari kunci body;
+  kunci di luar tabel → error SQL 500, dan tidak ada daftar putih seperti PostgREST
+  (`PGRST204` di Next). Sekarang ada `kolomTransaksiBolehDiubah`
+  (`db/transactions.go`) + `ErrKolomAsing`; handler menjawab 400
+  `Kolom '<nama>' tidak dikenal.`
+- **T2. `set_role` tanpa daftar putih nilai.**
+  `PATCH /api/admin/users` action `set_role` dulu meneruskan `role` apa pun
+  (termasuk `superadmin`). Next membatasi lewat zod `owner|cs|gudang`
+  (`lib/api/validation.ts`). Sekarang nilai di luar daftar → 400 `Role tidak valid.`
+  dan tidak menyentuh DB.
+- **T4. Ack backup bukti bayar dibaca dengan id user, bukan tenant.**
+  `handlePembayaranReminder` memakai `me.UserID`, padahal ack ditulis atas nama
+  tenant (`handlePembayaranAck` → `TenantID`) dan Next membaca
+  `.eq('user_id', ownerId)`. Staf yang memanggil selalu melihat banner. Sekarang
+  memakai `tenant`.
+- **T5. `POST /api/transactions` dengan body parsial menghapus nilai lama.**
+  Next memakai `rpc_save_transaction`, yang untuk `denda`/`biaya`/`total_akhir`/
+  `dp_hangus`/`member_id`/`printilan` memakai `p_transaction ? 'kunci'` dan untuk
+  `items`/`pembayaran`/`diskon`/`riwayatDilayani` memakai `jsonb_typeof(...)`:
+  kunci yang tidak dikirim berarti **pertahankan**. Go dulu menulis semua kolom
+  apa adanya (kunci absen → nol/kosong, `no_invoice` tidak ikut fallback). Sekarang
+  `TransactionInput.Present` diisi handler dari JSON mentah dan UPDATE dibangun
+  dinamis mengikuti aturan RPC; INSERT memakai default `'[]'`/`'{}'` + `no_invoice`
+  (`NULLIF(COALESCE(no_invoice, id_transaksi),'')`).
+  Satu beda yang sengaja dijaga: `printilan` berisi JSON `null` disimpan `'[]'`
+  (RPC menyimpan JSON null) — kolomnya selalu array di produksi.
+- **T6. Id milik tenant lain → 500 `unique_violation`.**
+  Dulu jalur POST dengan id yang sudah dipakai tenant lain jatuh ke INSERT lalu
+  meledak 500. RPC 1384 mengembalikan `42501 Transaction belongs to another
+  tenant`. Sekarang dicek sebelum `SET LOCAL role` (jalur owner bypass RLS) →
+  403 dengan pesan yang sama.
+
+### T3 — ditutup (Telegram)
+
+Konteks yang diluruskan user (2026-10-30): Telegram **internal use only**, belum
+dan tidak berencana dibuka untuk publik, **hanya satu bot**, dipakai superadmin
+untuk tiga hal — log login, backup transaksi bisnis harian, dan notif pendaftar
+baru yang menunggu persetujuan admin. Tidak ada bot/tenant lain.
+
+Temuan: `GetSettingByKey` (`db/settings.go`) hanya menyaring `WHERE key = $1` dan
+mengandalkan RLS, sedangkan Next selalu menambah scope user saat membaca satu key
+(`.eq('user_id', ...)`) — di `telegram/test` (service-role + id pemanggil),
+`invoice/header` (`getTenantId`), `pembayaran/reminder` (`ownerId`), dan
+`lib/services/telegram.ts` (service-role + superadmin pertama). Perbaikan: scope
+`user_id` eksplisit di `GetSettingByKey`, jadi baris yang dibaca selalu baris
+tenant, bukan hasil urutan RLS.
+
+Catatan jujur: pada data nyata perbaikan ini **tidak mengubah perilaku** — RLS
+sudah membatasi, dan seluruh pemanggil meneruskan id tenant (bukan id user login),
+sehingga hanya satu baris yang cocok. Baris kembar hanya mungkin muncul untuk
+key non-privat bila ada baris milik staf sendiri, dan API tidak pernah menulis
+baris seperti itu (POST settings selalu di-stamp tenant). Jadi ini pengetatan
+determinisme/paritas, bukan penutup celah yang bisa dieksploitasi. Yang diuji
+smoke adalah invariant-nya: baca satu key memakai scope tenant (baris tenant tidak
+ada → `null`, bukan baris pribadi pemanggil).
+
+Konfigurasi bot di jalur kirim tetap benar seperti sekarang:
+`db.TelegramConfigSuperadmin` sudah menyaring `user_id` superadmin pertama
+eksplisit (padanan `getTelegramConfig()` + service role), chat id default dari env
+`TELEGRAM_CHAT_ID`, thread 4/6/25 untuk login/backup/daftar.
+
+### Kosmetik — ditunda
+
+| # | Beda | Catatan |
+|---|---|---|
+| T7 | Pesan 403 `admin/users`, `admin/logs`, `logs/login` memakai teks `"FORBIDDEN"` | Next memakai pesan kalimat; `api-client.js` hanya butuh `error.message` |
+| T8 | Pesan `promo/use` berakhiran titik sedangkan Next tidak | teks tampil di UI |
+| T9 | `?kolom=` tak dikenal & `komponen:null` pada inventory | Go lebih ketat |
+| T10 | Kolom `owner_id` belum disertakan pada `ListLoginLogs` | mengikuti bentuk Next, tidak dipakai UI |
+| T11 | PATCH transaksi membuang `id`/`user_id` (Go lebih ketat) | mencegah klien memindah baris |
+| T12 | `POST /api/members` 201 vs 200; 404 vs 500 saat baris tak ada | frontend hanya cek `ok` |
+| T13 | `admin/data` envelope `{ok,data:{total}}` vs body mentah Next | justru cocok dengan `api-client.js` (`return data.data`) — **bukan gap** |
+| T14 | `dihapus` dihitung dari baris `auth.users` vs `ids.length` | angka sama pada jalur normal |
+| T15 | Akun nonaktif: 401 vs 403 | keduanya memicu redirect login |
+| T16 | `POST /api/logs` memaksa `user_id` tenant | Next meneruskan body |
+
+### Utang format
+
+`gofmt` menandai `internal/db/members.go`, `internal/httpapi/handlers_members.go`,
+`internal/httpapi/handlers_transaction_items.go` (debt lama, bukan bug). Sisanya
+hanya perbedaan line ending CRLF.
