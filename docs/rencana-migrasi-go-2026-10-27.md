@@ -487,7 +487,7 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 20 smoke scripts, 444 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 21 smoke scripts, 472 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
@@ -495,10 +495,11 @@ check, tetapi semua package tidak punya test file.
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
 logs/login, domain manajemen, domain invoice admin, grup pembayaran, lalu domain
-eksternal telegram + webhook, lalu domain auth):** 20
-smoke scripts Docker, exit 0 semua, 444 skenario lulus. `go build ./...`,
+eksternal telegram + webhook, domain auth, lalu berkas member):** 21
+smoke scripts Docker, exit 0 semua, 472 skenario lulus. `go build ./...`,
 `go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go`,
-`telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`) juga lulus.
+`telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`,
+`member_file_test.go`) juga lulus.
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -517,6 +518,7 @@ regresi kode: setelah reset, 17/17 hijau).
 | `smoke-inventory.ps1` | 20 | PASS |
 | `smoke-inventory-crud.ps1` | 32 | PASS |
 | `smoke-members.ps1` | 24 | PASS |
+| `smoke-member-file.ps1` | 28 | PASS (fase 2 R2 hidup) |
 | `smoke-blacklist.ps1` | 41 | PASS |
 | `smoke-promo.ps1` | 30 | PASS |
 | `smoke-promo-logika.ps1` | 18 | PASS |
@@ -618,6 +620,34 @@ Catatan batch:
   400 `{"error":...}` mentah dan jalur sukses tetap amplop `{"ok":true,"data":
   {"ok":true}}`; (6) `Max-Age=-1` cookie pembersih diserialkan Go sebagai
   `Max-Age=0` (efek sama: cookie langsung kedaluwarsa).
+- `smoke-member-file.ps1` baru (28 skenario) menutup dua endpoint FILE terakhir,
+  `POST /api/member/upload` dan `GET /api/member/photo`. Fase 1 (tanpa R2)
+  membuktikan kontrak: 401 tanpa cookie, urutan validasi (label/index/MIME/ukuran)
+  dengan pesan persis Next, 404 `Member tidak ditemukan.` untuk member asing,
+  guard prefix `photo` 403, dan 503 `msgStorageOff` untuk jalur yang lolos
+  validasi. Fase 2 baru berjalan bila kredensial R2 lengkap di
+  `sewara-backend/.env.local` (bucket dibaca dari `R2_BUCKET` **atau**
+  `R2_BUCKET_NAME`; skrip menolak jalan bila bucket bukan `sewara-dev`) dan
+  membuktikan jalur sukses sungguhan: unggah PNG 1×1 → 200
+  `{ok:true,path,label}` dengan key `<tenantId>/<memberId>/doc-<index>.<ext>` dan
+  baris `members.foto_jaminan` berisi label+path; `photo?key=` mengembalikan byte
+  identik + `Content-Type: image/png` + `Cache-Control: private, max-age=3600`;
+  mengganti slot yang sama menghapus objek lama (GET key lama → 404); PDF dilayani
+  `application/pdf`; dokumen ke-6 ditolak 400 `Maksimal 5 dokumen diizinkan.` dan
+  11 MiB ditolak 400. Semua objek uji dihapus di akhir (`Sisa objek uji: 0`).
+- Perbaikan konfigurasi bucket: backend Next dan env VPS memakai `R2_BUCKET_NAME`,
+  sedangkan backend Go membaca `R2_BUCKET`. `internal/config/config.go` kini
+  menerima keduanya (utamakan `R2_BUCKET`, fallback `R2_BUCKET_NAME`) supaya
+  cutover tidak mematikan seluruh fitur berkas diam-diam karena nama env berbeda.
+  Konsekuensinya smoke lama yang mengosongkan `R2_*` juga ikut mengosongkan
+  `R2_BUCKET_NAME` (kalau tidak, shell yang mengekspor nama itu bisa membuat smoke
+  lama berjalan dengan storage hidup tanpa sengaja).
+- Deviasi member (disengaja): storage mati dibalas 503 `EXTERNAL_SERVICE_ERROR`
+  (`msgStorageOff`) dengan urutan validasi → tenant → member → batas 5 → cek
+  store → unggah; Next tanpa storage jatuh ke 500 generik (upload) dan 404
+  (photo). Rate limit `memberUploadLimiter` di Next TIDAK diport (state di memori
+  proses, aturan portabilitas). MIME divalidasi dari yang dideklarasikan klien
+  (`file.type`) tanpa sniffing byte — sama seperti Next.
 - Env baru yang harus ada saat deploy Go API: `PURGE_SECRET` (pembayaran/purge),
   `WEBHOOK_TELEGRAM_SECRET` (telegram webhook), `TELEGRAM_CHAT_ID` (default
   `-1003838354394`), `TELEGRAM_API_BASE` (default `https://api.telegram.org`),

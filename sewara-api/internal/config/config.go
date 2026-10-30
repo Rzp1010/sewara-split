@@ -192,12 +192,22 @@ func Load() (Config, error) {
 // saat start. Di produksi, kosong juga kesalahan — lebih baik gagal start
 // daripada menerima upload lalu membalas 500 pada tiap permintaan.
 func loadStorage(env string) (StorageConfig, error) {
+	// Nama bucket: backend Next (dan env VPS yang sudah ada) memakai
+	// R2_BUCKET_NAME, sementara Go memakai R2_BUCKET. Terima keduanya supaya cutover
+	// tidak mematikan fitur file diam-diam hanya karena nama env berbeda.
+	bucket := strings.TrimSpace(os.Getenv("R2_BUCKET"))
+	bucketNamaEnv := "R2_BUCKET"
+	if bucket == "" {
+		bucket = strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
+		bucketNamaEnv = "R2_BUCKET_NAME"
+	}
+
 	cfg := StorageConfig{
 		Endpoint:  strings.TrimSpace(os.Getenv("R2_ENDPOINT")),
 		Region:    strings.TrimSpace(os.Getenv("R2_REGION")),
 		AccessKey: strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID")),
 		SecretKey: strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
-		Bucket:    strings.TrimSpace(os.Getenv("R2_BUCKET")),
+		Bucket:    bucket,
 	}
 
 	wajib := []struct {
@@ -207,7 +217,7 @@ func loadStorage(env string) (StorageConfig, error) {
 		{"R2_ENDPOINT", cfg.Endpoint},
 		{"R2_ACCESS_KEY_ID", cfg.AccessKey},
 		{"R2_SECRET_ACCESS_KEY", cfg.SecretKey},
-		{"R2_BUCKET", cfg.Bucket},
+		{bucketNamaEnv, cfg.Bucket},
 	}
 
 	var kosong []string
@@ -220,7 +230,7 @@ func loadStorage(env string) (StorageConfig, error) {
 	if len(kosong) == len(wajib) {
 		if env == EnvProd {
 			return cfg, fmt.Errorf("storage wajib dikonfigurasi di produksi: isi %s",
-				strings.Join([]string{"R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"}, ", "))
+				strings.Join([]string{"R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET (atau R2_BUCKET_NAME)"}, ", "))
 		}
 		return cfg, nil
 	}

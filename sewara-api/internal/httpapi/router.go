@@ -85,6 +85,10 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("PATCH /api/members/{id}", s.requireAuth(s.handleMembersPatch))
 	mux.HandleFunc("DELETE /api/members/{id}", s.requireAuth(s.handleMembersDelete))
 
+	// Member (berkas).
+	mux.HandleFunc("POST /api/member/upload", s.requireAuth(s.handleMemberUpload))
+	mux.HandleFunc("GET /api/member/photo", s.requireAuth(s.handleMemberPhoto))
+
 	// Transactions.
 	mux.HandleFunc("GET /api/transactions", s.requireAuth(s.handleTransactionsGet))
 	mux.HandleFunc("POST /api/transactions", s.requireAuth(s.handleTransactionsPost))

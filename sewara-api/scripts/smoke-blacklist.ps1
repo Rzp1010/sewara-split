@@ -1,4 +1,4 @@
-# smoke-blacklist.ps1 — uji domain blacklist Go
+﻿# smoke-blacklist.ps1 — uji domain blacklist Go
 #
 # Cakupan: GET/POST/PATCH/DELETE + check + kontrak storage-off + guard header.
 # R2 sengaja dikosongkan; unggah/proxy bucket nyata perlu smoke terpisah dengan
@@ -91,7 +91,7 @@ $env:APP_ENV      = 'development'
 $env:R2_ENDPOINT          = ''
 $env:R2_ACCESS_KEY_ID     = ''
 $env:R2_SECRET_ACCESS_KEY = ''
-$env:R2_BUCKET            = ''
+$env:R2_BUCKET            = ''; $env:R2_BUCKET_NAME            = ''
 
 $api = Start-Process -FilePath $apiExe -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $root '.data\api.out.log') `

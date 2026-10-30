@@ -1,4 +1,4 @@
-# smoke-members.ps1 — uji CRUD members Go
+﻿# smoke-members.ps1 — uji CRUD members Go
 #
 # Cakupan: GET/POST/PATCH/DELETE, validasi, isolasi tenant, join tipe (tipeNama,
 # diskon_persen dari member_types aktif).
@@ -68,7 +68,7 @@ $env:APP_ENV      = 'development'
 $env:R2_ENDPOINT          = ''
 $env:R2_ACCESS_KEY_ID     = ''
 $env:R2_SECRET_ACCESS_KEY = ''
-$env:R2_BUCKET            = ''
+$env:R2_BUCKET            = ''; $env:R2_BUCKET_NAME            = ''
 
 $api = Start-Process -FilePath $apiExe -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $root '.data\api.out.log') `

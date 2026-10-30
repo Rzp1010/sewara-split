@@ -106,7 +106,7 @@ try {
     $env:DATABASE_URL = 'postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable'
     $env:ADDR = '127.0.0.1:8099'
     $env:APP_ENV = 'development'
-    $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''
+    $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''; $env:R2_BUCKET_NAME = ''
     $env:MAIL_DRIVER = 'log'
     $env:EMAIL_TOKEN_SECRET = $SECRET
     $env:FRONTEND_URL = $FRONTEND

@@ -1,4 +1,4 @@
-# smoke-promo-logika.ps1 — uji validate + use promo Go
+﻿# smoke-promo-logika.ps1 — uji validate + use promo Go
 #
 # Cakupan: validate (valid/expired/nonaktif/not found), use (increment terpakai,
 # concurrency guard, auto-expired kuota habis).
@@ -67,7 +67,7 @@ $env:APP_ENV      = 'development'
 $env:R2_ENDPOINT          = ''
 $env:R2_ACCESS_KEY_ID     = ''
 $env:R2_SECRET_ACCESS_KEY = ''
-$env:R2_BUCKET            = ''
+$env:R2_BUCKET            = ''; $env:R2_BUCKET_NAME            = ''
 
 $api = Start-Process -FilePath $apiExe -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput (Join-Path $root '.data\api.out.log') `

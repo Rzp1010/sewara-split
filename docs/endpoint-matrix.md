@@ -164,10 +164,14 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | POST /api/auth/logout | `handlers_auth_extra.go` | 29 |
 | GET /api/auth/callback | `handlers_auth_extra.go` | 29 (token HMAC) |
 | POST /api/auth/resend-verification | `handlers_auth_extra.go` | 29 (RPC limit DB) |
+| POST /api/member/upload | `handlers_member_file.go` | 28 (fase 1 + fase 2 R2 hidup) |
+| GET /api/member/photo | `handlers_member_file.go` | 28 (fase 1 + fase 2 R2 hidup) |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **2 path / 2 metode**
-(angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
-belum dikurangi port domain logs, manajemen, invoice, dan pembayaran). Deviasi kontrak yang
+**Sisa kerja port: 0 path / 0 metode** — seluruh 47 path / 68 metode sudah punya
+implementasi Go. Sisa 1 skrip smoke (`smoke-auth.ps1`) masih menunjuk portable
+PostgreSQL sehingga tetap dikecualikan dari batch Docker.
+(Catatan angka: hitungan "61 path" dan "24/36" pada versi awal matriks belum
+dikurangi endpoint mati dan domain yang kemudian diport.) Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
 
 ## Pemakaian endpoint di frontend (audit 2026-10-28)
@@ -287,9 +291,9 @@ data lama tetap utuh sampai cutover.
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Empat puluh lima path di antaranya sudah diport (termasuk domain
-  logs, manajemen, invoice, pembayaran, eksternal telegram + webhook, dan auth),
-  jadi sisa **2 path / 2 metode** (`member/upload`, `member/photo`). Empat path
+  (68 metode)**. Keempat puluh tujuh path sudah punya implementasi Go (termasuk
+  domain logs, manajemen, invoice, pembayaran, eksternal telegram + webhook, auth,
+  dan berkas member), jadi **sisa 0 path / 0 metode**. Empat path
   ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja

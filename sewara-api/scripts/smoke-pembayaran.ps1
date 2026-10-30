@@ -1,4 +1,4 @@
-# smoke-pembayaran.ps1 — uji endpoint pembayaran pada Docker staging saja.
+﻿# smoke-pembayaran.ps1 — uji endpoint pembayaran pada Docker staging saja.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $apiExe = Join-Path $root '.data\bin\sewara-api.exe'
@@ -22,7 +22,7 @@ try {
  $hash='$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu'
  Sql "INSERT INTO auth.users(id,email,encrypted_password,email_confirmed_at) VALUES ('$OWNER_A','owner-a@staging.local','$hash',now()),('$OWNER_STAFF','cs-a@staging.local','$hash',now()),('$OWNER_B','owner-b@staging.local','$hash',now()) ON CONFLICT(id) DO UPDATE SET encrypted_password='$hash',email_confirmed_at=now();" | Out-Null
  $baseline=Sql "SELECT coalesce(string_agg(key||'='||coalesce(value,'NULL'),',' ORDER BY key),'') FROM settings WHERE user_id='$OWNER_A';"
- $env:DATABASE_URL='postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable';$env:ADDR='127.0.0.1:8099';$env:APP_ENV='development';$env:R2_ENDPOINT='';$env:R2_ACCESS_KEY_ID='';$env:R2_SECRET_ACCESS_KEY='';$env:R2_BUCKET='';$env:PURGE_SECRET='smoke-purge-secret'
+ $env:DATABASE_URL='postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable';$env:ADDR='127.0.0.1:8099';$env:APP_ENV='development';$env:R2_ENDPOINT='';$env:R2_ACCESS_KEY_ID='';$env:R2_SECRET_ACCESS_KEY='';$env:R2_BUCKET=''; $env:R2_BUCKET_NAME='';$env:PURGE_SECRET='smoke-purge-secret'
  $ls=@(Get-NetTCPConnection -LocalPort 8099 -State Listen -ErrorAction SilentlyContinue); foreach($l in $ls){Stop-Process -Id $l.OwningProcess -Force -ErrorAction SilentlyContinue}; $api=Start-Process $apiExe -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $tmpDir 'pembayaran-api.out') -RedirectStandardError (Join-Path $tmpDir 'pembayaran-api.err')
  $ready=$false;for($i=0;$i -lt 40;$i++){Start-Sleep -Milliseconds 300;if((curl.exe -s -o NUL -w '%{http_code}' "$apiURL/api/health")-eq '200'){$ready=$true;break}};if(!$ready){throw 'API tidak siap'}
  $a=Get-SessionCookie 'owner-a@staging.local';$b=Get-SessionCookie 'owner-b@staging.local';$cs=Get-SessionCookie 'cs-a@staging.local'

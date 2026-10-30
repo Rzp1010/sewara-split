@@ -139,7 +139,7 @@ try {
     $env:DATABASE_URL = 'postgres://sewara:sewara123@127.0.0.1:5433/sewara?sslmode=disable'
     $env:ADDR = '127.0.0.1:8099'
     $env:APP_ENV = 'development'
-    $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''
+    $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''; $env:R2_BUCKET_NAME = ''
     $env:WEBHOOK_TELEGRAM_SECRET = $SECRET
     $env:TELEGRAM_API_BASE = $stubURL
     $env:TELEGRAM_CHAT_ID = '-1003838354394'
