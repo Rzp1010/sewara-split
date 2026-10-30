@@ -123,7 +123,11 @@ function Stop-Container {
 }
 
 function Reset-Container {
-    docker rm -f $containerName 2>$null | Out-Null
+    # -v wajib: image postgres mendeklarasikan VOLUME /var/lib/postgresql/data,
+    # jadi setiap container meninggalkan satu volume anonim. Tanpa -v volume itu
+    # menjadi dangling dan menumpuk (pernah 292 volume / 14,7 GB sampai disk C:
+    # penuh dan Docker melempar 'readdirent _data: input/output error').
+    docker rm -fv $containerName 2>$null | Out-Null
     Write-Host "Container dihapus, jalankan 'start' untuk membuat ulang"
 }
 

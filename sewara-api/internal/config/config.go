@@ -151,12 +151,19 @@ func Load() (Config, error) {
 	smtpHost := strings.TrimSpace(os.Getenv("SMTP_HOST"))
 	smtpFrom := strings.TrimSpace(os.Getenv("SMTP_FROM"))
 	tokenSecret := strings.TrimSpace(os.Getenv("EMAIL_TOKEN_SECRET"))
+	frontendURL := strings.TrimRight(strings.TrimSpace(os.Getenv("FRONTEND_URL")), "/")
 	if env == EnvProd {
 		if tokenSecret == "" {
 			return Config{}, fmt.Errorf("EMAIL_TOKEN_SECRET wajib diisi di produksi")
 		}
 		if mailDriver == "smtp" && (smtpHost == "" || smtpFrom == "") {
 			return Config{}, fmt.Errorf("konfigurasi SMTP wajib di produksi: isi SMTP_HOST dan SMTP_FROM")
+		}
+		// Deviasi sengaja dari Next (`FRONTEND_URL || "http://localhost:3000"`):
+		// di produksi fallback itu mengirim tautan verifikasi email ke localhost
+		// tanpa suara, jadi lebih baik gagal start.
+		if frontendURL == "" {
+			return Config{}, fmt.Errorf("FRONTEND_URL wajib diisi di produksi")
 		}
 	}
 
@@ -172,7 +179,7 @@ func Load() (Config, error) {
 		TelegramChatID:        tgChatID,
 		TelegramAPIBase:       tgBase,
 		TelegramTimeout:       tgTimeout,
-		FrontendURL:           strings.TrimRight(strings.TrimSpace(os.Getenv("FRONTEND_URL")), "/"),
+		FrontendURL:           frontendURL,
 		PublicAPIURL:          strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_API_URL")), "/"),
 		MailDriver:            mailDriver,
 		SMTPHost:              smtpHost,

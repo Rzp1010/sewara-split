@@ -500,7 +500,7 @@ yang terakhir masuk batch):** 22
 smoke scripts Docker, exit 0 semua, 477 skenario lulus. `go build ./...`,
 `go vet ./...`, dan `go test -count=1 ./...` (`pembayaran_test.go`,
 `telegram_test.go`, `email_token_test.go`, `auth_extra_test.go`,
-`member_file_test.go`) juga lulus.
+`member_file_test.go`, `config_test.go`) juga lulus.
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -658,7 +658,8 @@ Catatan batch:
   (`log`|`smtp`), `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`,
   `EMAIL_TOKEN_SECRET` (wajib di produksi), `EMAIL_TOKEN_TTL` (default `24h`) —
   di samping `R2_*` yang sudah ada. Di produksi konfigurasi gagal-cepat:
-  `EMAIL_TOKEN_SECRET` wajib dan `SMTP_HOST`/`SMTP_FROM` wajib bila driver smtp.
+  `EMAIL_TOKEN_SECRET`, `FRONTEND_URL`, dan `R2_*` wajib; `SMTP_HOST`/`SMTP_FROM`
+  wajib bila driver smtp.
 - Pelajaran harness: PowerShell TIDAK membedakan besar-kecil huruf pada variabel,
   sehingga `$A` (UUID tenant) bisa tertimpa `$a` (cookie sesi) dan SQL berikutnya
   gagal `invalid input syntax for type uuid`. Skrip smoke memakai nama panjang
@@ -773,3 +774,70 @@ Catatan batch:
   Audit lanjutan bisa menambah edge case tanpa mengubah source aplikasi.
 
 Smoke yang tersedia sudah lulus terpadu. Refactor Go pending approval user.
+
+## 30. Audit portabilitas runtime (2026-10-30)
+
+Dasar: daftar larangan aturan 8 root `AGENTS.md` (rujukan §18 dokumen ini; bagian
+§1-20 tidak ada di salinan repo — dokumen lokal mulai §21). Audit dijalankan
+mekanis atas `sewara-api/internal/**` dan `sewara-api/cmd/**` dengan grep
+berbukti, bukan pembacaan sekilas.
+
+| Larangan | Cara diperiksa | Hasil |
+|---|---|---|
+| State/berkas pengguna di disk lokal | `os.Create\|os.WriteFile\|ioutil.WriteFile\|os.OpenFile\|os.Mkdir(All)\|os.Remove` | 0 temuan |
+| Sesi/state di memori proses | `^var `, `sync.Map`, `sync.Mutex` | hanya sentinel error + regex + map lookup read-only; 0 state mutable |
+| Timer systemd/cron OS untuk urusan aplikasi | `time.NewTicker\|time.Tick(\|time.AfterFunc\|cron` | 2 temuan: ticker internal `cmd/api/main.go:101` (purge bukti bayar) dan `:135` (bersihkan sesi kedaluwarsa) |
+| Memanggil binari shell dari aplikasi | `os/exec`, `exec.Command` | 0 temuan |
+| Path/alamat mati di kode | `https?://`, `/var/`, `/home/`, `[A-Z]:\` | 2 alamat, keduanya default yang bisa ditimpa env (lihat temuan) |
+| Log ke file | `os.OpenFile`, `SetOutput` | 0 temuan; semua log ke `os.Stdout` (`main.go:123-128` slog JSON/teks; `mail.go:63` driver log) |
+| Build dengan CGO aktif | import `"C"`, `cgo`, isi `go.mod` | 0 temuan; seluruh dependensi murni Go (pgx v5, aws-sdk-go-v2, x/crypto), build di smoke memakai `CGO_ENABLED=0` |
+
+Temuan yang perlu tindakan:
+
+1. `FRONTEND_URL` kosong di produksi membuat `callback` mengarahkan ke
+   `http://localhost:3000` (`internal/httpapi/handlers_auth_extra.go:159`). Ini
+   paritas Next (`process.env.FRONTEND_URL || "http://localhost:3000"`), tetapi di
+   produksi ia menjadi salah-konfigurasi yang gagal diam-diam: tautan verifikasi
+   email akan membawa pengguna ke localhost. **SELESAI (2026-10-30):** `Load()`
+   kini gagal-cepat dengan `FRONTEND_URL wajib diisi di produksi` (deviasi sengaja
+   dari paritas Next), dan `internal/config/config_test.go` menahan perilaku itu:
+   produksi tanpa `FRONTEND_URL` gagal, produksi lengkap lulus dan memangkas garis
+   miring akhir, dev tanpa `FRONTEND_URL` tetap lulus (fallback localhost hanya
+   untuk pengembangan).
+2. `TELEGRAM_API_BASE` default `https://api.telegram.org` (`internal/config/config.go:118`)
+   adalah default yang sah dan memang seam uji; tidak perlu diubah.
+
+Catatan non-pelanggaran: unggahan dibaca ke memori dengan batas tegas
+(`MaxBytesReader` 6 MiB untuk multipart, `LimitReader` 5-10 MiB) dan objek R2
+dibaca dengan batas `maxObjectSize` 32 MiB — tidak menyentuh disk, hanya beban
+memori per permintaan yang wajar untuk proses tunggal.
+
+## 31. Insiden disk C: penuh saat batch (2026-10-30)
+
+Gejala: batch 22 skrip berhenti di skrip ke-20 (`smoke-pembayaran.ps1`,
+`smoke-eksternal.ps1`, `smoke-auth-extra.ps1`) dengan "Gagal: 0 dari 0 skenario"
+dan container staging tidak jalan; satu skrip melaporkan
+`Error response from daemon: container ... is not running`.
+19 skrip sebelumnya hijau, `go build`/`go vet`/`go test` bersih -- jadi bukan
+regresi kode.
+
+Akar masalah: `docker volume prune` membebaskan **14,7 GB** dan jumlah volume
+turun 293 -> 1. Penyebabnya `docker run` di `scripts/docker-staging.ps1` tanpa
+`-v`, sementara image `postgres` mendeklarasikan `VOLUME /var/lib/postgresql/data`:
+setiap `reset`/`start` meninggalkan satu volume anonim, dan `docker rm -f` (tanpa
+`-v`) tidak ikut menghapusnya. Setelah ratusan siklus, disk C: 0 byte bebas dan
+filesystem di dalam vhdx Docker melempar
+`readdirent _data: input/output error` sehingga `prune`/`rm` pun gagal.
+
+Perbaikan:
+
+- `scripts/docker-staging.ps1` `Reset-Container` kini `docker rm -fv` (satu flag,
+  mengembalikan perilaku "data uji segar" sekaligus mencegah volume menumpuk).
+- Ruang dikembalikan dengan compact vhdx (butuh Administrator): `wsl --shutdown`,
+  lalu `diskpart` -> `select vdisk file=...\Docker\wsl\disk\docker_data.vhdx`,
+  `attach vdisk readonly`, `compact vdisk`, `detach vdisk`. Hasil: C: 0,18 GB ->
+  12,9 GB bebas. Catatan: `wsl --manage docker-desktop --set-sparse true` TIDAK
+  cukup (eksperimental, `fstrim` melaporkan 0 byte ter-trim).
+- Pelajaran operasional: kalau smoke tiba-tiba gagal massal dengan 0 skenario,
+  periksa ruang disk dan jumlah volume Docker lebih dulu, bukan kode.
+
