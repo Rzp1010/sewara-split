@@ -487,14 +487,14 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 14 smoke scripts, 279 skenario lulus (batch Docker
-berurutan 2026-10-29). Ini tidak membuktikan seluruh endpoint migration Go;
+**Cakupan verifikasi terakhir:** 15 smoke scripts, 305 skenario lulus (batch Docker
+berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
-**Full batch berurutan 2026-10-29 (pasca PATCH/DELETE member-types, GET/PATCH
-transactions `:id`, GET/POST transaction-items):** 14 smoke scripts Docker, exit 0
-semua, 279 skenario lulus.
+**Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
+transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
+logs/login):** 15 smoke scripts Docker, exit 0 semua, 305 skenario lulus.
 
 | Skrip | Skenario | Hasil |
 |---|---:|---|
@@ -512,8 +512,20 @@ semua, 279 skenario lulus.
 | `smoke-promo-logika.ps1` | 18 | PASS |
 | `smoke-transactions.ps1` | 26 | PASS |
 | `smoke-transaction-items.ps1` | 20 | PASS |
+| `smoke-logs.ps1` | 26 | PASS |
 
 Catatan batch:
+
+- `smoke-logs.ps1` baru (26 skenario): CRUD log aktivitas (stamp `user_id` tenant,
+  isolasi RLS, hapus by ids / `olderThanDays` / semua) + log login (owner = tenant
+  sendiri, superadmin = semua, staf lain 403). Uji isolasi lewat isi body, bukan
+  status.
+- `/api/logs/login` membaca `login_logs` yang RLS-nya aktif **tanpa policy**, jadi
+  akses lewat `inSystemTx` (jalur sistem, sama seperti service role backend Next)
+  dengan filter `owner_id` eksplisit. Role dari `db.Identity`, bukan query profil lagi.
+- Paritas login sukses diperbaiki: backend Next menulis `owner_id || user_id`, jadi
+  login sukses owner memakai `user_id` sendiri — tanpa ini halaman log login tenant
+  owner kosong. Perubahan kecil di `afterLoginSuccess`.
 
 - `smoke-transaction-items.ps1` baru (20 skenario): GET `single`/`bulk`/`all` +
   POST replace item satu transaksi. Isolasi tenant diuji lewat RLS (kunci tenant B

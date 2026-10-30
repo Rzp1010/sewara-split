@@ -136,6 +136,10 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | PATCH /api/transactions/{id} | `handlers_transactions.go` | (cakupan smoke-transactions) |
 | GET /api/transaction-items | `handlers_transaction_items.go` | 20 |
 | POST /api/transaction-items | `handlers_transaction_items.go` | 20 |
+| GET /api/logs | `handlers_logs.go` | 26 |
+| POST /api/logs | `handlers_logs.go` | 26 |
+| DELETE /api/logs | `handlers_logs.go` | 26 |
+| GET /api/logs/login | `handlers_logs.go` | 26 |
 
 Sisa kerja setelah audit pemakaian (bagian berikutnya): **24 path / 36 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati). Deviasi kontrak yang
@@ -269,9 +273,12 @@ data lama tetap utuh sampai cutover.
 - Masih ada metode mati di dalam route yang tetap hidup. Jangan diport, tapi juga
   jangan dihapus sebelum cutover (masih dipakai sebagai rujukan paritas):
   `DELETE /api/inventory/{id}` (`api.inventory.delete` tak pernah dipanggil; hapus
-  inventaris selalu lewat `bulk-delete`), `GET /api/logs` dan `DELETE /api/logs`
-  (`getLogs`, `deleteLogs`), serta `GET /api/invoice/header` lewat
+  inventaris selalu lewat `bulk-delete`), serta `GET /api/invoice/header` lewat
   `api.invoice.headerGet` (yang dipakai adalah URL langsungnya di komponen).
+- `/api/logs` (dikoreksi 2026-10-29): `GET` hidup — dipakai `getLogsTerbaru` di
+  `log/page.js`; `POST` hidup — `tambahLogs` dipanggil dari booking/status.
+  Hanya `DELETE` (pembungkus `deleteLogs`/`deleteOldLogs`) yang belum ada pemanggil
+  halaman; tetap diport sebagai paritas. `/api/logs/login` dipakai `loginlog/page.js`.
 - `/api/transaction-items` bukan lagi kandidat mati (dikoreksi 2026-10-29):
   `GET` dipakai dua halaman (`getTransactionItemsSemua` di laporan/page.js,
   `getTransactionItemsBulk` di status/page.js), dan `POST` sudah diport sebagai

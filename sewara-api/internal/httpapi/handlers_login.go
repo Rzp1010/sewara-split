@@ -304,6 +304,13 @@ func (s *Server) afterLoginSuccess(userID, email string, ownerID *string, ip, us
 		s.log.Error("gagal mereset penalti login", "err", err)
 	}
 
+	// Paritas backend Next: login sukses memakai `owner_id || user_id`. Owner tidak
+	// punya owner_id, jadi jejaknya harus memakai user_id sendiri supaya halaman
+	// log login tenant menampilkan aktivitas login owner.
+	if ownerID == nil {
+		ownerID = &userID
+	}
+
 	detail := "login berhasil"
 	if err := s.db.InsertLoginLog(ctx, db.LoginLog{
 		Email: email, OwnerID: ownerID, Event: "login_sukses",

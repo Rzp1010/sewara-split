@@ -76,6 +76,13 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/transaction-items", s.requireAuth(s.handleTransactionItemsGet))
 	mux.HandleFunc("POST /api/transaction-items", s.requireAuth(s.handleTransactionItemsPost))
 
+	// Logs. `GET /api/logs/login` tidak bentrok dengan `GET /api/logs`:
+	// ServeMux mencocokkan pola tanpa trailing slash secara eksak.
+	mux.HandleFunc("GET /api/logs", s.requireAuth(s.handleLogsGet))
+	mux.HandleFunc("POST /api/logs", s.requireAuth(s.handleLogsPost))
+	mux.HandleFunc("DELETE /api/logs", s.requireAuth(s.handleLogsDelete))
+	mux.HandleFunc("GET /api/logs/login", s.requireAuth(s.handleLogsLoginGet))
+
 	// Fallback supaya 404 tetap memakai envelope standar, bukan teks polos.
 	mux.HandleFunc("/", s.handleNotFound)
 
