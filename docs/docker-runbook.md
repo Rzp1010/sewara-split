@@ -280,10 +280,14 @@ acl = private
 ```
 
 - Buat token R2 khusus bucket backup (idealnya hanya bucket itu) — bukan token
-  akun. Bucket dump terpisah, mis. `sewara-backup`, prefix `db`.
+  akun. Bucket dump terpisah, mis. `sewara-backup`, prefix `db`. Token cukup
+  **Object Read & Write pada bucket itu**; izin tingkat bucket tidak diperlukan
+  (dan kalau tidak ada, skrip tetap jalan asalkan `--s3-no-check-bucket` dipakai
+  dan `rclone mkdir` tidak dipanggil — lihat §Hasil uji).
 - Nama remote (`r2backup`) bebas; samakan dengan `RCLONE_REMOTE` di unit.
-- Supaya backup tahan hapus: aktifkan Object Lock/retention di bucket backup —
-  `--min-age` hanya rotasi normal, bukan proteksi dari penghapusan.
+- Supaya backup tahan hapus: aktifkan Object Lock/retention **di dashboard
+  Cloudflare** (token objek tidak bisa mengaturnya) — `--min-age` hanya rotasi
+  normal, bukan proteksi dari penghapusan.
 
 ### Verifikasi jalur (sebelum diandalkan)
 
@@ -306,21 +310,96 @@ rclone --config /etc/sewara/rclone.conf check /srv/sewara/restore r2backup:sewar
 Restore ke DB scratch dulu (prosedur di `runbook-migrasi-mesin.md`), jangan
 langsung ke DB produksi.
 
-### Hasil uji 2026-10-30
+### Hasil uji 2026-10-30 (kredensial asli, akun R2 backup terpisah)
 
-Diuji dengan remote `:local:` palsu (tanpa kredensial asli), di laptop (Windows)
-dan di homelab (Linux + Docker): `copy` + `check` → `0 differences found` /
-`2 matching files`; rotasi remote benar-benar mengosongkan tujuan; berkas sumber
-utuh dan `sha256sum -c` OK; `RCLONE_REMOTE` kosong → pesan jelas + exit 2
-(gagal cepat, bukan diam-diam sukses).
+Ujung-ke-ujung dibuktikan di homelab: dump + `.sha256` naik ke bucket
+(`2 matching files`), `rclone check` → `0 differences found`, **diunduh balik ke
+folder lain dan `sha256sum -c` lulus**, rotasi retensi 0 hari mengosongkan tujuan,
+berkas sumber tetap utuh. Semua RC=0.
 
-Temuan saat uji: image `rclone/rclone` berbasis **alpine tanpa bash** → skrip
+Dua hal yang WAJIB diingat dari uji ini (kalau dilupakan, backup gagal total):
+
+- **Jangan `rclone mkdir`** di tujuan S3/R2: token yang dibatasi hanya ke satu
+  bucket akan ditolak `CreateBucket` 403 dan seluruh upload batal. `copy` sudah
+  membuat prefix sendiri.
+- **Pakai `--s3-no-check-bucket`** (sudah ada di skrip): tanpa itu rclone menyentuh
+  `HeadBucket`/`CreateBucket` yang ditolak token objek.
+
+Yang wajar muncul di log: `GetBucketVersioning ... 403 AccessDenied` saat hapus —
+rclone lanjut "assuming unversioned" dan penghapusan tetap berhasil (RC=0).
+Konsekuensinya: **Object Lock/retention hanya bisa diatur di dashboard Cloudflare**,
+bukan lewat rclone. Rotasi juga bisa diserahkan ke lifecycle rule bucket kalau mau.
+
+Catatan teknis lain: image `rclone/rclone` berbasis **alpine tanpa bash** → skrip
 ditulis POSIX `sh` dan unit memakai `--entrypoint sh` (kalau tidak:
 `bash: executable file not found`). `--user root` perlu untuk membaca kunci mode
 600; folder backup di-mount **read-only**.
 
 Lapis ketiga (GitHub Actions menarik dari R2 → artifact 90 hari) menyusul setelah
 bucket backup terbukti terisi.
+
+## Konsol DB (Adminer)
+
+Adminer = padanan phpMyAdmin untuk Postgres (lihat tabel, jalankan SQL,
+import/export). Ini **bukan** dashboard aplikasi — dashboard bisnis tetap
+frontend + API Go. Adminer setara akses root DB, jadi perlakuannya sama seperti
+kunci SSH.
+
+**Keputusan 2026-10-30: sementara cukup lewat SSH tunnel** (Cloudflare Access
+ditunda, jalur & langkahnya tetap dicatat di bagian bawah supaya tidak perlu
+dirancang ulang). Adminer tetap di profil `admin` supaya tidak ikut jalan di
+mesin 1 GB:
+
+```bash
+# di VPS: jalankan Adminer (loopback saja, tidak ada port publik)
+docker compose -f docker-compose.prod.yml --profile admin up -d adminer
+# matikan setelah selesai (hemat memori)
+docker compose -f docker-compose.prod.yml --profile admin stop
+```
+
+Dari laptop:
+
+```bash
+ssh -L 8081:127.0.0.1:8081 <user>@<vps>    # lalu buka http://localhost:8081
+```
+
+Login Adminer: server `db`, user `sewara`, database `sewara`, password dari
+`/etc/sewara/pg_password`.
+
+Verifikasi: `curl -sI http://127.0.0.1:8081 | head -1` → `200`. Port 8081
+**hanya** loopback; kalau perlu diakses dari HP tanpa SSH, pilihannya jalur
+Cloudflare di bawah — jangan pernah membuka 8081 ke publik.
+
+### Nanti: Cloudflare Access (kalau mau dari HP tanpa SSH)
+
+Sudah disiapkan di compose sebagai profil `tunnel`; tinggal dihidupkan bersama
+Adminer:
+
+```bash
+docker compose -f docker-compose.prod.yml --profile admin --profile tunnel up -d
+```
+
+Langkah dashboard Cloudflare (sekali saja):
+
+1. Zero Trust → Networks → Tunnels → **Create tunnel** (Cloudflared), mode
+   remotely managed. Salin token ke VPS:
+   `sudo mkdir -p /etc/sewara/cloudflared && sudo install -m 600 /dev/stdin /etc/sewara/cloudflared/token`
+   (tempel token, Enter, Ctrl-D). **Jangan pernah menempel token ke chat.**
+2. Di tunnel yang sama → Public hostname → tambah `dbadmin.sewara.my.id` →
+   service `http://adminer:8080` (`adminer` = nama service di network
+   `sewara_internal`). Pakai hostname terpisah dari `app.sewara.my.id` supaya
+   tidak mengganggu vhost aplikasi.
+3. Zero Trust → Access → Applications → **Add self-hosted** untuk hostname itu,
+   policy `Allow`, selector `Emails` = emailmu, metode One-time PIN, durasi sesi
+   pendek (mis. 8 jam).
+
+Cek: `docker compose -f docker-compose.prod.yml logs --tail 20 cloudflared | grep -i registered`,
+dan dari luar tanpa login Access `curl -sI https://dbadmin.sewara.my.id` harus
+302 ke `*.cloudflareaccess.com` — kalau 200, berarti konsol DB terbuka untuk umum.
+
+Catatan: `--token-file` berarti container harus bisa membaca berkas 600 itu; image
+`cloudflare/cloudflared` standar berjalan sebagai root sehingga aman — kalau nanti
+ganti varian `-nonroot`, ubah pemilik ke uid 65532.
 
 ## Deploy produksi (urutan, belum dijalankan)
 
