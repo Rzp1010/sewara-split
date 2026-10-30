@@ -151,10 +151,16 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | GET /api/invoice/header | `handlers_invoice.go` | 17 (storage off + guard prefix) |
 | POST /api/invoice/header | `handlers_invoice.go` | 17 (storage off) |
 | DELETE /api/invoice/header | `handlers_invoice.go` | 17 (storage off + guard prefix) |
+| GET /api/pembayaran/export | `handlers_pembayaran.go` | 24 |
+| GET /api/pembayaran/photo | `handlers_pembayaran.go` | 24 (storage off + guard prefix) |
+| POST /api/pembayaran/purge | `handlers_pembayaran.go` | 24 (secret + storage off) |
+| GET /api/pembayaran/reminder | `handlers_pembayaran.go` | 24 |
+| POST /api/pembayaran/reminder-ack | `handlers_pembayaran.go` | 24 |
+| POST /api/pembayaran/upload | `handlers_pembayaran.go` | 24 (storage off) |
 
-Sisa kerja setelah audit pemakaian (bagian berikutnya): **15 path / 15 metode**
+Sisa kerja setelah audit pemakaian (bagian berikutnya): **9 path / 9 metode**
 (angka "61" sebelumnya belum dikurangi endpoint mati; angka "24/36" sebelumnya
-belum dikurangi port domain logs, manajemen, dan invoice). Deviasi kontrak yang
+belum dikurangi port domain logs, manajemen, invoice, dan pembayaran). Deviasi kontrak yang
 disengaja dicatat di `rencana-migrasi-go-2026-10-27.md` §17, §22, dan §23.
 
 ## Pemakaian endpoint di frontend (audit 2026-10-28)
@@ -211,6 +217,8 @@ kini melaporkan **47 path / 68 metode** tanpa satu pun pembungkus mati.
 | `/api/blacklist/upload` | POST | FILE | app/dashboard/blacklist/page.js, components/BlacklistModal.jsx |
 | `/api/inventory/:id` | PATCH, DELETE | LOGIKA | app/dashboard/booking/page.js, app/dashboard/inventaris/page.js, app/dashboard/status/page.js |
 | `/api/inventory/bulk-delete` | POST | CRUD | app/dashboard/inventaris/page.js |
+| `/api/invoice-counter` | POST | LOGIKA | app/dashboard/booking/page.js |
+| `/api/invoice/header` | GET, POST, DELETE | FILE | components/InvoiceLayoutEditor.jsx, app/dashboard/pengaturan/page.js, components/InvoiceBody.jsx [url] |
 | `/api/logs` | GET, POST, DELETE | CRUD | app/dashboard/booking/page.js, app/dashboard/status/page.js |
 | `/api/logs/login` | GET | CRUD | app/dashboard/loginlog/page.js |
 | `/api/member-types` | GET, POST | CRUD | app/dashboard/member/page.js, app/dashboard/member/page.js [url] |
@@ -264,7 +272,7 @@ data lama tetap utuh sampai cutover.
 | Endpoint | Metode | Pemanggil |
 |---|---|---|
 | `/api/auth/callback` | GET | Tautan verifikasi email: `emailRedirectTo` di `/api/auth/register` |
-| `/api/pembayaran/purge` | POST | Cron VPS harian (README backend, `PURGE_SECRET`). Di Go wajib jadi ticker internal, bukan cron OS |
+| `/api/pembayaran/purge` | POST | Cron VPS (README backend, `PURGE_SECRET`). Di Go: ticker internal `cmd/api/main.go` (hari WIB 15, jam ≥3, idempoten), endpoint tetap ada untuk paritas + pemicu manual |
 | `/api/telegram/webhook` | POST | Server Telegram |
 | `/api/webhooks/payment` | POST | Payment gateway |
 
@@ -272,8 +280,8 @@ data lama tetap utuh sampai cutover.
 
 - Angka ini menggantikan asumsi "61 endpoint tersisa". Yang perlu ada di Go:
   43 path yang dipakai + 4 path yang dipanggil pihak lain = **47 path
-  (68 metode)**. Tiga puluh dua path di antaranya sudah diport (termasuk domain
-  logs, manajemen, dan invoice), jadi sisa **15 path / 15 metode**. Empat path
+  (68 metode)**. Tiga puluh delapan path di antaranya sudah diport (termasuk domain
+  logs, manajemen, invoice, dan pembayaran), jadi sisa **9 path / 9 metode**. Empat path
   ber-pembungkus mati tidak perlu diport sama sekali.
 - `inventory_units` tidak lagi disentuh kode mana pun setelah route matinya
   dibuang (stok sekarang dihitung dari `inventory.sns`). Tabelnya sengaja

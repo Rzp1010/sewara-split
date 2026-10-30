@@ -93,6 +93,14 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/admin/logs", s.requireAuth(s.handleAdminLogsGet))
 	mux.HandleFunc("POST /api/admin/data", s.requireAuth(s.handleAdminDataPost))
 
+	// Pembayaran.
+	mux.HandleFunc("GET /api/pembayaran/export", s.requireAuth(s.handlePembayaranExport))
+	mux.HandleFunc("GET /api/pembayaran/photo", s.requireAuth(s.handlePembayaranPhoto))
+	mux.HandleFunc("POST /api/pembayaran/purge", s.handlePembayaranPurge)
+	mux.HandleFunc("GET /api/pembayaran/reminder", s.requireAuth(s.handlePembayaranReminder))
+	mux.HandleFunc("POST /api/pembayaran/reminder-ack", s.requireAuth(s.handlePembayaranAck))
+	mux.HandleFunc("POST /api/pembayaran/upload", s.requireAuth(s.handlePembayaranUpload))
+
 	// Invoice.
 	mux.HandleFunc("POST /api/invoice-counter", s.requireAuth(s.handleInvoiceCounterPost))
 	mux.HandleFunc("GET /api/invoice/header", s.requireAuth(s.handleInvoiceHeaderGet))

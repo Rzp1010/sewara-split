@@ -61,6 +61,9 @@ func run() error {
 
 	// Sesi kedaluwarsa dibersihkan berkala; tanpa ini tabel auth.sessions tumbuh terus.
 	go cleanupSessions(ctx, log, database)
+	if store != nil {
+		go cleanupPaymentProofs(ctx, log, store)
+	}
 
 	srv := &http.Server{
 		Addr:    cfg.Addr,
@@ -92,6 +95,29 @@ func run() error {
 	defer cancel()
 
 	return srv.Shutdown(shutdownCtx)
+}
+
+func cleanupPaymentProofs(ctx context.Context, log *slog.Logger, store *storage.Store) {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			now := time.Now().In(time.FixedZone("WIB", 7*3600))
+			if now.Day() != 15 || now.Hour() < 3 {
+				continue
+			}
+			cutoff := time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.FixedZone("WIB", 7*3600))
+			n, err := store.DeleteOlderThan(ctx, "bukti-bayar/", cutoff)
+			if err != nil {
+				log.Error("gagal purge bukti bayar terjadwal", "err", err)
+				continue
+			}
+			log.Info("purge bukti bayar terjadwal selesai", "deleted", n, "cutoff", cutoff.UTC().Format(time.RFC3339Nano))
+		}
+	}
 }
 
 func newLogger(prod bool) *slog.Logger {

@@ -487,15 +487,16 @@ scripts, exit 0 semua. Skenario: blacklist 41, dashboard 6, inventory 20,
 inventory-crud 32, login 18, members 24, member-types 8, profiles 8, promo 30,
 promo-logika 18, settings 13, auth 4 = **222 skenario**.
 
-**Cakupan verifikasi terakhir:** 17 smoke scripts, 371 skenario lulus (batch Docker
+**Cakupan verifikasi terakhir:** 18 smoke scripts, 395 skenario lulus (batch Docker
 berurutan 2026-10-30). Ini tidak membuktikan seluruh endpoint migration Go;
 lihat batas cakupan di bawah. `go test ./...` sebelumnya lulus sebagai build/package
 check, tetapi semua package tidak punya test file.
 
 **Full batch berurutan 2026-10-30 (pasca PATCH/DELETE member-types, GET/PATCH
 transactions `:id`, GET/POST transaction-items, GET/POST/DELETE logs + GET
-logs/login, domain manajemen, lalu domain invoice admin):** 17 smoke scripts
-Docker, exit 0 semua, 371 skenario lulus.
+logs/login, domain manajemen, domain invoice admin, lalu grup pembayaran):** 18
+smoke scripts Docker, exit 0 semua, 395 skenario lulus. `go build ./...`,
+`go vet ./...`, dan `go test ./...` (pembayaran_test.go) juga lulus.
 
 Syarat menjalankan batch: mulai dari container yang dibuat ulang
 (`docker-staging.ps1 reset` lalu `start`). Skrip berbagi satu DB dan
@@ -522,8 +523,39 @@ regresi kode: setelah reset, 17/17 hijau).
 | `smoke-logs.ps1` | 26 | PASS |
 | `smoke-manajemen.ps1` | 49 | PASS |
 | `smoke-invoice.ps1` | 17 | PASS |
+| `smoke-pembayaran.ps1` | 24 | PASS |
 
 Catatan batch:
+
+- `smoke-pembayaran.ps1` baru (24 skenario): keenam endpoint pembayaran diuji
+  tanpa R2 (`R2_*` kosong). `purge` satu-satunya endpoint yang TIDAK dibungkus
+  `requireAuth` — 401 berasal dari perbandingan header `x-purge-secret` dengan env
+  `PURGE_SECRET`, jadi asersinya `{"ok":false,"message":"Unauthorized"}`, bukan
+  kode `UNAUTHORIZED`. `photo` membalas **400** "Path tidak valid." untuk prefix
+  tenant lain (paritas Next), sedangkan 503 `msgStorageOff` dipakai untuk prefix
+  sendiri saat storage mati. `reminder-ack` oleh staf diverifikasi menulis baris
+  `settings` milik OWNER (bukan id staf) dan tidak menyentuh tenant lain; skrip
+  memulihkan settings owner A ke seed di akhir. `upload` diuji tiga cabang:
+  transaksiId bukan UUID (400), transaksi tidak ada (404), transaksi ada +
+  storage mati (503).
+- Deviasi sengaja dari Next: bila `store == nil`, handler pembayaran membalas 503
+  `EXTERNAL_SERVICE_ERROR` `msgStorageOff` (Next jatuh ke 500 lewat
+  `withErrorHandler`) — konsisten dengan handler blacklist/invoice.
+- Logika waktu tidak bisa diandalkan ke jam mesin saat batch, jadi dipisah ke
+  fungsi murni ber-parameter `now` dan diuji di
+  `internal/httpapi/pembayaran_test.go`: jendela hari WIB 8–15, pemilihan bulan
+  reminder (−2 dengan fallback −3, termasuk lintas tahun), dan cutoff purge
+  (00:00 WIB tanggal 1 bulan berjalan −2 bulan, termasuk Januari/Februari).
+  Purge terjadwal dijalankan ticker internal `cmd/api/main.go` (hari WIB 15, jam
+  ≥3, idempoten lewat cutoff) — cron OS dilarang aturan portabilitas; endpoint
+  `POST /api/pembayaran/purge` tetap ada untuk paritas dan pemicu manual.
+- Jalur sukses berkas masih belum berbukti: ZIP `export`, stream byte `photo`,
+  dan unggah ke R2 butuh bucket hidup (menunggu rotasi secret R2). Yang terbukti
+  baru kontrak: validasi, guard prefix, 404, 503.
+- Pelajaran harness: PowerShell TIDAK membedakan besar-kecil huruf pada variabel,
+  sehingga `$A` (UUID tenant) bisa tertimpa `$a` (cookie sesi) dan SQL berikutnya
+  gagal `invalid input syntax for type uuid`. Skrip smoke memakai nama panjang
+  (`$OWNER_A`).
 
 - `smoke-invoice.ps1` baru (17 skenario): `POST /api/invoice-counter` memakai RPC
   `increment_invoice_counter` (versi per-tenant, migration 20260913) sehingga

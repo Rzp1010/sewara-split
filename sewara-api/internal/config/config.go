@@ -15,6 +15,7 @@ type Config struct {
 	Env          string
 	CookieSecure bool
 	SessionTTL   time.Duration
+	PurgeSecret  string
 
 	// Storage adalah object storage S3-compatible (Cloudflare R2). Di development
 	// boleh kosong; di produksi wajib lengkap karena upload foto jaminan, foto
@@ -85,6 +86,7 @@ func Load() (Config, error) {
 		Env:          env,
 		CookieSecure: env == EnvProd,
 		SessionTTL:   ttl,
+		PurgeSecret:  os.Getenv("PURGE_SECRET"),
 		Storage:      storageCfg,
 	}, nil
 }
