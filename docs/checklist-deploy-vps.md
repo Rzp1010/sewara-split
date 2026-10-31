@@ -210,6 +210,17 @@ Urutan yang harus diuji sebelum menyentuh produksi:
    tercatat), bukan ditebak saat produksi.
 4. Cocokkan `members`, `users`, dan `schema_migrations` produksi lama vs baru,
    lalu jalankan drill restore dari dump yang sudah naik ke R2.
+5. **Audit bentuk `items` sebelum rilis** (utang 2026-10-31: item tanpa `ref`
+   menjatuhkan halaman booking — rincian di `cutover-plan.md` §11):
+
+   ```sql
+   SELECT count(*) FROM transactions t
+    WHERE jsonb_typeof(t.items) = 'array'
+      AND EXISTS (SELECT 1 FROM jsonb_array_elements(t.items) e WHERE e->'ref' IS NULL);
+   ```
+
+   Hasil ≠ 0 → tanam normalisasi di `sewara-frontend/src/lib/db.js` (batas baca)
+   lebih dulu, lalu bangun ulang frontend. Jangan menambal di DB produksi.
 
 Kesimpulan: Fase B perlu satu sesi latihan sendiri di homelab dengan dump
 percobaan, sebelum jadwal cutover. Rencana jendelanya di

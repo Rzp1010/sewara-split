@@ -730,3 +730,9 @@ Yang masih menunggu di VPS: pemindahan data (Fase B) + vhost host.
    dipakai** — berkas `.github/workflows/build-image.yml` dihapus 2026-10-30 atas
    keputusan user (manual, hindari otomatisasi). Build di VPS terukur 207 detik /
    669 MB / swap 387 MB, tanpa OOM.
+9. **Utang data 2026-10-31 (temuan real use homelab):** elemen `transactions.items`
+   tanpa `ref` menjatuhkan `/dashboard/booking` (Next 16 menampilkan "This page
+   couldn't load"; `booking/page.js:2825` membaca `i.ref.nama`).
+   Perbaikan disetujui: normalisasi di `lib/db.js` (batas baca) — **ditunda sampai
+   dekat rilis**, karena produksi Next masih dipakai untuk maintenance.
+   Rincian lengkap + daftar baris yang ikut pola sama: `cutover-plan.md` §11.

@@ -282,6 +282,7 @@ maka endpoint baru sejak itu wajib di Go — frontend tetap bebas.
 | Risiko | Mitigasi |
 |---|---|
 | Perbedaan skema/bentuk data antara Supabase dan Postgres self-hosted | Fase 1 dengan data produksi nyata |
+| **Baris `transactions.items` bentuk lama tanpa `ref` menjatuhkan halaman booking** | Ditemukan 2026-10-31 di homelab (lihat catatan di bawah). Sebelum dump produksi dimuat: jalankan audit bentuk items + tanam normalisasi di `lib/db.js` (bukan di render) |
 | Jalur belum terbukti (unggah R2, export ZIP, SMTP Resend) | Diuji di Fase 1; gagal = NO-GO, bukan ditemukan di jendela |
 | Tulisan hilang kalau rollback setelah flip | Jendela singkat + `pm2` tidak dimatikan + dump akhir sebelum flip |
 | Semua pengguna ter-logout saat flip (cookie sesi berbeda) | Diumumkan sebelumnya; lakukan di luar jam kerja |
@@ -289,3 +290,39 @@ maka endpoint baru sejak itu wajib di Go — frontend tetap bebas.
 | Timer/ticker ganda (purge sesi, purge bukti) setelah flip | Setelah `pm2 stop`, hanya ticker Go yang berjalan — dicatat di runbook |
 | Ukuran disk EBS tidak diketahui | Cek di Fase 0 sebelum menetapkan `/srv/sewara` |
 | Node runtime VPS masih v24.21.0 (laptop v24.22.1) | Tidak menghambat cutover Go; dirapikan sebelum Fase 4 |
+
+### Utang terukur: `transactions.items` tanpa `ref` (2026-10-31)
+
+**Gejala:** `/dashboard/booking` menampilkan halaman error bawaan Next 16 —
+teks **"This page couldn't load"** (dari
+`node_modules/next/dist/client/components/builtin/global-error.js:46`, bukan kode
+kita). Console: `Uncaught TypeError: Cannot read properties of undefined
+(reading 'nama')`, dua frame `Array.map` berurutan.
+
+**Titik ledak:** `sewara-frontend/src/app/dashboard/booking/page.js:2825` —
+`{i.qty}x {i.ref.nama}` di dalam `tampil.map((t) => (t.items || []).map(...))`.
+Penjaga `(t.items || [])` hanya melindungi array-nya, bukan isi elemen.
+
+**Penyebab data:** elemen `items` berbentuk lama tanpa kunci `ref`
+(`{idBarang, qty, sn, hargaSatuan, subtotal}` ± `nama`/`jenis`). UI selalu menulis
+`ref` (`page.js:960,973,1543,1562` membentuk `{ idBarang, ref: refBarang, ... }`);
+yang cacat datang dari skrip smoke/uji API yang mengirim items ringkas. Di homelab
+tercatat 5 dari 16 baris. Dibersihkan 2026-10-31 (cadangan
+`/srv/sewara/backup/pra-bersih-20261031.sql`).
+
+**Kelas bug, bukan satu baris:** titik baca `item.ref.*` tanpa penjaga di
+`page.js` ada di baris `995, 1189, 1200, 1211, 1226, 1235, 1239, 1694, 1721, 1732,
+1740, 1750, 1753, 2350, 2353, 2825, 2826, 3137, 3143, 3158`; halaman yang membaca
+transaksi (riwayat, invoice, tracking) perlu diperiksa dengan pola yang sama.
+
+**Bentuk perbaikan yang disetujui (dikerjakan dekat rilis, bukan sekarang):**
+normalisasi **sekali di batas baca** (`sewara-frontend/src/lib/db.js`, tempat
+`getTransactions*` mengembalikan data) — elemen lama diberi `ref` dari kuncinya
+sendiri, sehingga `booking/page.js` tidak disentuh dan fix UI lain tidak
+bertabrakan saat merge. Padanan gaya yang sudah ada: `parseJaminan`
+(`utils.js:33`) dan `item?.ref || item || {}` (`utils.js:116`).
+
+**Kenapa tidak boleh dilewati:** produksi Next sekarang memakai kode yang sama,
+dan dump Supabase Januari 2027 bisa memuat baris items lama — gejalanya akan
+identik: halaman booking mati setelah cutover. Audit data dump masuk daftar
+prasyarat Fase B di `checklist-deploy-vps.md`.
