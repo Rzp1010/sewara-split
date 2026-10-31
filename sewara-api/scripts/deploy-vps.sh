@@ -12,6 +12,14 @@
 #   SEWARA_STATE_FILE    default: /etc/sewara/api-image.txt (tag terpasang sekarang)
 #   SEWARA_SKIP_DRIFT=1  lewati cek drift ledger (WAJIB dicatat alasannya di runbook)
 #
+# Langkah tambahan (semua default MATI; nilai dibaca dari shell atau
+# sewara-api/.env yang juga dipakai `docker compose`):
+#   SEWARA_FRONTEND_STATIC=1  build static export frontend + salin ke SEWARA_WWW_DIR
+#   SEWARA_WWW_DIR            default: /srv/sewara/www
+#   SEWARA_EDGE=1             recreate container edge setelah api naik
+# Unit systemd TIDAK pernah disentuh skrip ini (butuh root); kalau deploy/systemd
+# ikut berubah, skrip hanya mencetak perintah salin untuk dijalankan sendiri.
+#
 # Build di VPS memang ~3,5 menit dan butuh ~700 MB RAM (terukur 2026-10-30) —
 # jadi WAJIB ada swap 2 GB dan sebaiknya dijalankan saat traffic kosong.
 # Container lama tetap melayani selama build (build tidak menyentuh proses jalan).
@@ -20,8 +28,22 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 API_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 REPO_DIR=${SEWARA_REPO_DIR:-$(cd "$API_DIR/.." && pwd)}
+
+# --- env lokal (opsional) -----------------------------------------------------
+# sewara-api/.env sudah dipakai `docker compose`; skrip ini ikut membacanya
+# supaya pengaturan lokal (branch, penanda langkah) tidak perlu diingat di shell.
+# Nilai di .env MENANG atas variabel shell dengan nama sama.
+# Tidak ada langkah otomatis: semua langkah tambahan default MATI (0).
+if [ -f "$API_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$API_DIR/.env"
+  set +a
+fi
+
 BRANCH=${SEWARA_BRANCH:-main}
 STATE=${SEWARA_STATE_FILE:-/etc/sewara/api-image.txt}
+WWW=${SEWARA_WWW_DIR:-/srv/sewara/www}
 COMPOSE=(docker compose -f "$API_DIR/docker-compose.prod.yml")
 HEALTH_URL=http://127.0.0.1:8098/api/health
 
@@ -29,6 +51,8 @@ TARGET=""
 [ "${1:-}" = "--ke" ] && TARGET=${2:?pakai: --ke <commit, mis. a3a1b58>}
 
 log() { echo "[deploy] $*"; }
+
+log "rencana: branch=$BRANCH frontend_static=${SEWARA_FRONTEND_STATIC:-0} edge=${SEWARA_EDGE:-0} www=$WWW"
 
 # --- 0. prasyarat -------------------------------------------------------------
 if ! swapon --show | grep -q .; then
@@ -52,6 +76,15 @@ else
 fi
 SHA=$(git rev-parse --short=7 HEAD)
 log "kode: $SHA ($(git log -1 --format=%s))"
+
+# Pengingat, BUKAN aksi: unit systemd butuh root, jadi skrip ini tidak
+# menyentuhnya. Kalau deploy/systemd ikut berubah di pull tadi, salin manual.
+if git rev-parse 'HEAD@{1}' >/dev/null 2>&1 &&
+   git diff --name-only 'HEAD@{1}' HEAD -- deploy/systemd 2>/dev/null | grep -q .; then
+  log "PERHATIAN: deploy/systemd berubah. Jalankan sendiri:"
+  log "  sudo cp $REPO_DIR/deploy/systemd/sewara*.service $REPO_DIR/deploy/systemd/sewara-backup.timer /etc/systemd/system/"
+  log "  sudo systemctl daemon-reload"
+fi
 
 # Cek drift wallet vs berkas migration (aturan AGENTS 5). Saat rollback dilewati:
 # skema memang sudah versi baru, yang mundur hanya kode.
@@ -81,6 +114,30 @@ log "build $IMG (perkiraan 3-5 menit)"
 export SEWARA_API_IMAGE="$IMG"
 "${COMPOSE[@]}" build api
 
+# --- 2b. frontend static (opsional, default MATI) ------------------------------
+# Hanya untuk jalur Go yang frontend-nya disajikan nginx (homelab, dan nanti
+# Fase 3). Di VPS produksi sekarang frontend masih Next/pm2, jadi biarkan 0.
+# Alamat API ikut terpanggang saat build -> dibaca Next dari
+# sewara-frontend/.env.production.local (gitignored).
+if [ "${SEWARA_FRONTEND_STATIC:-0}" = "1" ]; then
+  FE_DIR="$REPO_DIR/sewara-frontend"
+  log "frontend: build static export -> $WWW (perkiraan 1-3 menit)"
+  cd "$FE_DIR"
+  if [ ! -d node_modules ]; then
+    log "node_modules belum ada -> npm ci"
+    npm ci
+  fi
+  npm run build:static
+  if [ ! -d out ]; then echo "build frontend tidak menghasilkan out/"; exit 4; fi
+  mkdir -p "$WWW"
+  find "$WWW" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  cp -a out/. "$WWW"/
+  log "frontend: $(find "$WWW" -type f | wc -l) berkas di $WWW"
+  cd "$REPO_DIR"
+else
+  log "frontend static: dilewati (SEWARA_FRONTEND_STATIC != 1)"
+fi
+
 # --- 3. naikkan ---------------------------------------------------------------
 prev=""
 [ -f "$STATE" ] && prev=$(cat "$STATE")
@@ -97,6 +154,13 @@ for i in $(seq 1 30); do
 done
 
 if [ "$sehat" = "1" ]; then
+  # --- 4b. edge (opsional, default MATI) --------------------------------------
+  # nginx menyelesaikan nama `api` sekali saat start, jadi container api yang
+  # baru (IP baru) akan ditembak lewat IP lama sampai edge di-recreate.
+  if [ "${SEWARA_EDGE:-0}" = "1" ]; then
+    log "recreate edge (api dapat IP baru)"
+    "${COMPOSE[@]}" --profile edge up -d --force-recreate edge
+  fi
   printf '%s\n' "$IMG" > "$STATE" 2>/dev/null || log "catatan: $STATE tidak bisa ditulis (perlu root)"
   log "SEHAT: $HEALTH_URL 200"
   "${COMPOSE[@]}" ps api

@@ -276,6 +276,30 @@ Dua tambahan operasional:
   dan browser menembak alamat yang salah. Simpan di
   `sewara-frontend/.env.production.local` (gitignored).
 
+### Deploy jadi satu perintah (opt-in)
+
+`sewara-api/scripts/deploy-vps.sh` membaca `sewara-api/.env`, jadi pengaturan
+lokal tidak perlu diingat di shell. Di homelab, tambahkan ke `.env` itu:
+
+```
+SEWARA_BRANCH=dev
+SEWARA_STATE_FILE=/srv/sewara/api-image.txt
+SEWARA_FRONTEND_STATIC=1
+SEWARA_WWW_DIR=/srv/sewara/www
+SEWARA_EDGE=1
+```
+
+Lalu deploy = satu perintah dari akar repo:
+
+```bash
+cd /srv/sewara/app && ./sewara-api/scripts/deploy-vps.sh
+```
+
+Sifatnya sengaja tidak otomatis: tidak ada timer/CI, semua langkah tambahan
+default MATI, dan unit systemd tidak pernah disentuh skrip (kalau `deploy/systemd`
+ikut berubah, skrip hanya mencetak perintah salin). Rollback tetap dua cara:
+otomatis kalau health gagal, atau manual `--ke <commit-lama>`.
+
 ## Hasil uji homelab 2026-10-30 (bentuk produksi di Linux)
 
 Yang diuji: `docker-compose.prod.yml` apa adanya, di `~/sewara-test` (bukan
