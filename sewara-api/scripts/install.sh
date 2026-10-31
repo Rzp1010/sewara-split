@@ -255,7 +255,10 @@ if [ "$ROOT" = /srv/sewara ] && [ "$ETC" = /etc/sewara ]; then
     "$APP_DIR/deploy/systemd/sewara-backup.timer" \
     /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now sewara.service
+  # Sengaja `enable` tanpa `--now`. `up -d` di sini akan memakai SEWARA_API_IMAGE
+  # dari .env, yang pada mesin lama bisa menunjuk image lama (build manual) —
+  # artinya api turun versi tanpa disadari. Yang menaikkan stack adalah deploy.
+  systemctl enable sewara.service
   systemctl enable --now sewara-backup.timer
 else
   log "unit systemd dilewati (isinya mengasumsikan /srv/sewara + /etc/sewara)"
@@ -266,11 +269,11 @@ if [ "$DO_DEPLOY" = 0 ]; then
   log "deploy dilewati (--no-deploy). Jalankan sendiri: cd $APP_DIR && ./sewara-api/scripts/deploy-vps.sh"
 elif [ "$PROD" = 1 ]; then
   log "deploy produksi sengaja TIDAK dijalankan otomatis: lengkapi R2_* dan SMTP_* di $ETC/api.env dulu"
-  log "  lalu: cd $APP_DIR && ./sewara-api/scripts/deploy-vps.sh semua"
+  log "  lalu: cd $APP_DIR && ./sewara-api/scripts/deploy-vps.sh"
 elif sudo -u "$OPERATOR" -H docker info >/dev/null 2>&1 &&
      sudo -u "$OPERATOR" -H test -r "$ETC/api.env"; then
-  log "deploy pertama sebagai $OPERATOR"
-  sudo -u "$OPERATOR" -H bash -lc "cd '$APP_DIR' && ./sewara-api/scripts/deploy-vps.sh semua"
+  log "deploy pertama sebagai $OPERATOR (mode auto)"
+  sudo -u "$OPERATOR" -H bash -lc "cd '$APP_DIR' && ./sewara-api/scripts/deploy-vps.sh"
 else
   log "deploy belum bisa dijalankan sebagai $OPERATOR (grup docker/$GRP belum aktif di sesi sekarang)"
   log "  logout lalu login lagi, kemudian: cd $APP_DIR && ./sewara-api/scripts/deploy-vps.sh"
