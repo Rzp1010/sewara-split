@@ -300,6 +300,15 @@ default MATI, dan unit systemd tidak pernah disentuh skrip (kalau `deploy/system
 ikut berubah, skrip hanya mencetak perintah salin). Rollback tetap dua cara:
 otomatis kalau health gagal, atau manual `--ke <commit-lama>`.
 
+Dasar "build di server" itu sah, bukan jalan buntu: dokumen Docker sendiri
+menyuruh begitu untuk compose satu server —
+<https://docs.docker.com/compose/how-tos/production/> ("The easiest way to deploy
+an application is to run it on a single server"; "Deploying changes":
+`docker compose build web` lalu `docker compose up --no-deps -d web`). Gerbang
+health-nya memakai `--wait` / `--wait-timeout` (Compose v2.1.1+), bukan loop curl
+buatan sendiri. Pola `docker compose pull` hanya berlaku kalau image diambil dari
+registry, dan proyek ini sengaja tidak memakai registry/CI.
+
 ## Hasil uji homelab 2026-10-30 (bentuk produksi di Linux)
 
 Yang diuji: `docker-compose.prod.yml` apa adanya, di `~/sewara-test` (bukan

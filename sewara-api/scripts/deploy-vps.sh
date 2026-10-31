@@ -45,7 +45,6 @@ BRANCH=${SEWARA_BRANCH:-main}
 STATE=${SEWARA_STATE_FILE:-/etc/sewara/api-image.txt}
 WWW=${SEWARA_WWW_DIR:-/srv/sewara/www}
 COMPOSE=(docker compose -f "$API_DIR/docker-compose.prod.yml")
-HEALTH_URL=http://127.0.0.1:8098/api/health
 
 TARGET=""
 [ "${1:-}" = "--ke" ] && TARGET=${2:?pakai: --ke <commit, mis. a3a1b58>}
@@ -138,20 +137,18 @@ else
   log "frontend static: dilewati (SEWARA_FRONTEND_STATIC != 1)"
 fi
 
-# --- 3. naikkan ---------------------------------------------------------------
+# --- 3. naikkan + gerbang health ----------------------------------------------
 prev=""
 [ -f "$STATE" ] && prev=$(cat "$STATE")
 log "image terpasang sebelum: ${prev:-<belum tercatat>}"
-"${COMPOSE[@]}" up -d --no-build api
 
-# --- 4. uji sehat -------------------------------------------------------------
+# Gerbang health memakai fasilitas resmi Compose (sejak v2.1.1): --wait menunggu
+# healthcheck container api lulus dan keluar non-zero kalau lewat
+# --wait-timeout, sehingga langsung masuk cabang rollback di bawah.
 sehat=0
-for i in $(seq 1 30); do
-  # Tanpa -S: pesan galat curl disembunyikan, karena 30 percobaan gagal itu normal
-  # dan cuma membanjiri log.
-  if curl -fs -o /dev/null --max-time 3 "$HEALTH_URL" 2>/dev/null; then sehat=1; break; fi
-  sleep 2
-done
+if "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 90 api; then
+  sehat=1
+fi
 
 if [ "$sehat" = "1" ]; then
   # --- 4b. edge (opsional, default MATI) --------------------------------------
@@ -162,24 +159,22 @@ if [ "$sehat" = "1" ]; then
     "${COMPOSE[@]}" --profile edge up -d --force-recreate edge
   fi
   printf '%s\n' "$IMG" > "$STATE" 2>/dev/null || log "catatan: $STATE tidak bisa ditulis (perlu root)"
-  log "SEHAT: $HEALTH_URL 200"
+  log "SEHAT: api lulus healthcheck (--wait)"
   "${COMPOSE[@]}" ps api
   log "rollback instan kalau perlu: SEWARA_API_IMAGE=$prev ${COMPOSE[*]} up -d --no-build api"
   log "rollback kode: ./sewara-api/scripts/deploy-vps.sh --ke <commit-lama>"
   exit 0
 fi
 
-# --- 5. gagal -> balik ke image sebelumnya (tanpa build, instan) --------------
-echo "TIDAK SEHAT setelah 60 detik. Log terakhir:"
+# --- 4. gagal -> balik ke image sebelumnya (tanpa build, instan) --------------
+echo "TIDAK SEHAT (--wait-timeout 90 s). Log terakhir:"
 "${COMPOSE[@]}" logs --tail 40 api || true
 
 if [ -n "$prev" ] && docker image inspect "$prev" >/dev/null 2>&1; then
   log "rollback ke $prev"
   export SEWARA_API_IMAGE="$prev"
-  "${COMPOSE[@]}" up -d --no-build api
   printf '%s\n' "$prev" > "$STATE" 2>/dev/null || true
-  sleep 10
-  if curl -fsS -o /dev/null --max-time 3 "$HEALTH_URL"; then
+  if "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 60 api; then
     log "rollback BERHASIL, layanan kembali ke $prev"
   else
     log "rollback GAGAL — periksa: ${COMPOSE[*]} logs api"
