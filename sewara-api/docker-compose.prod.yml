@@ -76,7 +76,10 @@ services:
     env_file:
       - ${SEWARA_ENV_FILE:-/etc/sewara/api.env}
     environment:
-      APP_ENV: production       # cookie Secure aktif; config wajib lengkap
+      # Produksi: cookie sesi `Secure`. Untuk uji di homelab yang diakses lewat
+      # http (tanpa TLS) nilai ini HARUS dev, kalau tidak browser menolak cookie
+      # Secure dan login gagal. Default tetap production.
+      APP_ENV: ${SEWARA_APP_ENV:-production}
       ADDR: 0.0.0.0:4000
     depends_on:
       db:
@@ -129,6 +132,26 @@ services:
     volumes:
       - ${SEWARA_CLOUDFLARED_DIR:-/etc/sewara/cloudflared}:/etc/cloudflared:ro
     mem_limit: 96m
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+
+  # Edge untuk uji (homelab): nginx container menyajikan static export frontend dan
+  # meneruskan `/api/` ke container api. Di VPS produksi ini TIDAK dipakai — nginx
+  # host yang menjadi edge, sesuai docs/cutover-plan.md. Karena itu dipisah di
+  # profil `edge` supaya tidak ikut naik kecuali diminta.
+  edge:
+    image: nginx:1.27-alpine
+    profiles: ["edge"]
+    volumes:
+      - ${SEWARA_WWW_DIR:-/srv/sewara/www}:/usr/share/nginx/html:ro
+      - ../deploy/nginx.staging.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      # Default loopback (aman untuk VPS: nginx host yang meneruskan). Uji di
+      # homelab perlu dibuka supaya bisa diakses dari laptop: set
+      # SEWARA_EDGE_BIND=0.0.0.0 (atau IP LAN homelab) sebelum `up -d edge`.
+      - "${SEWARA_EDGE_BIND:-127.0.0.1}:8090:80"
+    mem_limit: 64m
     networks: [internal]
     restart: unless-stopped
     logging: *logging

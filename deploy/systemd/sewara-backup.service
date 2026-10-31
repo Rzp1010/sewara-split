@@ -1,12 +1,12 @@
 [Unit]
 Description=Backup DB Sewara (pg_dump -Fc + verifikasi + rotasi)
-Documentation=file:/home/sewara-apps-production/sewara-split/docs/runbook-migrasi-mesin.md
+Documentation=file:/srv/sewara/app/docs/runbook-migrasi-mesin.md
 Requires=docker.service
 After=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/sewara-apps-production/sewara-split/sewara-api
+WorkingDirectory=/srv/sewara/app/sewara-api
 # --user root: berkas password mode 600 hanya bisa dibaca root.
 # Network `sewara_internal` = nama project (name: sewara) + network internal.
 # Skrip keluar exit 1 kalau dump tidak lolos verifikasi -> unit ini FAILED,
@@ -18,7 +18,7 @@ ExecStart=/usr/bin/docker run --rm --user root \
   -e BACKUP_DIR=/backup \
   -v /etc/sewara/pg_password:/run/secrets/pg_password:ro \
   -v /srv/sewara/backup:/backup \
-  -v /home/sewara-apps-production/sewara-split/sewara-api/scripts/backup.sh:/s/backup.sh:ro \
+  -v /srv/sewara/app/sewara-api/scripts/backup.sh:/s/backup.sh:ro \
   postgres:16 bash /s/backup.sh
 # Salin keluar host (rclone -> R2 akun terpisah). Berkas konfigurasi rclone di
 # /etc/sewara/rclone.conf (600) berisi endpoint + kunci akun backup; nama remote
@@ -31,7 +31,7 @@ ExecStartPost=/usr/bin/docker run --rm --user root --memory 192m --entrypoint sh
   -e RETENSI_HARI=28 \
   -v /etc/sewara/rclone.conf:/etc/rclone/rclone.conf:ro \
   -v /srv/sewara/backup:/backup:ro \
-  -v /home/sewara-apps-production/sewara-split/sewara-api/scripts/backup-rclone.sh:/s/backup-rclone.sh:ro \
+  -v /srv/sewara/app/sewara-api/scripts/backup-rclone.sh:/s/backup-rclone.sh:ro \
   rclone/rclone:1.75 /s/backup-rclone.sh
 # Catatan: image rclone/rclone berbasis alpine (tanpa bash) — pakai --entrypoint sh.
 # --user root perlu karena berkas kredensial mode 600. Folder backup di-mount

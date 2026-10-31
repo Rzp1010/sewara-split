@@ -1,6 +1,6 @@
 [Unit]
 Description=Sewara stack (Postgres + API Go)
-Documentation=file:/home/sewara-apps-production/sewara-split/docs/docker-runbook.md
+Documentation=file:/srv/sewara/app/docs/docker-runbook.md
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -9,7 +9,7 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 # Sesuaikan kalau folder repo di VPS berbeda.
-WorkingDirectory=/home/sewara-apps-production/sewara-split/sewara-api
+WorkingDirectory=/srv/sewara/app/sewara-api
 ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml up -d
 ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml stop
 TimeoutStartSec=300

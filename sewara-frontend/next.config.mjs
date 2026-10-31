@@ -34,6 +34,14 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Static export dipakai jalur Go (nginx menyajikan hasil build). Default MATI
+  // supaya `next build` untuk pm2 tidak berubah; dinyalakan lewat
+  // `npm run build:static` (scripts/build-static.mjs).
+  // `images.unoptimized` wajib: optimasi gambar Next tidak ada di export.
+  // Header keamanan pindah ke nginx (deploy/nginx.staging.conf).
+  ...(process.env.STATIC_EXPORT === "true"
+    ? { output: "export", images: { unoptimized: true } }
+    : {}),
   // output: "standalone", // disabled — pakai node_modules langsung via PM2
   async headers() {
     return [
