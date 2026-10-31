@@ -53,7 +53,11 @@ WWW=$(envval SEWARA_WWW_DIR /srv/sewara/www)
 FE_STATIC=$(envval SEWARA_FRONTEND_STATIC 0)
 EDGE=$(envval SEWARA_EDGE 0)
 SKIP_DRIFT=$(envval SEWARA_SKIP_DRIFT 0)
-COMPOSE=(docker compose -f "$API_DIR/docker-compose.prod.yml")
+COMPOSE=(docker compose)
+# --env-file eksplisit: `docker compose` sebenarnya membaca .env dari direktori
+# project (folder berkas compose), tapi jangan bergantung pada dugaan itu.
+if [ -f "$API_DIR/.env" ]; then COMPOSE+=(--env-file "$API_DIR/.env"); fi
+COMPOSE+=(-f "$API_DIR/docker-compose.prod.yml")
 
 TARGET=""
 MODE=auto
@@ -207,6 +211,11 @@ if [ "$sehat" = "1" ]; then
     "${COMPOSE[@]}" --profile edge up -d --force-recreate edge
   fi
   printf '%s\n' "$IMG" > "$STATE" 2>/dev/null || log "catatan: $STATE tidak bisa ditulis (perlu root)"
+  # Samakan tag di .env dengan yang benar-benar jalan: unit systemd menjalankan
+  # `up -d` tanpa env ini, jadi reboot berikutnya harus memakai tag yang sama.
+  if [ -f "$API_DIR/.env" ] && grep -q '^SEWARA_API_IMAGE=' "$API_DIR/.env"; then
+    sed -i "s|^SEWARA_API_IMAGE=.*|SEWARA_API_IMAGE=$IMG|" "$API_DIR/.env"
+  fi
   log "SEHAT: api lulus healthcheck (--wait)"
   "${COMPOSE[@]}" ps api
   log "rollback instan kalau perlu: SEWARA_API_IMAGE=$prev ${COMPOSE[*]} up -d --no-build api"
@@ -222,6 +231,9 @@ if [ -n "$prev" ] && docker image inspect "$prev" >/dev/null 2>&1; then
   log "rollback ke $prev"
   export SEWARA_API_IMAGE="$prev"
   printf '%s\n' "$prev" > "$STATE" 2>/dev/null || true
+  if [ -f "$API_DIR/.env" ] && grep -q '^SEWARA_API_IMAGE=' "$API_DIR/.env"; then
+    sed -i "s|^SEWARA_API_IMAGE=.*|SEWARA_API_IMAGE=$prev|" "$API_DIR/.env"
+  fi
   if "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 60 api; then
     log "rollback BERHASIL, layanan kembali ke $prev"
   else

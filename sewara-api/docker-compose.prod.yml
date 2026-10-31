@@ -6,13 +6,12 @@
 # Kalau port/healthcheck di docker-compose.yml berubah, samakan di sini.
 # ==============================================================================
 #
-# Sekali di VPS:
-#   sudo mkdir -p /srv/sewara/pgdata /etc/sewara
-#   sudo chown -R 999:999 /srv/sewara/pgdata && sudo chmod 700 /srv/sewara/pgdata
-#   printf '%s' '<password-kuat>' | sudo tee /etc/sewara/pg_password >/dev/null
-#   sudo tee /etc/sewara/api.env      # dari .env.prod.example
-#   sudo chmod 600 /etc/sewara/pg_password /etc/sewara/api.env
-#   docker compose -f docker-compose.prod.yml up -d
+# Sekali di mesin baru (idempoten, dari akar repo):
+#   sudo ./sewara-api/scripts/install.sh          # dev/homelab
+#   sudo ./sewara-api/scripts/install.sh --prod   # produksi
+# Skrip itu yang membuat folder, password DB, api.env, berkas .env, dan unit
+# systemd. Langkah manualnya (rujukan): docs/docker-runbook.md §Pasang Docker di
+# mesin baru, dan opsi lain di komentar deploy/systemd/*.
 #
 # `down -v` di sini TIDAK menghapus data: pgdata ada di folder host, di luar
 # jangkauan Docker (kebal down -v, volume prune, system prune --volumes).

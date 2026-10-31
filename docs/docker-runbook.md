@@ -204,6 +204,22 @@ Batas di t3.micro (dikoreksi 2026-10-30 setelah diukur, bukan diperkirakan):
 
 ## Pasang Docker di mesin baru (homelab/VPS)
 
+Cara ringkas sekarang — satu perintah, idempoten, aman diulang:
+
+```bash
+sudo ./sewara-api/scripts/install.sh          # dev/homelab: APP_ENV=development
+sudo ./sewara-api/scripts/install.sh --prod   # produksi:    APP_ENV=production
+```
+
+Yang dikerjakan skrip itu: cek prasyarat (docker, git, openssl, npm), precedence
+IPv4 di `/etc/gai.conf`, grup `sewara` + `docker`, folder `/srv/sewara/*` dan
+`/etc/sewara`, clone/pull repo, password DB + `api.env` + `.env` compose (rahasia
+dibangkitkan sendiri, tidak dicetak), `rclone.conf` kosong, `up -d --wait db`,
+muat skema sekali, unit systemd, lalu deploy pertama. Yang sudah ada dilewati.
+
+Daftar perintah manual di bawah tetap disimpan sebagai rujukan apa yang
+sebenarnya terjadi (dan untuk mesin yang docker-nya sudah ada sejak dulu).
+
 Sudah dijalankan di homelab 2026-10-30 oleh user: Docker 29.1.3 + Compose
 2.40.3 dari paket Ubuntu, user masuk grup `docker`, `systemd-analyze verify`
 pada ketiga unit **bersih tanpa keluaran** setelah Docker ada.
@@ -322,6 +338,11 @@ Sifatnya sengaja tidak otomatis: tidak ada timer/CI, semua langkah tambahan
 default MATI, dan unit systemd tidak pernah disentuh skrip (kalau `deploy/systemd`
 ikut berubah, skrip hanya mencetak perintah salin). Rollback tetap dua cara:
 otomatis kalau health gagal, atau manual `--ke <commit-lama>`.
+
+Sesudah deploy berhasil (atau sesudah rollback), skrip menulis tag yang benar-benar
+jalan ke `SEWARA_API_IMAGE` di `sewara-api/.env`. Alasannya: `sewara.service`
+menjalankan `up -d` tanpa env itu, jadi reboot memakai nilai di `.env` — kalau
+dibiarkan menunjuk tag lama yang sudah tak ada, unit gagal saat boot.
 
 Dasar "build di server" itu sah, bukan jalan buntu: dokumen Docker sendiri
 menyuruh begitu untuk compose satu server —
