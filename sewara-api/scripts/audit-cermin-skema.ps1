@@ -1,11 +1,13 @@
-# Audit cermin skema: setiap migrasi Supabase yang lebih baru dari baseline Go
-# WAJIB punya padanan di sewara-api/migrations/ (lihat docs/cutover-plan.md §4).
+# Audit cermin skema: setiap migrasi Supabase dengan tanggal sama atau lebih baru
+# dari baseline Go WAJIB punya padanan di sewara-api/migrations/ (lihat docs/cutover-plan.md §4).
+# Migrasi tercermin di baseline dapat dilewati lewat -SudahDiBaseline; pakai hanya setelah verifikasi.
 #
 # Cara pakai (dari akar repo sewara-split):
 #   pwsh sewara-api/scripts/audit-cermin-skema.ps1
 # Keluar dengan kode 1 kalau ada migrasi tanpa padanan (bisa dipakai di CI/pre-commit).
 param(
-    [string]$Baseline = "20260930"   # dari schema_prod_20260930.sql
+    [string]$Baseline = "20260930",   # dari schema_prod_20260930.sql
+    [string[]]$SudahDiBaseline = @()  # nama file migrasi Supabase yang sudah tercermin
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,10 +22,12 @@ $goFiles += Get-ChildItem $goBoot -Filter *.sql -ErrorAction SilentlyContinue
 $goText = ($goFiles | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
 
 $sbFiles = Get-ChildItem $sbDir -Filter *.sql | Sort-Object Name
-$baru = $sbFiles | Where-Object { $_.Name -match '^(\d{8})' -and $Matches[1] -gt $Baseline }
+$baru = $sbFiles | Where-Object {
+    $_.Name -match '^(\d{8})' -and $Matches[1] -ge $Baseline -and $_.Name -notin $SudahDiBaseline
+}
 
 Write-Host "Baseline Go : schema_prod_$Baseline.sql"
-Write-Host "Supabase    : $($sbFiles.Count) berkas migrasi; $($baru.Count) sesudah baseline"
+Write-Host "Supabase    : $($sbFiles.Count) berkas migrasi; $($baru.Count) sama/lebih baru (pengecualian: $($SudahDiBaseline.Count))"
 Write-Host ""
 
 $kurang = @()
@@ -54,5 +58,5 @@ if ($kurang.Count -gt 0) {
     Write-Host "mengandung komentar: -- cermin dari sewara-backend/supabase/migrations/<nama>"
     exit 1
 }
-Write-Host "HASIL: cermin lengkap - semua migrasi Supabase sesudah baseline ada padanannya."
+Write-Host "HASIL: cermin lengkap - semua migrasi Supabase sama/lebih baru dari baseline ada padanannya atau dikecualikan."
 exit 0

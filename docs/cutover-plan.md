@@ -124,9 +124,35 @@ Peta cermin (isi lengkapnya menyusul sebagai tabel per berkas):
 | Supabase | Padanan Go |
 |---|---|
 | semua migrasi sebelum 30 Sep 2026 | sudah termasuk di `schema_prod_20260930.sql` (baseline) |
+| `20260930_jaminan_multi.sql` | `sewara-api/migrations/0006_jaminan_multi.sql` **dibuat 2026-10-31** (lihat §4a) |
 | `20261002_penyewa_blacklist.sql` | `sewara-api/migrations/0005_blacklist.sql` **sudah** |
 | *migrasi baru Nov 2026 → Jan 2027* | **belum ada padanannya — wajib dibuat saat itu** |
 | — | `0001_auth_shim`, `0002_grants`, `0003_drop_pgnet`, `0004_sessions` khusus Go (tidak ada padanan Supabase) |
+
+### 4a. Koreksi asumsi baseline (2026-10-31)
+
+Asumsi "semua migrasi ≤ 30 Sep 2026 sudah termasuk di baseline" **salah**. Buktinya:
+
+- `schema_prod_20260930.sql:367` masih `jaminan_sewa text`, tanpa constraint
+  `jaminan_sewa_is_array`, dan RPC di baseline masih `->>'jaminan_sewa'`;
+- padahal `20260930_jaminan_multi.sql` (tanggal **sama** dengan baseline, sudah
+  tercatat di ledger produksi) mengubah kolom itu menjadi **jsonb array**.
+  Artinya dump baseline diambil **sebelum** migrasi hari itu dijalankan.
+
+Akibat nyata: DB Go (`text`) ≠ DB produksi (`jsonb`), dan handler Go menolak
+payload UI nyata (`jaminan_sewa: ["E-KTP"]` → `400 Body tidak valid.`). Rantai
+temuan: `booking/page.js:1400` (kirim array) → `internal/db/transactions.go`
+(dulu `*string`) → `handlers_transactions.go:214`. Tutup: migrasi `0006`,
+tipe `json.RawMessage` + normalisasi, cast `::jsonb`, skenario smoke ber-array.
+
+Dua pelajaran yang mengikat:
+
+1. Tanggal berkas migrasi **bukan** bukti isi baseline. Urutan penulisan dump
+   (generator `tools_dump_schema.mjs`) harus dipastikan setelah migrasi hari itu.
+2. `audit-cermin-skema.ps1` dulu memakai `-gt $Baseline` sehingga migrasi
+   bertanggal sama dilewatkan dan skrip melaporkan "cermin lengkap" padahal
+   drift nyata. Sekarang migrasi bertanggal `>=` baseline ikut diperiksa
+   (dengan jalur lewat-sadar eksplisit bila memang sudah tercermin).
 
 Aturan yang mengikat mulai sekarang:
 

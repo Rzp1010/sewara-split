@@ -145,6 +145,7 @@ try {
         status = 'Booking'
         biaya = 100000
         total_akhir = 100000
+        jaminan_sewa = @()
     } | ConvertTo-Json -Depth 6 -Compress
     $r = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyMinimal
     $created = ($r.Body | ConvertFrom-Json).data.transaction
@@ -176,6 +177,7 @@ try {
         biaya = 150000
         denda = 0
         total_akhir = 150000
+        jaminan_sewa = @('E-KTP', 'SIM')
         durasi_teks = '1 hari'
         items = @(
             @{
@@ -208,6 +210,30 @@ try {
     if (-not $postFullOK) { Write-Host "POST flat body: $($r.Body)" }
     Add-Hasil 'POST flat items + payments -> tersimpan' ([int]$postFullOK) 1 "HTTP=$($r.Status) id=$($createdFull.id)"
 
+    # Jaminan UI dikirim sebagai array; pembacaan harus mempertahankan dua nilai.
+    $txJaminan = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 50
+    $bodyJaminan = @{ id = $txJaminan; penyewa = 'Jaminan Array'; status = 'Booking'; jaminan_sewa = @('E-KTP', 'SIM') } | ConvertTo-Json -Compress
+    $rJaminanArray = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyJaminan
+    $createdJaminan = ($rJaminanArray.Body | ConvertFrom-Json).data.transaction
+    $jaminanFull = @($createdJaminan.jaminan_sewa)
+    Add-Hasil 'POST jaminan array -> tersimpan dua nilai' ([int]($rJaminanArray.Status -eq 200 -and $jaminanFull.Count -eq 2 -and $jaminanFull[0] -eq 'E-KTP' -and $jaminanFull[1] -eq 'SIM')) 1 "HTTP=$($rJaminanArray.Status) jaminan=$($jaminanFull -join ',')"
+
+    # Bentuk lama string dinormalisasi menjadi array satu elemen.
+    $txLegacy = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 51
+    $bodyLegacy = @{ id = $txLegacy; penyewa = 'Jaminan Legacy'; status = 'Booking'; jaminan_sewa = 'E-KTP' } | ConvertTo-Json -Compress
+    $rLegacy = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyLegacy
+    $legacy = ($rLegacy.Body | ConvertFrom-Json).data.transaction
+    $jaminanLegacy = @($legacy.jaminan_sewa)
+    Add-Hasil 'POST jaminan string lama -> array satu nilai' ([int]($rLegacy.Status -eq 200 -and $jaminanLegacy.Count -eq 1 -and $jaminanLegacy[0] -eq 'E-KTP')) 1 "HTTP=$($rLegacy.Status) jaminan=$($jaminanLegacy -join ',')"
+
+    # String kosong dinormalisasi menjadi array kosong.
+    $txEmpty = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 52
+    $bodyEmpty = @{ id = $txEmpty; penyewa = 'Jaminan Kosong'; status = 'Booking'; jaminan_sewa = '' } | ConvertTo-Json -Compress
+    $rEmpty = Invoke-Api 'POST' '/api/transactions' $cookieA $bodyEmpty
+    $empty = ($rEmpty.Body | ConvertFrom-Json).data.transaction
+    $jaminanEmpty = @($empty.jaminan_sewa)
+    Add-Hasil 'POST jaminan kosong -> array kosong' ([int]($rEmpty.Status -eq 200 -and $jaminanEmpty.Count -eq 0)) 1 "HTTP=$($rEmpty.Status) jaminanCount=$($jaminanEmpty.Count)"
+
     # Assert DB: normalisasi item flat tersimpan di transaction_items.
     $nItems = Get-Count "SELECT count(*) FROM transaction_items WHERE transaction_id=$txID2"
     Add-Hasil 'DB: transaction_items terisi 2 baris' ([int]($nItems -eq 2)) 1 "count=$nItems"
@@ -224,11 +250,11 @@ try {
     $nParent = Get-Count "SELECT count(*) FROM transactions WHERE id=$txID2 AND (pembayaran->>'dp')::numeric=50000"
     Add-Hasil 'DB: parent pembayaran legacy tersimpan' ([int]($nParent -eq 1)) 1 "count=$nParent"
 
-    # GET owner A sekarang 2 transaksi
+    # GET owner A: 2 transaksi dasar + 3 skenario jaminan = 5.
     $r = Invoke-Api 'GET' '/api/transactions' $cookieA $null
     $dataA = ($r.Body | ConvertFrom-Json).data.transactions
     $countA = @($dataA).Count
-    Add-Hasil 'GET owner A setelah POST kedua -> 2 transaksi' ([int]($r.Status -eq 200 -and $countA -eq 2)) 1 "HTTP=$($r.Status) count=$countA"
+    Add-Hasil 'GET owner A -> 5 transaksi (2 dasar + 3 skenario jaminan)' ([int]($r.Status -eq 200 -and $countA -eq 5)) 1 "HTTP=$($r.Status) count=$countA"
 
     # GET owner B -> array kosong (isolasi tenant)
     $r = Invoke-Api 'GET' '/api/transactions' $cookieB $null
@@ -260,11 +286,11 @@ try {
     $countB = @($dataB).Count
     Add-Hasil 'GET tenant B setelah POST -> 1 transaksi' ([int]($r.Status -eq 200 -and $countB -eq 1)) 1 "HTTP=$($r.Status) countB=$countB"
 
-    # GET tenant A tetap 2 (tidak bocor)
+    # GET owner A tetap 5 transaksi setelah POST tenant B (tidak bocor).
     $r = Invoke-Api 'GET' '/api/transactions' $cookieA $null
     $dataA = ($r.Body | ConvertFrom-Json).data.transactions
     $countA = @($dataA).Count
-    Add-Hasil 'Tenant A tetap 2 transaksi (tidak bocor)' ([int]($r.Status -eq 200 -and $countA -eq 2)) 1 "HTTP=$($r.Status) count=$countA"
+    Add-Hasil 'Tenant A tetap 5 transaksi (tidak bocor)' ([int]($r.Status -eq 200 -and $countA -eq 5)) 1 "HTTP=$($r.Status) count=$countA"
 
     # POST flat item tanpa nama -> tidak ditolak, item_name fallback "Unknown".
     $txNoName = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 100

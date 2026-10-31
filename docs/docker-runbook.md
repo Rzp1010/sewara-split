@@ -736,3 +736,12 @@ Yang masih menunggu di VPS: pemindahan data (Fase B) + vhost host.
    Perbaikan disetujui: normalisasi di `lib/db.js` (batas baca) — **ditunda sampai
    dekat rilis**, karena produksi Next masih dipakai untuk maintenance.
    Rincian lengkap + daftar baris yang ikut pola sama: `cutover-plan.md` §11.
+10. **Drift skema ketemu lewat real use (2026-10-31):** `transactions.jaminan_sewa`
+   di DB Go masih `text`, padahal produksi sudah `jsonb` array
+   (`20260930_jaminan_multi.sql`, tanggal sama dengan baseline). Gejala:
+   simpan booking dari UI balas `400 Body tidak valid.` Tutup: migrasi Go `0006`,
+   tipe `json.RawMessage` + normalisasi, cast `::jsonb`, skenario smoke ber-array,
+   dan `audit-cermin-skema.ps1` kini memeriksa migrasi bertanggal **sama** dengan
+   baseline. Catatan: DB yang sudah ada tidak ikut migrasi otomatis saat
+   `install.sh` dijalankan ulang (ledger lengkap → dilewati); terapkan `0006`
+   manual lewat `psql -f` lalu catat baris ledger, dengan pola sama seperti runner.

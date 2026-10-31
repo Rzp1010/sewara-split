@@ -18,7 +18,7 @@ type Transaction struct {
 	Penyewa             string          `json:"penyewa"`
 	HPPenyewa           *string         `json:"hp_penyewa"`
 	AlamatPenyewa       *string         `json:"alamat_penyewa"`
-	JaminanSewa         *string         `json:"jaminan_sewa"`
+	JaminanSewa         json.RawMessage `json:"jaminan_sewa"`
 	WaktuAmbilRencana   *time.Time      `json:"waktu_ambil_rencana"`
 	WaktuKembaliRencana *time.Time      `json:"waktu_kembali_rencana"`
 	WaktuAmbilAktual    *time.Time      `json:"waktu_ambil_aktual"`
@@ -82,7 +82,7 @@ type TransactionInput struct {
 	Penyewa             string          `json:"penyewa"`
 	HPPenyewa           *string         `json:"hp_penyewa"`
 	AlamatPenyewa       *string         `json:"alamat_penyewa"`
-	JaminanSewa         *string         `json:"jaminan_sewa"`
+	JaminanSewa         json.RawMessage `json:"jaminan_sewa"`
 	WaktuAmbilRencana   *time.Time      `json:"waktu_ambil_rencana"`
 	WaktuKembaliRencana *time.Time      `json:"waktu_kembali_rencana"`
 	WaktuAmbilAktual    *time.Time      `json:"waktu_ambil_aktual"`
@@ -111,6 +111,36 @@ type TransactionInput struct {
 
 // ada melaporkan apakah kunci dikirim client.
 func (t TransactionInput) ada(kunci string) bool { return t.Present[kunci] }
+
+// jaminanParam menormalkan jaminan lama menjadi array jsonb; nilai null/absen
+// mempertahankan nilai lama pada UPDATE.
+func (t TransactionInput) jaminanParam() any {
+	if !t.ada("jaminan_sewa") {
+		return nil
+	}
+	raw := strings.TrimSpace(string(t.JaminanSewa))
+	if raw == "" || raw == "null" {
+		return nil
+	}
+	if raw == `""` {
+		return "[]"
+	}
+	if strings.HasPrefix(raw, "[") {
+		return raw
+	}
+	var nilai string
+	if json.Unmarshal(t.JaminanSewa, &nilai) == nil {
+		if strings.HasPrefix(strings.TrimSpace(nilai), "[") {
+			return nilai
+		}
+		if nilai == "" {
+			return "[]"
+		}
+		b, _ := json.Marshal([]string{nilai})
+		return string(b)
+	}
+	return raw
+}
 
 // invoiceEfektif meniru v_invoice RPC, yaitu
 // NULLIF(COALESCE(no_invoice, id_transaksi), "") — kunci yang ada tapi berisi
@@ -500,7 +530,7 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 		tambah("penyewa = COALESCE($%d, penyewa)", tx.Penyewa)
 		tambah("hp_penyewa = COALESCE($%d, hp_penyewa)", tx.HPPenyewa)
 		tambah("alamat_penyewa = COALESCE($%d, alamat_penyewa)", tx.AlamatPenyewa)
-		tambah("jaminan_sewa = COALESCE($%d, jaminan_sewa)", tx.JaminanSewa)
+		tambah("jaminan_sewa = COALESCE($%d::jsonb, jaminan_sewa)", tx.jaminanParam())
 		tambah("waktu_ambil_rencana = COALESCE($%d, waktu_ambil_rencana)", tx.WaktuAmbilRencana)
 		tambah("waktu_kembali_rencana = COALESCE($%d, waktu_kembali_rencana)", tx.WaktuKembaliRencana)
 		tambah("waktu_ambil_aktual = COALESCE($%d, waktu_ambil_aktual)", tx.WaktuAmbilAktual)
@@ -569,9 +599,9 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 				status, items, denda, biaya, durasi_teks, total_akhir, pembayaran, "riwayatDilayani",
 				dilayani_oleh, diskon, member_id, dp_hangus, dp_hangus_aturan, printilan, user_id
 			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+				$1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
 			) RETURNING `+kolomHasil,
-			tx.ID, tx.IDTransaksi, tx.invoiceEfektif(), tx.Penyewa, tx.HPPenyewa, tx.AlamatPenyewa, tx.JaminanSewa,
+			tx.ID, tx.IDTransaksi, tx.invoiceEfektif(), tx.Penyewa, tx.HPPenyewa, tx.AlamatPenyewa, tx.jaminanParam(),
 			tx.WaktuAmbilRencana, tx.WaktuKembaliRencana, tx.WaktuAmbilAktual, tx.WaktuKembaliAktual,
 			status, jsonbAwal(tx.Items, "array", "[]"), tx.Denda, tx.Biaya, tx.DurasiTeks, tx.TotalAkhir,
 			jsonbAwal(tx.Pembayaran, "object", "{}"), jsonbAwal(tx.RiwayatDilayani, "array", "[]"),
