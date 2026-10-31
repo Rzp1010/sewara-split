@@ -135,6 +135,10 @@ Aturan yang mengikat mulai sekarang:
 3. **Drill bulanan** (sampai Desember): muat backup produksi terbaru ke Postgres Go
    di homelab → jalankan 22 skrip smoke → bandingkan angka kunci dengan Supabase.
    Drill ini yang menangkap drift, bukan ingatan.
+4. Sebelum setiap rilis Next (`dev` → `main`), jalankan
+   `powershell -File sewara-api/scripts/audit-cermin-skema.ps1` — keluar `1` kalau
+   ada migrasi Supabase tanpa padanan Go, jadi rilis Next tidak jalan dulu sebelum
+   cerminnya lengkap.
 
 ---
 
