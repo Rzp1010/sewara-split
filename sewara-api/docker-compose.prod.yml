@@ -77,8 +77,11 @@ services:
       - ${SEWARA_ENV_FILE:-/etc/sewara/api.env}
     environment:
       # Produksi: cookie sesi `Secure`. Untuk uji di homelab yang diakses lewat
-      # http (tanpa TLS) nilai ini HARUS dev, kalau tidak browser menolak cookie
-      # Secure dan login gagal. Default tetap production.
+      # http (tanpa TLS) nilai ini HARUS `development`, kalau tidak browser
+      # menolak cookie Secure dan login gagal. Nilai sah: development|production
+      # (internal/config/config.go). Default tetap production.
+      # Catatan: baris ini MENIMPA APP_ENV dari env_file, jadi satu-satunya cara
+      # mengubahnya adalah lewat SEWARA_APP_ENV (lihat docs/docker-runbook.md).
       APP_ENV: ${SEWARA_APP_ENV:-production}
       ADDR: 0.0.0.0:4000
     depends_on:

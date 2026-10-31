@@ -234,6 +234,48 @@ Mesin homelab: Ubuntu 26.04, 2 vCPU, RAM 1,4 GB (631 MB available sebelum
 hermes dimatikan), disk 49 GB sisa. Jangan jalankan backup bersamaan dengan
 build image di mesin sekecil ini.
 
+## Variabel compose + berkas env (pelajaran pemasangan 2026-10-31)
+
+`docker-compose.prod.yml` men-substitusi empat variabel. Simpan di `.env` pada
+folder project (`sewara-api/.env`) supaya terbaca oleh `docker compose` manual
+**dan** oleh `sewara.service`. Berkas itu sudah ada di `.gitignore` dan
+`.dockerignore`, jadi aman diisi nilai lokal.
+
+| Variabel | Fungsi | Homelab | Produksi |
+|---|---|---|---|
+| `SEWARA_APP_ENV` | mengisi `APP_ENV` container api | `development` | `production` (atau hapus baris; default) |
+| `SEWARA_DATA_DIR` | letak `pgdata` | `/srv/sewara` | `/srv/sewara` |
+| `SEWARA_API_IMAGE` | tag image api | `sewara-api:local` | diisi `deploy-vps.sh` (tag commit) |
+| `SEWARA_EDGE_BIND` | alamat bind port 8090 (profil `edge`) | `0.0.0.0` | biarkan default `127.0.0.1` |
+
+Empat jebakan yang sudah dilewati (semua memakan waktu, jadi catat):
+
+1. `environment:` di compose **menang** atas `env_file:`. Jadi `APP_ENV` di
+   `/etc/sewara/api.env` diabaikan dan yang berlaku `SEWARA_APP_ENV`. Salah nilai
+   berhenti cepat dengan pesan jelas: `APP_ENV tidak dikenal` atau
+   `storage wajib dikonfigurasi di produksi`.
+2. Nilai sah hanya `development` dan `production` (`internal/config/config.go`).
+   `dev` ditolak.
+3. `env_file` dibaca user yang menjalankan compose → `/etc/sewara/api.env` butuh
+   `640 root:sewara`, dan operator harus benar-benar berada di grup `sewara`
+   (efektif setelah login ulang; `newgrp sewara` mengganti daftar grup sehingga
+   `docker` hilang). `/etc/sewara/pg_password` tetap `600 root` karena dibaca
+   daemon lewat `secrets:`.
+4. Registry lewat IPv6: kalau `docker pull` gagal `network is unreachable`,
+   tambahkan `precedence ::ffff:0:0/96 100` ke `/etc/gai.conf`, lalu
+   `systemctl restart docker`.
+
+Dua tambahan operasional:
+
+- `edge` (nginx) menyelesaikan nama `api` sekali saat start. Sesudah
+  `up -d --force-recreate api` (IP container berubah), edge harus di-recreate
+  juga, kalau tidak nginx menembak IP lama (`host not found in upstream "api"`
+  muncul kalau api memang sedang mati).
+- Frontend static export memerlukan `NEXT_PUBLIC_API_URL` **saat build**; tanpa
+  itu bundle memakai cadangan `http://localhost:4000` di `src/lib/api-client.js`
+  dan browser menembak alamat yang salah. Simpan di
+  `sewara-frontend/.env.production.local` (gitignored).
+
 ## Hasil uji homelab 2026-10-30 (bentuk produksi di Linux)
 
 Yang diuji: `docker-compose.prod.yml` apa adanya, di `~/sewara-test` (bukan
@@ -482,15 +524,18 @@ Yang masih menunggu: langkah yang butuh sudo di mesin tujuan (`/srv/sewara`,
 
 1. ~~Verifikasi stack compose di laptop (health, login, endpoint baca, drill
    pg_dump)~~ — selesai 2026-10-30.
-2. Homelab staging: **Docker sudah terpasang** (29.1.3 + Compose 2.40.3) dan
-   bentuk produksi sudah diuji di sana (§Hasil uji homelab 2026-10-30). Sisa:
-   pindahkan uji ke lokasi sungguhan (`/srv/sewara`, `/etc/sewara`, unit systemd
-   butuh sudo) dan pastikan cloudflared mengarah ke stack ini kalau mau dipakai
-   sebagai staging ber-URL.
-   Kondisi mesin: `rizkiserver`, Ubuntu 26.04, 2 vCPU, RAM 1,4 GB, disk 49 GB
-   sisa; `~/sewara-split` salinan lama tanpa `.git` dan tanpa `sewara-api`
-   (kode uji ditaruh di `~/sewara-test`). Sudah jalan di sana: nginx,
-   `postgresql@18` host, cloudflared, tailscaled, samba, hermes (RSS 310 MB).
+2. Homelab staging: **selesai dipasang permanen 2026-10-31** di `/srv/sewara`
+   (`app` = clone GitHub branch `dev`, `www` = static export frontend, `pgdata`,
+   `backup`, `schema`) + `/etc/sewara` (api.env, pg_password, rclone kosong),
+   tiga unit systemd aktif, `edge` menyajikan `http://10.1.1.121:8090`.
+   Terverifikasi: `tabel=29 policy=27 ledger=5 members=6 users=5`, tiga container
+   Up (api & db healthy), `login: 200`. Yang belum: isi `rclone.conf` + jalankan
+   `sewara-backup.service` sekali, dan arahkan cloudflared ke stack ini kalau mau
+   dipakai sebagai staging ber-URL.
+   Kondisi mesin: `rizkiserver`, Ubuntu 26.04, 2 vCPU, RAM 1,4 GB, disk 46 GB
+   sisa; yang sudah jalan: nginx, `postgresql@18` host, cloudflared, tailscaled,
+   samba, hermes (RSS ±310 MB). Node untuk build frontend: `/usr/bin/node` →
+   `/www/server/nodejs/v24.20.0/bin/node`.
 3. Cutover frontend + nginx per-path (ditunda atas permintaan user) — butuh
    vhost produksi sekarang (`nginx -T`) supaya per-path flip menyalin perilaku,
    bukan menebak.
