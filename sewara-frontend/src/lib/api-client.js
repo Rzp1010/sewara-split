@@ -1,4 +1,8 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Dasar alamat API. Dikosongkan dengan sengaja: bundel memakai **origin yang
+// sama** (relatif), jadi halaman https memanggil https dan ganti domain/IP tidak
+// perlu bangun ulang. Isi NEXT_PUBLIC_API_URL hanya kalau frontend dan API memang
+// beda origin (mis. frontend di Cloudflare Pages); di dev lokal pun begitu.
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 /**
  * Fetch helper untuk backend API.

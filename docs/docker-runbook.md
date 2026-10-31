@@ -287,10 +287,12 @@ Dua tambahan operasional:
   `up -d --force-recreate api` (IP container berubah), edge harus di-recreate
   juga, kalau tidak nginx menembak IP lama (`host not found in upstream "api"`
   muncul kalau api memang sedang mati).
-- Frontend static export memerlukan `NEXT_PUBLIC_API_URL` **saat build**; tanpa
-  itu bundle memakai cadangan `http://localhost:4000` di `src/lib/api-client.js`
-  dan browser menembak alamat yang salah. Simpan di
-  `sewara-frontend/.env.production.local` (gitignored).
+- Frontend static export memakai dasar alamat API **relatif** (origin yang sama),
+  jadi ganti domain/IP tidak perlu bangun ulang, dan halaman https tidak pernah
+  memanggil http. `NEXT_PUBLIC_API_URL` hanya perlu diisi kalau frontend dan API
+  beda origin — dan perlu diingat: `deploy-vps.sh frontend` tidak membangun ulang
+  kalau `sewara-frontend/` tidak berubah, jadi perubahan isi `.env.production.local`
+  harus disusul `./sewara-api/scripts/deploy-vps.sh frontend` (mode paksa).
 
 ### Deploy jadi satu perintah (opt-in)
 
