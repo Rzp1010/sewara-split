@@ -191,6 +191,22 @@ fi
 chown "$OPERATOR":"$GRP" "$API_DIR/.env"
 chmod 0640 "$API_DIR/.env"
 
+# --- 8b. alamat API untuk build frontend --------------------------------------
+# Alamat ini tertanam saat build (Next membaca NEXT_PUBLIC_API_URL), jadi harus
+# ada SEBELUM deploy pertama. Berkas gitignored. Di produksi (Fase 3) nilainya
+# diisi manual: https://app.sewara.my.id
+if [ "$FE_STATIC" = 1 ]; then
+  FE_ENV="$APP_DIR/sewara-frontend/.env.production.local"
+  if [ -s "$FE_ENV" ]; then
+    log "$FE_ENV sudah ada -> dibiarkan"
+  else
+    FE_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    log "tulis $FE_ENV (NEXT_PUBLIC_API_URL=http://${FE_IP:-localhost}:8090)"
+    printf 'NEXT_PUBLIC_API_URL=http://%s:8090\n' "${FE_IP:-localhost}" > "$FE_ENV"
+    chown "$OPERATOR":"$GRP" "$FE_ENV"
+  fi
+fi
+
 # --- 9. rclone.conf -----------------------------------------------------------
 if [ ! -s "$ETC/rclone.conf" ]; then
   install -m 0600 -o root -g root /dev/null "$ETC/rclone.conf"
