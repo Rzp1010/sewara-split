@@ -295,6 +295,29 @@ Lalu deploy = satu perintah dari akar repo:
 cd /srv/sewara/app && ./sewara-api/scripts/deploy-vps.sh
 ```
 
+Lingkup kerja dipilih skrip kalau tidak disebut:
+
+| Perintah | Yang dikerjakan |
+|---|---|
+| `./sewara-api/scripts/deploy-vps.sh` (default `auto`) | hanya folder yang berubah dibanding commit di `SEWARA_STATE_FILE` |
+| `… api` | paksa api saja |
+| `… frontend` | paksa frontend saja |
+| `… semua` | paksa api + frontend |
+| `… --ke <commit>` | rollback api ke tag/commit itu |
+
+Di `auto`, kalau `sewara-api/` tidak berubah, container api **tidak disentuh** —
+tanpa restart, tanpa downtime. Kalau `sewara-frontend/` tidak berubah, build
+frontend dilewati. Perubahan di luar kedua folder itu (mis. `docs/`) tidak memicu
+pekerjaan apa pun. State kosong atau commit lama tidak terjangkau → bangun keduanya
+(fail-safe).
+
+Urutan menang nilai penyetelan: **shell > `sewara-api/.env` > default di skrip**,
+jadi penyimpangan sesaat tidak perlu mengedit berkas:
+
+```bash
+SEWARA_FRONTEND_STATIC=0 ./sewara-api/scripts/deploy-vps.sh api
+```
+
 Sifatnya sengaja tidak otomatis: tidak ada timer/CI, semua langkah tambahan
 default MATI, dan unit systemd tidak pernah disentuh skrip (kalau `deploy/systemd`
 ikut berubah, skrip hanya mencetak perintah salin). Rollback tetap dua cara:

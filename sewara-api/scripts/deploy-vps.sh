@@ -3,20 +3,25 @@
 # Tidak ada registry, tidak ada CI, laptop tidak ikut build.
 #
 # Pakai (dari akar repo):
-#   ./sewara-api/scripts/deploy-vps.sh                 # commit terbaru branch main
-#   ./sewara-api/scripts/deploy-vps.sh --ke a3a1b58    # ROLLBACK ke commit itu
+#   ./sewara-api/scripts/deploy-vps.sh               # auto: bangun yang berubah saja
+#   ./sewara-api/scripts/deploy-vps.sh api           # paksa api saja
+#   ./sewara-api/scripts/deploy-vps.sh frontend      # paksa frontend saja
+#   ./sewara-api/scripts/deploy-vps.sh semua         # paksa api + frontend
+#   ./sewara-api/scripts/deploy-vps.sh --ke a3a1b58  # ROLLBACK api ke commit itu
 #
-# Env:
+# "auto" membandingkan folder sewara-api/ dan sewara-frontend/ dengan commit yang
+# tercatat di SEWARA_STATE_FILE. Yang tidak berubah tidak dibangun, dan kalau api
+# tidak berubah container api tidak disentuh sama sekali (tanpa downtime).
+#
+# Env (urutan menang: shell > sewara-api/.env > default di skrip):
 #   SEWARA_REPO_DIR      default: akar repo (dua tingkat di atas skrip)
 #   SEWARA_BRANCH        default: main
 #   SEWARA_STATE_FILE    default: /etc/sewara/api-image.txt (tag terpasang sekarang)
 #   SEWARA_SKIP_DRIFT=1  lewati cek drift ledger (WAJIB dicatat alasannya di runbook)
-#
-# Langkah tambahan (semua default MATI; nilai dibaca dari shell atau
-# sewara-api/.env yang juga dipakai `docker compose`):
-#   SEWARA_FRONTEND_STATIC=1  build static export frontend + salin ke SEWARA_WWW_DIR
-#   SEWARA_WWW_DIR            default: /srv/sewara/www
-#   SEWARA_EDGE=1             recreate container edge setelah api naik
+#   SEWARA_FRONTEND_STATIC=1  izinkan langkah build frontend static (wajib di homelab;
+#                             biarkan 0 di VPS yang frontend-nya masih Next/pm2)
+#   SEWARA_WWW_DIR       default: /srv/sewara/www
+#   SEWARA_EDGE=1        recreate container edge setelah api naik
 # Unit systemd TIDAK pernah disentuh skrip ini (butuh root); kalau deploy/systemd
 # ikut berubah, skrip hanya mencetak perintah salin untuk dijalankan sendiri.
 #
@@ -29,29 +34,40 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 API_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 REPO_DIR=${SEWARA_REPO_DIR:-$(cd "$API_DIR/.." && pwd)}
 
-# --- env lokal (opsional) -----------------------------------------------------
-# sewara-api/.env sudah dipakai `docker compose`; skrip ini ikut membacanya
-# supaya pengaturan lokal (branch, penanda langkah) tidak perlu diingat di shell.
-# Nilai di .env MENANG atas variabel shell dengan nama sama.
-# Tidak ada langkah otomatis: semua langkah tambahan default MATI (0).
-if [ -f "$API_DIR/.env" ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . "$API_DIR/.env"
-  set +a
-fi
+# --- nilai penyetelan: shell > sewara-api/.env > default ----------------------
+# .env itu berkas yang sama yang dibaca `docker compose`, jadi penyetelan lokal
+# tidak perlu diingat di shell; penyimpangan sesaat cukup ditulis di depan
+# perintah (mis. SEWARA_FRONTEND_STATIC=0 ./sewara-api/scripts/deploy-vps.sh).
+envval() { # envval NAMA default
+  local k=$1 d=${2:-} v=""
+  eval "v=\${$k:-}"
+  if [ -z "$v" ] && [ -f "$API_DIR/.env" ]; then
+    v=$(sed -n "s/^$k=//p" "$API_DIR/.env" | tail -1)
+  fi
+  printf '%s' "${v:-$d}"
+}
 
-BRANCH=${SEWARA_BRANCH:-main}
-STATE=${SEWARA_STATE_FILE:-/etc/sewara/api-image.txt}
-WWW=${SEWARA_WWW_DIR:-/srv/sewara/www}
+BRANCH=$(envval SEWARA_BRANCH main)
+STATE=$(envval SEWARA_STATE_FILE /etc/sewara/api-image.txt)
+WWW=$(envval SEWARA_WWW_DIR /srv/sewara/www)
+FE_STATIC=$(envval SEWARA_FRONTEND_STATIC 0)
+EDGE=$(envval SEWARA_EDGE 0)
+SKIP_DRIFT=$(envval SEWARA_SKIP_DRIFT 0)
 COMPOSE=(docker compose -f "$API_DIR/docker-compose.prod.yml")
 
 TARGET=""
-[ "${1:-}" = "--ke" ] && TARGET=${2:?pakai: --ke <commit, mis. a3a1b58>}
+MODE=auto
+case "${1:-}" in
+  --ke) TARGET=${2:?pakai: --ke <commit, mis. a3a1b58>} ;;
+  auto|api|frontend|semua) MODE=$1 ;;
+  "") ;;
+  *) echo "pakai: $0 [auto|api|frontend|semua] | --ke <commit>"; exit 2 ;;
+esac
+if [ -n "$TARGET" ]; then MODE=api; fi
 
 log() { echo "[deploy] $*"; }
 
-log "rencana: branch=$BRANCH frontend_static=${SEWARA_FRONTEND_STATIC:-0} edge=${SEWARA_EDGE:-0} www=$WWW"
+log "rencana: branch=$BRANCH mode=$MODE frontend_static=$FE_STATIC edge=$EDGE www=$WWW"
 
 # --- 0. prasyarat -------------------------------------------------------------
 if ! swapon --show | grep -q .; then
@@ -87,7 +103,7 @@ fi
 
 # Cek drift wallet vs berkas migration (aturan AGENTS 5). Saat rollback dilewati:
 # skema memang sudah versi baru, yang mundur hanya kode.
-if [ "${SEWARA_SKIP_DRIFT:-0}" = "1" ]; then
+if [ "$SKIP_DRIFT" = "1" ]; then
   log "cek drift DILEWATI (SEWARA_SKIP_DRIFT=1)"
 elif [ -n "$TARGET" ]; then
   log "cek drift dilewati (rollback kode, bukan deploy skema)"
@@ -107,18 +123,46 @@ else
   log "drift ledger: 0"
 fi
 
-# --- 2. build (dulu; container lama tetap melayani) ---------------------------
-IMG="sewara-api:$SHA"
-log "build $IMG (perkiraan 3-5 menit)"
-export SEWARA_API_IMAGE="$IMG"
-"${COMPOSE[@]}" build api
+# --- 2. lingkup: apa yang berubah sejak commit terpasang ----------------------
+prev=""
+[ -f "$STATE" ] && prev=$(cat "$STATE")
+prev_sha=${prev#sewara-api:}
+log "image terpasang sebelum: ${prev:-<belum tercatat>}"
 
-# --- 2b. frontend static (opsional, default MATI) ------------------------------
+perlu_api=0; perlu_fe=0
+case "$MODE" in
+  api) perlu_api=1 ;;
+  frontend) perlu_fe=1 ;;
+  semua) perlu_api=1; perlu_fe=1 ;;
+  auto)
+    if [ -z "$prev_sha" ] || ! git cat-file -e "${prev_sha}^{commit}" 2>/dev/null; then
+      log "auto: commit sebelumnya tidak diketahui -> api + frontend"
+      perlu_api=1; perlu_fe=1
+    else
+      # galat diff = fail-safe: anggap berubah.
+      git diff --quiet "$prev_sha" HEAD -- sewara-api || perlu_api=1
+      git diff --quiet "$prev_sha" HEAD -- sewara-frontend || perlu_fe=1
+      log "auto: sejak $prev_sha -> api=$perlu_api frontend=$perlu_fe"
+    fi
+    ;;
+esac
+
+# --- 3. api: build (container lama tetap melayani) ----------------------------
+if [ "$perlu_api" = 1 ]; then
+  IMG="sewara-api:$SHA"
+  log "build $IMG (perkiraan 3-5 menit)"
+  export SEWARA_API_IMAGE="$IMG"
+  "${COMPOSE[@]}" build api
+else
+  log "api: dilewati (sewara-api/ tidak berubah)"
+fi
+
+# --- 4. frontend static (butuh SEWARA_FRONTEND_STATIC=1) -----------------------
 # Hanya untuk jalur Go yang frontend-nya disajikan nginx (homelab, dan nanti
 # Fase 3). Di VPS produksi sekarang frontend masih Next/pm2, jadi biarkan 0.
 # Alamat API ikut terpanggang saat build -> dibaca Next dari
 # sewara-frontend/.env.production.local (gitignored).
-if [ "${SEWARA_FRONTEND_STATIC:-0}" = "1" ]; then
+if [ "$perlu_fe" = 1 ] && [ "$FE_STATIC" = "1" ]; then
   FE_DIR="$REPO_DIR/sewara-frontend"
   log "frontend: build static export -> $WWW (perkiraan 1-3 menit)"
   cd "$FE_DIR"
@@ -133,15 +177,19 @@ if [ "${SEWARA_FRONTEND_STATIC:-0}" = "1" ]; then
   cp -a out/. "$WWW"/
   log "frontend: $(find "$WWW" -type f | wc -l) berkas di $WWW"
   cd "$REPO_DIR"
+elif [ "$perlu_fe" = 1 ]; then
+  log "frontend: dilewati (SEWARA_FRONTEND_STATIC != 1)"
 else
-  log "frontend static: dilewati (SEWARA_FRONTEND_STATIC != 1)"
+  log "frontend: dilewati (sewara-frontend/ tidak berubah)"
 fi
 
-# --- 3. naikkan + gerbang health ----------------------------------------------
-prev=""
-[ -f "$STATE" ] && prev=$(cat "$STATE")
-log "image terpasang sebelum: ${prev:-<belum tercatat>}"
+# Hindari sentuhan sia-sia: api yang tidak berubah dibiarkan melayani.
+if [ "$perlu_api" = 0 ]; then
+  log "api: tidak disentuh (image lama tetap melayani, tanpa downtime)"
+  exit 0
+fi
 
+# --- 5. naikkan + gerbang health ----------------------------------------------
 # Gerbang health memakai fasilitas resmi Compose (sejak v2.1.1): --wait menunggu
 # healthcheck container api lulus dan keluar non-zero kalau lewat
 # --wait-timeout, sehingga langsung masuk cabang rollback di bawah.
@@ -151,10 +199,10 @@ if "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 90 api; then
 fi
 
 if [ "$sehat" = "1" ]; then
-  # --- 4b. edge (opsional, default MATI) --------------------------------------
+  # --- 5b. edge (butuh SEWARA_EDGE=1) -----------------------------------------
   # nginx menyelesaikan nama `api` sekali saat start, jadi container api yang
   # baru (IP baru) akan ditembak lewat IP lama sampai edge di-recreate.
-  if [ "${SEWARA_EDGE:-0}" = "1" ]; then
+  if [ "$EDGE" = "1" ]; then
     log "recreate edge (api dapat IP baru)"
     "${COMPOSE[@]}" --profile edge up -d --force-recreate edge
   fi
