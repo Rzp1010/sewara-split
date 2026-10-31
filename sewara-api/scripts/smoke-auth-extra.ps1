@@ -172,7 +172,11 @@ try {
     Add 'callback token sah → 307 success + email_confirmed_at terisi' `
         ($r.Status -eq 307 -and (Loc $r) -eq "$FRONTEND/auth/callback/success" -and $cf -eq 'true') "$($r.Status) loc=$(Loc $r) cf=$cf"
 
-    $tampered = $validTok.Substring(0, $validTok.Length - 1) + $(if ($validTok.EndsWith('A')) { 'B' } else { 'A' })
+    # Tukar karakter di TENGAH, bukan yang terakhir: karakter terakhir base64 dari
+    # HMAC 32 byte hanya membawa 2 bit bermakna, jadi A/B/C/D di posisi itu
+    # menghasilkan tanda tangan yang SAMA (tes lolos-gagal acak ~6%).
+    $idxGanti = [int]($validTok.Length / 2)
+    $tampered = $validTok.Substring(0, $idxGanti) + $(if ($validTok[$idxGanti] -eq 'A') { 'B' } else { 'A' }) + $validTok.Substring($idxGanti + 1)
     $r = Invoke-Api GET "/api/auth/callback?token=$tampered" '' $null
     Add 'callback token diubah → redirect error' ($r.Status -eq 307 -and (Loc $r) -eq "$FRONTEND/?error=verification") "$($r.Status) loc=$(Loc $r)"
 
