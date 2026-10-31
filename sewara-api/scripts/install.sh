@@ -62,8 +62,11 @@ for c in docker git openssl; do
     die "$c belum terpasang. Contoh: sudo apt install -y docker.io docker-compose-v2 git openssl"
 done
 docker compose version >/dev/null 2>&1 || die "plugin 'docker compose' v2 belum ada"
-if [ "$DO_DEPLOY" = 1 ] && [ "$FE_STATIC" = 1 ] && ! command -v npm >/dev/null 2>&1; then
-  log "PERINGATAN: npm tidak ada; langkah build frontend static akan gagal tanpa node"
+if [ "$DO_DEPLOY" = 1 ] && [ "$FE_STATIC" = 1 ]; then
+  # Dicek di shell login operator, bukan di PATH root: node di mesin ini sering
+  # hanya terpasang di profil user.
+  sudo -u "$OPERATOR" -H bash -lc 'command -v npm >/dev/null' 2>/dev/null ||
+    log "PERINGATAN: npm tidak terlihat di shell login $OPERATOR; build frontend akan gagal"
 fi
 
 # --- 2. registry lewat IPv4 ---------------------------------------------------

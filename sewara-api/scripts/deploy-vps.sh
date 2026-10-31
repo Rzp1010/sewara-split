@@ -131,6 +131,17 @@ fi
 prev=""
 [ -f "$STATE" ] && prev=$(cat "$STATE")
 prev_sha=${prev#sewara-api:}
+if [ -z "$prev_sha" ]; then
+  # State belum ada/kosong: patokan diambil dari container yang benar-benar jalan
+  # (itu kenyataan, bukan ingatan). Terjadi kalau deploy pertama tidak sempat
+  # menulis state, mis. karena folder state belum bisa ditulis.
+  api_id=$("${COMPOSE[@]}" ps -q api 2>/dev/null | head -1 || true)
+  if [ -n "$api_id" ]; then
+    prev=$(docker inspect --format '{{.Config.Image}}' "$api_id" 2>/dev/null || true)
+    prev_sha=${prev#sewara-api:}
+    [ -n "$prev_sha" ] && log "state kosong -> patokan dari container yang jalan: $prev"
+  fi
+fi
 log "image terpasang sebelum: ${prev:-<belum tercatat>}"
 
 perlu_api=0; perlu_fe=0
@@ -210,7 +221,9 @@ if [ "$sehat" = "1" ]; then
     log "recreate edge (api dapat IP baru)"
     "${COMPOSE[@]}" --profile edge up -d --force-recreate edge
   fi
-  printf '%s\n' "$IMG" > "$STATE" 2>/dev/null || log "catatan: $STATE tidak bisa ditulis (perlu root)"
+  if ! printf '%s\n' "$IMG" > "$STATE" 2>/dev/null; then
+    log "PERINGATAN: $STATE tidak tertulis; deploy berikutnya akan memakai container yang jalan sebagai patokan"
+  fi
   # Samakan tag di .env dengan yang benar-benar jalan: unit systemd menjalankan
   # `up -d` tanpa env ini, jadi reboot berikutnya harus memakai tag yang sama.
   if [ -f "$API_DIR/.env" ] && grep -q '^SEWARA_API_IMAGE=' "$API_DIR/.env"; then
