@@ -15,8 +15,8 @@ ada satu pun perubahan yang menyentuh produksi**.
 ```
 SEKARANG (produksi)                      PARALEL (pematangan, tanpa trafik)
 Next + Supabase                          Go + Postgres self-hosted
-  sewara-backend/  (main)                  sewara-api/  (dev -> go-prod)
-  sewara-frontend/ (main)                  staging: Docker di laptop/homelab
+  sewara-backend/  (main)                  sewara-api/  (dev)
+  sewara-frontend/ (main)                  staging: Docker di homelab (terpasang 2026-10-31)
   VPS: pm2, /home/sewara-apps-production   VPS: Docker, /srv/sewara (belum dipasang)
 ```
 
@@ -42,7 +42,7 @@ Yang **wajib** dijaga berdampingan selama 2026 bukan folder, melainkan **skema D
 | Topik | Keputusan | Alasan |
 |---|---|---|
 | Letak kode | **Satu repo** (`sewara-split`), `sewara-api/` tetap di dalamnya | Pemisahan sudah nyata (folder + stack VPS sendiri); repo kedua = dua sinkronisasi yang harus dijaga |
-| Cabang | `dev` = pengembangan (Next **dan** Go). `main` = **terminal Next**. `go-prod` = **terminal Go** | Pengembangan Next tidak pernah otomatis merilis Go, dan sebaliknya |
+| Cabang | `dev` = pengembangan (Next **dan** Go). `main` = **terminal Next**. Go dirilis dari `dev` juga — tidak ada cabang `go-prod` | Satu cabang pengembangan; yang memisahkan Go dan Next adalah folder + stack VPS, bukan cabang. Rilis Go ke VPS belum pernah terjadi (menunggu Januari) |
 | Direktori VPS | Next: `/home/sewara-apps-production/sewara-split` (pm2). Go: `/srv/sewara/app` + `/srv/sewara/pgdata` + `/etc/sewara/*` (Docker) | Dua stack tidak berbagi berkas; `git pull` salah satu tidak mengganggu yang lain |
 | Cara rilis | Next: `git pull` → `npm run build` → `pm2 restart`. Go: `scripts/deploy-vps.sh` (pull → build → up → uji sehat → rollback otomatis) | Terbukti di homelab 2026-10-30 |
 | Pemindahan data | **Satu jendela** (API + data bersamaan), didahului latihan kering | Lihat §3 |
@@ -55,7 +55,7 @@ Yang **wajib** dijaga berdampingan selama 2026 bukan folder, melainkan **skema D
 sewara-split/
   sewara-backend/    Next backend   -> rilis dari `main`, pm2 di VPS
   sewara-frontend/   Next frontend  -> rilis dari `main` (nanti static export)
-  sewara-api/        Go backend     -> rilis dari `go-prod`, Docker di VPS
+  sewara-api/        Go backend     -> rilis dari `dev`, Docker di VPS
   deploy/            systemd, nginx
   docs/              runbook, checklist, rencana ini
 ```
@@ -65,8 +65,10 @@ Aturan yang mengikat:
 1. Perubahan kode Go tidak boleh menyentuh `sewara-backend/`/`sewara-frontend/`
    kecuali diminta eksplisit (dan sebaliknya) — supaya rilis Go tidak membawa
    perubahan Next yang belum diuji.
-2. Rilis Go: `dev` → `go-prod` (hanya commit yang sudah lolos uji), lalu di VPS
-   `SEWARA_BRANCH=go-prod ./sewara-api/scripts/deploy-vps.sh`.
+2. Rilis Go: di VPS metode `/srv/sewara/app` pada branch `dev`
+   (`SEWARA_BRANCH=dev` di `sewara-api/.env`, diisi `install.sh`), lalu
+   `./sewara-api/scripts/deploy-vps.sh`. Skrip itu menarik `dev`, jadi commit yang
+   belum lolos uji jangan di-push ke `dev`.
 3. Rilis Next: pola lama tetap berlaku (`dev` → `main`, `main` = terminal).
 4. Migrasi DB terpisah dan **tidak pernah** tercampur:
    - `sewara-backend/supabase/migrations/` → Supabase (ledger `schema_migrations`)
@@ -82,9 +84,11 @@ Aturan yang mengikat:
 Diperiksa di kode, tiga hal ini menutup jalur bertahap:
 
 1. **Frontend murni pemanggil API** (`sewara-frontend/src/lib/db.js:5-6`,
-   `src/lib/api-client.js:1` — `NEXT_PUBLIC_API_URL`). Supabase dipakai frontend
-   hanya untuk `preconnect` (`src/app/layout.js:33`). Artinya begitu `/api/`
-   dialihkan ke Go, halaman lama tetap jalan tanpa diubah.
+   `src/lib/api-client.js:1`). Dasar alamat API **relatif** sejak 2026-10-31
+   (`NEXT_PUBLIC_API_URL || ''`), jadi bundel memanggil origin yang sama — cocok
+   untuk nginx per-path, dan ganti domain/IP tidak menuntut bangun ulang. Supabase
+   dipakai frontend hanya untuk `preconnect` (`src/app/layout.js:33`). Artinya
+   begitu `/api/` dialihkan ke Go, halaman lama tetap jalan tanpa diubah.
 2. **Jembatan "Go memakai DB Supabase" mustahil tanpa perubahan kode**: Go
    menulis langsung ke `auth.users` dan `auth.sessions`
    (`internal/db/login.go:33`, `session.go:23,37`, `admin_users.go:58`).
@@ -145,17 +149,24 @@ Aturan yang mengikat mulai sekarang:
 ## 5. Fase 0 — prasyarat (belum satu pun dijalankan)
 
 - [ ] Vhost produksi sekarang disimpan: `sudo nginx -T > ~/nginx-prod-sebelum-<tanggal>.conf`
-      (tanpa ini kita menebak `location`, header, dan timeout).
-- [ ] `/etc/sewara/api.env` terisi lengkap: R2, Telegram, `PURGE_SECRET`,
-      `WEBHOOK_TELEGRAM_SECRET`, `EMAIL_TOKEN_SECRET` baru, Resend SMTP **port 587**
-      (`smtp.resend.com`, user `resend`), plus `DATABASE_URL` baru.
-- [ ] `/etc/sewara/pg_password` (600), `rclone.conf` (600) terpasang.
-- [ ] Tiga unit systemd terpasang (`sewara`, `sewara-backup`, `sewara-backup.timer`),
-      backup pertama sukses + `rclone check` → 0 differences.
+      (tanpa ini kita menebak `location`, header, dan timeout). Bentuk yang dibaca
+      2026-10-31 ada di `docker-runbook.md` §nginx host: `/api/` → `localhost:4000`,
+      `/` → `localhost:3002`.
+- [ ] Pemasangan mesin dijalankan satu perintah:
+      `sudo ./sewara-api/scripts/install.sh --prod` — folder, grup, `pg_password`,
+      `api.env` (rahasia acak), `.env` compose, skema tanpa seed, tiga unit
+      systemd. Sudah terbukti di homelab 2026-10-31 (idempoten); di VPS belum.
+- [ ] `/etc/sewara/api.env` dilengkapi kredensial asli: R2, Telegram, `PURGE_SECRET`
+      (sudah dibangkitkan skrip), `EMAIL_TOKEN_SECRET`, Resend SMTP **port 587**
+      (`smtp.resend.com`, user `resend`), `DATABASE_URL` (sudah diisi skrip).
+- [ ] `/etc/sewara/rclone.conf` (600, dibuat kosong skrip) diisi + backup pertama
+      sukses + `rclone check` → 0 differences. Timer sudah `enable --now` sejak
+      `install.sh`, jadi isi segera atau `disable --now` dulu.
 - [ ] Halaman maintenance statis siap (satu berkas HTML) + cara mengaktifkannya
       di nginx dan mengembalikannya.
-- [ ] Image Go **sudah dibangun lebih dulu** (`docker compose build api`) supaya
-      jendela tidak menunggu 207 detik build.
+- [ ] Image Go **sudah dibangun lebih dulu**: `./sewara-api/scripts/deploy-vps.sh api`
+      di hari yang tenang (bukan di jendela), supaya jendela tidak menunggu
+      build ~3-5 menit.
 - [ ] Backup terakhir dari produksi (repo `sewara-backup`, REST JSON + `users.json`)
       diunduh untuk bahan latihan.
 - [ ] Ukuran DB produksi & sisa disk EBS dicek (`df -h`, ukuran dump).
@@ -196,8 +207,7 @@ juga memberi angka nyata untuk menjadwalkan jendela.
 | T+3 | Dump akhir Supabase (`pg_dump -Fc`) + simpan sha256 | berkas dump ada, ukuran wajar |
 | T+8 | Restore ke Postgres Docker (skema dari bootstrap+baseline+migrations, lalu data) | `psql -c '\dt'` jumlah tabel cocok |
 | T+15 | Verifikasi hitung (sama seperti Fase 1 langkah 4) | **angka identik, kalau tidak → NO-GO** |
-| T+20 | Flip `location /api/` → `127.0.0.1:8098`; `nginx -t`; reload | `curl` health 200 |
-| T+22 | Uji berurutan: login, dashboard, members, transactions, unggah bukti, export, cetak invoice | semua 200/berhasil |
+| T+20 | Flip `location /api/` → `127.0.0.1:8098`; `nginx -t`; reload | `curl` health 200 || T+22 | Uji berurutan: login, dashboard, members, transactions, unggah bukti, export, cetak invoice | semua 200/berhasil |
 | T+30 | Matikan maintenance, buka layanan | pengguna bisa login |
 | T+30..T+90 | Pantau: `docker logs -f api`, `pm2 logs`, error 4xx/5xx | tidak ada lonjakan galat |
 
@@ -206,6 +216,10 @@ juga memberi angka nyata untuk menjadwalkan jendela.
 cukup login sekali lagi. Tulisan sejak flip hilang — catat jamnya dan, kalau ada,
 masukkan manual dari catatan pengguna.
 
+Yang disentuh di jendela cuma vhost nginx host (punyamu; skrip deploy tidak pernah
+menyentuhnya): satu baris `proxy_pass` di `location /api/`. Bentuk lengkap tahap 1
+dan tahap 2 ada di `docker-runbook.md` §nginx host.
+
 **NO-GO otomatis:** angka verifikasi tidak identik, login tidak jalan, unggah/export
 gagal, atau `pg_restore` melaporkan galat yang tidak bisa dijelaskan.
 
@@ -213,9 +227,16 @@ gagal, atau `pg_restore` melaporkan galat yang tidak bisa dijelaskan.
 
 ## 8. Fase 3 — frontend jadi static export (terpisah, setelah stabil ≥3 hari)
 
-`sewara-frontend` build static export → taruh di `/srv/sewara/www` → alihkan
-`root` nginx dari Next ke folder itu. Rollback: kembalikan `root` + `proxy_pass`
-frontend. Setelah fase ini pm2 benar-benar bisa dipensiunkan.
+`sewara-frontend` build static export (`npm run build:static`) → `/srv/sewara/www`
+→ `edge` (container, `127.0.0.1:8090`) menyajikan berkas statis + `/api/` →
+`api:4000`. Vhost host lalu cukup satu blok `location /` → `127.0.0.1:8090`; blok
+`/api/` **dihapus** karena pembagian path pindah ke `edge` (yang tidak memuat
+domain sama sekali). Rollback: kembalikan vhost dari `.bak` (dan `root`/`proxy_pass`
+lama). Setelah fase ini pm2 benar-benar bisa dipensiunkan.
+
+Di homelab fase ini sudah berjalan (frontend statis di `/srv/sewara/www`, 298
+berkas, `login=200`); di VPS belum, karena `SEWARA_FRONTEND_STATIC=0` selama Next
+masih melayani.
 
 ---
 
@@ -229,7 +250,9 @@ dibatalkan; backup R2 akun terpisah + drill berkala tetap jalan.
 
 ## 10. Setelah cutover: apa yang masih boleh diubah
 
-`location /api/` → Go; seluruh path lain tetap Next (`try_files`).
+`location /api/` → Go; seluruh path lain tetap Next (`try_files`). Sesudah Fase 3
+(tahap 2), pembagian itu pindah ke `edge` dan host nginx cukup meneruskan `/` ke
+`127.0.0.1:8090`.
 
 | Perubahan | Aman? | Alasan |
 |---|---|---|

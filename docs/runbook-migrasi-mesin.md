@@ -59,7 +59,8 @@ folder tujuan. Penjadwalan sudah disiapkan sebagai unit systemd:
 `Persistent=true`). Timer aplikasi lain tetap ticker Go di dalam API — ini
 penjadwalan operasional, bukan logika aplikasi.
 
-Periksa unit dulu sebelum mengaktifkan (belum diuji di Linux):
+Periksa unit dulu sebelum mengaktifkan (di homelab sudah lolos `systemd-analyze
+verify` dan dipasang oleh `install.sh`):
 ```bash
 systemd-analyze verify /etc/systemd/system/sewara-backup.service /etc/systemd/system/sewara-backup.timer
 ```
@@ -129,15 +130,19 @@ sudah terbukti.
 
 ## Sisa pekerjaan (jujur, belum selesai)
 
-1. Salin dump ke luar host (rclone ke R2) + buktikan bisa diunduh kembali —
-   langkahnya sudah dicontohkan di `deploy/systemd/sewara-backup.service`
-   (`ExecStartPost`, masih dimatikan).
-2. Deploy unit systemd di VPS (berkas sudah ada di `deploy/systemd/`, belum
-   dipasang) + tetapkan RPO nyatanya.
+1. `install.sh` sudah memasang tiga unit systemd + meng-`enable` timer backup, tapi
+   `/etc/sewara/rclone.conf` masih kosong → backup ke luar host **belum jalan**
+   (isi kredensial, atau matikan timer dulu supaya tidak `failed` tiap 12 jam).
+2. RPO nyata belum ditetapkan; tetapkan sesudah backup pertama sukses +
+   `rclone check` → 0 differences.
 3. Salinan terenkripsi env produksi + isi kotak darurat di atas.
-4. `docker-compose.prod.yml`: bind mount `pgdata`, `POSTGRES_PASSWORD_FILE`, port
-   API hanya `127.0.0.1`, network internal.
-5. Latihan migrasi ulang di mesin sungguhan (homelab) — laptop sudah membuktikan
-   prosedurnya, homelab membuktikan lingkungannya.
-6. Backup berkas R2 (foto/bukti bayar) — R2 tahan mesin mati, tapi bukan jaminan
+4. Latihan migrasi ulang di mesin sungguhan (homelab) — laptop sudah membuktikan
+   prosedurnya, homelab sudah terpasang, tinggal drill penuh (dump produksi →
+   restore → smoke).
+5. Backup berkas R2 (foto/bukti bayar) — R2 tahan mesin mati, tapi bukan jaminan
    terhadap salah hapus; butuh snapshot/versioning sendiri.
+
+Yang sudah selesai dari daftar lama: `docker-compose.prod.yml` (bind mount
+`pgdata`, `POSTGRES_PASSWORD_FILE`, port API hanya `127.0.0.1`, network internal)
+dan pemasangan unit systemd lewat `install.sh`; salin dump ke luar host sudah ada
+skripnya (`backup-rclone.sh`, tinggal kredensial).

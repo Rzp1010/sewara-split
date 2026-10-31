@@ -1,8 +1,15 @@
 # Runbook Docker — Sewara (staging dulu, produksi menyusul)
 
-Lingkup saat ini: **Postgres + API Go** dalam satu `docker compose`.
-Frontend/Next **belum** dipindah ke container — cutover frontend ditunda atas
-permintaan user. nginx per-path juga belum (bagian dari cutover).
+Lingkup saat ini: **Postgres + API Go** dalam satu `docker compose` (+ `edge`
+nginx untuk homelab). Frontend/Next **belum** dipindah ke container —
+cutover frontend menunggu Januari 2027 (`docs/cutover-plan.md`).
+
+Dua perintah yang paling sering dipakai:
+
+```bash
+sudo ./sewara-api/scripts/install.sh          # pasang di mesin baru (--prod untuk VPS)
+cd /srv/sewara/app && ./sewara-api/scripts/deploy-vps.sh   # deploy berikutnya
+```
 
 Rujukan aturan: `rencana-migrasi-go-2026-10-27.md` §8 (portabilitas runtime).
 
@@ -13,8 +20,12 @@ Rujukan aturan: `rencana-migrasi-go-2026-10-27.md` §8 (portabilitas runtime).
 | `sewara-api/Dockerfile` | build multi-stage; runtime alpine + ca-certificates/tzdata/wget, user non-root 10001 |
 | `sewara-api/.dockerignore` | `.data/`, `.env*`, skema/seed/skrip (tidak dipakai runtime) |
 | `sewara-api/docker-compose.yml` | service `db` (named volume `pgdata`), `db-init` (profil `init`), `api` |
+| `sewara-api/docker-compose.prod.yml` | bentuk yang dipakai homelab/VPS: `db` (bind mount) + `api` + `edge` (profil `edge`) + `adminer`/`cloudflared` (profil `admin`/`tunnel`); knobs `SEWARA_*` |
 | `sewara-api/docker/db-init/init.sh` | bootstrap → baseline dump (baris pg_net dibuang) → migrations → seed → ledger → setval |
 | `sewara-api/.env.example` | daftar env lengkap; `cp` ke `.env` (gitignored) |
+| `sewara-api/scripts/install.sh` | pemasangan mesin baru, satu perintah + idempoten (`--prod`, `--no-deploy`, `--branch`, `--user`, `--root`, `--etc`, `--repo`) |
+| `sewara-api/scripts/deploy-vps.sh` | deploy/rollback opt-in (`auto` / `api` / `frontend` / `semua` / `--ke <commit>`) |
+| `deploy/nginx.staging.conf` | nginx `edge` (container): frontend statis + `/api/` → `api:4000`, tanpa domain |
 
 ## Prasyarat
 
@@ -155,9 +166,13 @@ Catatan: `pg_dump` tidak memuat isi R2 (foto member, bukti bayar, header
 invoice). Berkas itu hidup di bucket R2 dan harus punya jalur backup sendiri
 (rclone/sync) — belum dikerjakan.
 
-**Blocker cutover:** `sewara-backup` saat ini menarik data lewat REST Supabase
-(PostgREST). Setelah Go dipakai, jalur itu mati. Harus diganti `pg_dump -Fc`
-terjadwal (cron 12 jam) yang menyimpan hasil ke luar host aplikasi.
+**Blocker cutover:** `sewara-backup` (repo lama) menarik data lewat REST Supabase
+(PostgREST). Setelah Go dipakai, jalur itu mati. Penggantinya sudah ada: timer
+`sewara-backup.timer` (12 jam) → `scripts/backup.sh` (`pg_dump -Fc` + verifikasi +
+sha256 + rotasi) → `ExecStartPost` `scripts/backup-rclone.sh` ke R2 akun terpisah.
+Yang masih menggantung: `/etc/sewara/rclone.conf` belum diisi, sementara
+`install.sh` sudah meng-`enable --now` timer-nya — jadi unit akan `failed` tiap
+12 jam sampai kredensial ada (atau timer dimatikan dulu).
 
 ## Anggaran sumber daya (t3.micro: 2 vCPU / 1 GB RAM)
 
@@ -355,6 +370,82 @@ health-nya memakai `--wait` / `--wait-timeout` (Compose v2.1.1+), bukan loop cur
 buatan sendiri. Pola `docker compose pull` hanya berlaku kalau image diambil dari
 registry, dan proyek ini sengaja tidak memakai registry/CI.
 
+## nginx host: dua tahap cutover (produksi)
+
+Ada **dua** nginx dan pemiliknya beda:
+
+| Lapis | Berkas | Domain? | Siapa mengurus |
+|---|---|---|---|
+| nginx host (VPS) | `/etc/nginx/sites-enabled/<vhost>` | ya (`server_name`, sertifikat) | **kamu** — skrip deploy tidak pernah menyentuhnya |
+| nginx `edge` (container) | `deploy/nginx.staging.conf` | tidak (`server_name _;`, `Host $host`) | kode — ikut compose |
+
+Karena `edge` tidak memuat domain, ganti domain/typo tidak menuntut perubahan
+container; yang berubah hanya DNS, vhost host, dan `api.env`
+(`FRONTEND_URL`/`PUBLIC_API_URL`). Sama polanya dengan unit systemd: skrip hanya
+mengingatkan, tidak mengeksekusi.
+
+Vhost produksi sekarang: 80 → redirect 443, 443 TLS origin cert,
+`/api/` → `localhost:4000` (API Next), `/` → `localhost:3002` (Next).
+
+| Tahap | `location /api/` | `location /` | Yang jalan |
+|---|---|---|---|
+| sekarang | `localhost:4000` | `localhost:3002` | Next API + Next UI |
+| 1. hybrid | `127.0.0.1:8098` | `localhost:3002` | Go API + Next UI |
+| 2. penuh | *(dihapus)* | `127.0.0.1:8090` | `edge` menyajikan frontend statis + `/api` |
+
+Tahap 1 cuma satu baris `proxy_pass`; frontend Next tetap hidup dan rollback =
+kembalikan barisnya (instan, tanpa build). Tahap 2 memindahkan pembagian path ke
+`edge`, jadi host nginx turun pangkat jadi pintu TLS:
+
+```nginx
+server {
+    listen 80;
+    server_name app.sewara.my.id;
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;                                  # nginx >= 1.25: `listen 443 ssl http2` usang
+    server_name app.sewara.my.id;
+
+    ssl_certificate     /etc/nginx/ssl/sewara-origin.crt;
+    ssl_certificate_key /etc/nginx/ssl/sewara-origin.key;
+
+    # proxy_* di level server diwarisi location (beda dengan add_header)
+    client_max_body_size 10m;
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+    proxy_buffer_size 32k;
+    proxy_buffers 8 32k;
+    proxy_busy_buffers_size 64k;
+
+    location / {
+        proxy_pass http://127.0.0.1:8090;       # edge: statis + /api -> api:4000
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+`127.0.0.1:8090` tidak perlu dibuka ke publik (`SEWARA_EDGE_BIND=127.0.0.1` di
+prod), jadi hanya 80/443 yang mendengarkan — sama seperti sekarang. Kalau lebih
+suka pemisahan eksplisit (log per path, penyangga khusus API), tahap 2 boleh tetap
+dua blok: `/api/` → `127.0.0.1:8098`, `/` → `127.0.0.1:8090`. Dua-duanya sah; satu
+upstream lebih sedikit tempat untuk salah.
+
+Tiga hal yang harus cocok di tahap 1, kalau tidak login "gagal" tanpa pesan jelas:
+`APP_ENV=production` (cookie `Secure`), `FRONTEND_URL`/`PUBLIC_API_URL` = domain
+aplikasi, dan `X-Forwarded-Proto $scheme` terkirim (backend memakainya untuk tahu
+aslinya https). Pakai `127.0.0.1:8098`, bukan `localhost`, supaya tidak menembak
+`::1`.
+
+Sesudah tiap tahap: `curl -s https://app.sewara.my.id/api/health` → 200 dan halaman
+login tampil.
+
 ## Hasil uji homelab 2026-10-30 (bentuk produksi di Linux)
 
 Yang diuji: `docker-compose.prod.yml` apa adanya, di `~/sewara-test` (bukan
@@ -528,38 +619,34 @@ Catatan: `--token-file` berarti container harus bisa membaca berkas 600 itu; ima
 `cloudflare/cloudflared` standar berjalan sebagai root sehingga aman — kalau nanti
 ganti varian `-nonroot`, ubah pemilik ke uid 65532.
 
-## Deploy produksi (urutan, belum dijalankan)
+## Deploy produksi (urutan)
 
-Berkas: `docker-compose.prod.yml`, `.env.prod.example` (jadi `/etc/sewara/api.env`),
-`deploy/systemd/*`, `deploy/nginx.staging.conf` (bentuk cutover; versi produksi
-menyusul saat cutover).
+Berkas: `docker-compose.prod.yml`, `deploy/systemd/*`, `deploy/nginx.staging.conf`
+(`edge`), dan `sewara-api/scripts/install.sh` (pemasangan) +
+`deploy-vps.sh` (deploy/rollback).
 
-1. `sudo mkdir -p /srv/sewara/pgdata /srv/sewara/backup /etc/sewara`
-2. `sudo chown -R 999:999 /srv/sewara/pgdata && sudo chmod 700 /srv/sewara/pgdata`
-3. `printf '%s' '<password-kuat>' | sudo tee /etc/sewara/pg_password >/dev/null`
-4. `sudo cp .env.prod.example /etc/sewara/api.env` → isi nilai asli (boleh disalin
-   dari env Next produksi yang sudah ada di VPS) → `sudo chmod 600 /etc/sewara/pg_password /etc/sewara/api.env`
-5. `docker compose -f docker-compose.prod.yml up -d db` → buat role
-   (`anon`, `authenticated`, `service_role`) → restore dump data produksi
-6. `docker compose -f docker-compose.prod.yml up -d api` → cek `/api/health` + login.
-   Rilis berikutnya cukup satu perintah: `./sewara-api/scripts/deploy-vps.sh`
-   (cek drift ledger → build → naikkan → uji sehat → **rollback otomatis** kalau
-   gagal; image lama tidak ditimpa sehingga rollback instan).
-7. `sudo cp deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/` →
-   `systemd-analyze verify` → `systemctl enable --now sewara.service sewara-backup.timer`
-8. nginx: tanam vhost produksi (per-path) → `nginx -t` → reload
+Rangkaiannya sekarang tiga langkah, bukan delapan:
 
-Urutannya mengikat: container hidup dulu, lalu routing dialihkan per-path.
-Rollback = balikkan blok `location` ke Next, tanpa menyentuh container.
+1. `cd <repo> && sudo ./sewara-api/scripts/install.sh --prod --user "$USER"` —
+   mengerjakan folder, grup, `pg_password`, `api.env`, `.env` compose, skema
+   (tanpa seed di prod), dan tiga unit systemd. Idempoten.
+2. Lengkapi `R2_*` + `SMTP_*` di `/etc/sewara/api.env`, lalu
+   `cd /srv/sewara/app && ./sewara-api/scripts/deploy-vps.sh` (build ~3-5 menit,
+   wajib swap; gerbang `--wait` 90 s; gagal → balik ke image lama sendiri).
+3. nginx host per-path: tahap 1 `/api/` → `127.0.0.1:8098`, nanti tahap 2 `/` →
+   `127.0.0.1:8090` (§nginx host). `nginx -t` → reload.
 
-**Sudah diverifikasi di Linux 2026-10-30** (lihat §Hasil uji homelab): unit systemd
-lewat `systemd-analyze verify`, bind mount + uid 999, init skema, API
-`APP_ENV=production`, backup, dan ketahanan `down -v`. Jalur rilis **juga sudah
-dilatih di homelab** (repo git + bare sebagai origin): deploy normal hijau
-(`drift 0`, build 207 detik, health 200), lalu deploy sengaja dirusak → health gagal
-→ **rollback otomatis hijau** (kembali ke image sebelumnya, health 200, RC=1).
-Yang masih menunggu: langkah yang butuh sudo di mesin tujuan (`/srv/sewara`,
-`/etc/sewara`, pasang unit) dan pemindahan data (Fase B).
+Data produksi (dump → restore) bukan bagian pemasangan: urutannya di
+`checklist-deploy-vps.md` Fase B. Setelah DB berisi data asli, urutan mengikatnya
+tetap: **container hidup dulu, baru routing dialihkan per-path**; rollback =
+balikkan blok `location` ke Next, tanpa menyentuh container.
+
+**Sudah diverifikasi di Linux 2026-10-30/31** (lihat §Hasil uji homelab): unit
+systemd lewat `systemd-analyze verify`, bind mount + uid 999, init skema, API
+`APP_ENV=production`, backup, ketahanan `down -v`, jalur rilis (deploy normal hijau
+`drift 0` → health 200; deploy sengaja dirusak → rollback otomatis hijau), dan
+pemasangan `install.sh` (idempoten; jalan ulang = semua "sudah ada → dibiarkan").
+Yang masih menunggu di VPS: pemindahan data (Fase B) + vhost host.
 
 ## Delta produksi (belum dikerjakan)
 
@@ -571,15 +658,16 @@ Yang masih menunggu: langkah yang butuh sudo di mesin tujuan (`/srv/sewara`,
 - `APP_ENV=production` (cookie jadi `Secure`), semua secret asli dari file env di
   VPS (bukan di repo), `EMAIL_TOKEN_SECRET`/`FRONTEND_URL`/SMTP wajib terisi,
   R2 wajib lengkap — `config.Load()` gagal cepat kalau kurang.
-- Port API jangan dipublikasikan ke publik: bind `127.0.0.1:8098:4000`, nginx
-  host yang jadi edge (Cloudflare Full strict + HSTS tidak diubah).
+- Port API jangan dipublikasikan ke publik: bind `127.0.0.1:8098:4000`, `edge`
+  `SEWARA_EDGE_BIND=127.0.0.1:8090` di prod; nginx host yang jadi edge
+  (Cloudflare Full strict + HSTS tidak diubah).
 - `pgdata` di **bind mount folder host** (`/srv/sewara/pgdata`, uid 999) +
   monitoring disk; `logging` json-file dibatasi (10m × 3) supaya tidak menelan disk VPS.
   Bind mount inilah yang membuat data kebal `down -v`, `volume prune`, dan
   `system prune --volumes` (terbukti di homelab).
 - Password DB produksi jangan lewat `environment:` compose (bisa dibaca
   `docker inspect`): pakai `POSTGRES_PASSWORD_FILE` + file mode `600` di VPS,
-  dan `DATABASE_URL` di file env aplikasi (mode `600`, bukan di repo).
+  dan `DATABASE_URL` di `/etc/sewara/api.env` (mode `640 root:sewara`, bukan di repo).
 - Jadwal backup: `pg_dump -Fc` harian/12 jam ke luar host (R2 atau host lain),
   drill restore berkala. RPO mengikuti jadwal dump — sebelum cutover, tulis
   angkanya di runbook produksi supaya tidak diasumsikan.
@@ -608,21 +696,26 @@ Yang masih menunggu: langkah yang butuh sudo di mesin tujuan (`/srv/sewara`,
    `backup`, `schema`) + `/etc/sewara` (api.env, pg_password, rclone kosong),
    tiga unit systemd aktif, `edge` menyajikan `http://10.1.1.121:8090`.
    Terverifikasi: `tabel=29 policy=27 ledger=5 members=6 users=5`, tiga container
-   Up (api & db healthy), `login: 200`. Yang belum: isi `rclone.conf` + jalankan
-   `sewara-backup.service` sekali, dan arahkan cloudflared ke stack ini kalau mau
+   Up (api & db healthy), `login: 200`. Yang belum: `deploy-vps.sh frontend` sekali
+   setelah dasar alamat API jadi relatif (`bb6a840`; bundel lama masih memuat
+   `localhost:4000`/`10.1.1.121`), lalu `deploy-vps.sh` mode auto untuk memastikan
+   `/srv/sewara/api-image.txt` tertulis; isi `rclone.conf` + jalankan
+   `sewara-backup.service` sekali; dan arahkan cloudflared ke stack ini kalau mau
    dipakai sebagai staging ber-URL.
    Kondisi mesin: `rizkiserver`, Ubuntu 26.04, 2 vCPU, RAM 1,4 GB, disk 46 GB
    sisa; yang sudah jalan: nginx, `postgresql@18` host, cloudflared, tailscaled,
    samba, hermes (RSS ±310 MB). Node untuk build frontend: `/usr/bin/node` →
    `/www/server/nodejs/v24.20.0/bin/node`.
-3. Cutover frontend + nginx per-path (ditunda atas permintaan user) — butuh
-   vhost produksi sekarang (`nginx -T`) supaya per-path flip menyalin perilaku,
-   bukan menebak.
+3. Cutover frontend + nginx per-path (Januari 2027). Vhost produksi sudah dibaca
+   2026-10-31 (`/api/` → `localhost:4000`, `/` → `localhost:3002`), jadi flip
+   tahap 1 menyalin perilaku, bukan menebak. Bentuk lengkapnya di §nginx host,
+   jendelanya di `cutover-plan.md` §7/§8.
 4. ~~Ganti `sewara-backup` REST → `pg_dump`; tambah backup R2 (rclone)~~ — selesai
    2026-10-30: dump + `.sha256` + rotasi lokal, copy ke R2 **akun terpisah** dengan
-   verifikasi hash dan unduh-balik terbukti. Sisa saat deploy: pasang `rclone.conf`
-   di VPS, jalankan unit backup manual sekali, lalu `systemctl enable --now
-   sewara-backup.timer` dan matikan jalur REST lama supaya tidak ada dua isi backup.
+   verifikasi hash dan unduh-balik terbukti. Sisa: isi `rclone.conf` (di VPS belum
+   ada, di homelab masih kosong) dan matikan jalur REST lama supaya tidak ada dua
+   isi backup. Ingat: timer sudah `enable --now` dari `install.sh`, jadi unit akan
+   `failed` tiap 12 jam selama `rclone.conf` kosong.
 5. Migrasi data produksi (dump dari Supabase produksi → restore ke DB produksi baru)
    dengan urutan drift-check seperti `AGENTS.md` aturan 5; restore dilakukan di
    mesin besar, bukan di t3.micro.
