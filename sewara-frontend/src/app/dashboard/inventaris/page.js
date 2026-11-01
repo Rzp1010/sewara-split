@@ -585,7 +585,11 @@ export default function InventarisPage() {
         const drop = { format: 0, snKosong: 0, bundling: 0 };
 
         const header = parseBarisCSV((baris[0] || "").trim(), delim);
-        if (!header[0] || header[0].trim().toLowerCase() !== "nama") {
+        // Sel pertama header diuji longgar: "nama", "Nama Alat", "nama_alat" semua sah.
+        // Impor hanya memakai kolom pertama sebagai penanda; kolom lain dibaca
+        // berdasarkan posisi, jadi penamaan header bebas.
+        const kolomPertama = (header[0] || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (kolomPertama !== "nama" && kolomPertama !== "namaalat") {
           setCsvLoading(false);
           return notify("CSV harus punya baris header. Kolom pertama header harus 'nama'. Contoh: nama,tipe sewa,harga 6,...", "error");
         }
@@ -766,7 +770,7 @@ export default function InventarisPage() {
 
   function downloadTemplateCSV() {
     let csv =
-      "Nama Alat,TipeSewa(fleksibel/harian),Harga6J,Harga12J,Harga24J,Denda/Jam,NomorSeri(/),Kondisi,Keterangan,Tag Kategori\n";
+      "nama,TipeSewa(fleksibel/harian),Harga6J,Harga12J,Harga24J,Denda/Jam,NomorSeri(/),Kondisi,Keterangan,Tag Kategori\n";
     csv +=
       '"Sony A7III",fleksibel,75000,125000,150000,15000,"SN-001/SN-002","Sangat Baik","Body + Kit Lens","Kamera Sony"\n';
     csv +=
@@ -793,7 +797,7 @@ export default function InventarisPage() {
     const inv = await getInventory();
     // Format identik template 10 kolom (tanpa Jenis) — round-trip export->import aman.
     let csv =
-      "Nama Alat,TipeSewa(fleksibel/harian),Harga6J,Harga12J,Harga24J,Denda/Jam,NomorSeri(/),Kondisi,Keterangan,Tag Kategori\n";
+      "nama,TipeSewa(fleksibel/harian),Harga6J,Harga12J,Harga24J,Denda/Jam,NomorSeri(/),Kondisi,Keterangan,Tag Kategori\n";
     inv.forEach((i) => {
       const tag = i.tag || "";
       if (i.jenis === "satuan") {
