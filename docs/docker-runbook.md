@@ -556,6 +556,36 @@ Lapis ketiga (menarik dari R2 → artifact 90 hari) bersifat opsional dan
 **ditunda**: jalur backup resmi sekarang tetap manual/sederhana (dump → R2 akun
 terpisah), tanpa CI.
 
+## Akses UI staging dari laptop (https + secure context)
+
+Kondisi 2026-11-01: homelab sudah punya tunnel Cloudflare sendiri dengan
+hostname **`https://local.sewara.my.id`**, mengarah ke stack ini (`/` = static
+export frontend, `/api/health` = Go API dengan `env=development`). Tunnel itu
+sifatnya on/off sesuai kebutuhan, dan port tujuannya kadang diganti acak — jadi
+jangan anggap hostname itu selalu hidup.
+
+**Selalu akses lewat https, bukan `http://10.1.1.121:8090`.** Beberapa API
+browser hanya tersedia di *secure context* (https atau `localhost`), dan
+kegagalannya menjatuhkan fitur, bukan sekadar peringatan:
+
+- `crypto.randomUUID` — dipakai untuk id pembayaran (`booking/page.js:1331`,
+  `:1439`, `status/page.js:1065`). Di origin http, fungsinya `undefined` dan
+  simpan DP / catat pembayaran gagal:
+  `TypeError: crypto.randomUUID is not a function`. Ini yang terjadi
+  2026-10-31; bukan bug kode, dan produksi tidak terpengaruh karena https.
+- `navigator.clipboard` — tombol salin ikut diam saja di origin http.
+
+Cara alternatif tanpa tunnel: teruskan port edge ke laptop, karena `localhost`
+juga dihitung secure context —
+
+```bash
+ssh -N -L 8090:127.0.0.1:8090 rizki@10.1.1.121   # lalu buka http://localhost:8090
+```
+
+Dasar alamat API frontend bersifat relatif (`bb6a840`), jadi ganti-ganti port
+tunnel tidak merusak apa pun. Jangan pernah mengarahkan tunnel ke `8081`
+(Adminer) — ulasannya di §Konsol DB di bawah.
+
 ## Konsol DB (Adminer)
 
 Adminer = padanan phpMyAdmin untuk Postgres (lihat tabel, jalankan SQL,
@@ -566,27 +596,83 @@ kunci SSH.
 **Keputusan 2026-10-30: sementara cukup lewat SSH tunnel** (Cloudflare Access
 ditunda, jalur & langkahnya tetap dicatat di bagian bawah supaya tidak perlu
 dirancang ulang). Adminer tetap di profil `admin` supaya tidak ikut jalan di
-mesin 1 GB:
+mesin 1 GB.
+
+### Hidupkan
 
 ```bash
-# di VPS: jalankan Adminer (loopback saja, tidak ada port publik)
+cd /srv/sewara/app/sewara-api          # VPS: <repo>/sewara-api
 docker compose -f docker-compose.prod.yml --profile admin up -d adminer
-# matikan setelah selesai (hemat memori)
-docker compose -f docker-compose.prod.yml --profile admin stop
+docker ps --format '{{.Names}} {{.Ports}}' | grep adminer    # 127.0.0.1:8081->8080
+curl -sI http://127.0.0.1:8081 | head -1                     # HTTP/1.1 200 OK
 ```
 
-Dari laptop:
+### Akses dari laptop
 
 ```bash
-ssh -L 8081:127.0.0.1:8081 <user>@<vps>    # lalu buka http://localhost:8081
+ssh -N -L 8081:127.0.0.1:8081 rizki@10.1.1.121     # VPS: <user>@<vps>
 ```
 
-Login Adminer: server `db`, user `sewara`, database `sewara`, password dari
-`/etc/sewara/pg_password`.
+Biarkan terminal itu terbuka, lalu buka `http://localhost:8081` di browser.
+Form login (server sudah terisi otomatis dari `ADMINER_DEFAULT_SERVER`):
 
-Verifikasi: `curl -sI http://127.0.0.1:8081 | head -1` → `200`. Port 8081
-**hanya** loopback; kalau perlu diakses dari HP tanpa SSH, pilihannya jalur
-Cloudflare di bawah — jangan pernah membuka 8081 ke publik.
+| Kolom | Nilai |
+|---|---|
+| System | `PostgreSQL` |
+| Server | `db` |
+| Username | `sewara` |
+| Password | isi `/etc/sewara/pg_password` — baca dengan `sudo cat`, **jangan** tempel ke chat |
+| Database | `sewara` |
+
+### Matikan
+
+```bash
+docker compose -f docker-compose.prod.yml --profile admin stop adminer
+```
+
+`stop` sudah cukup (`down -v` jangan dipakai — itu menghapus volume data).
+**Lupa mematikan tidak membahayakan:** port 8081 di-bind ke loopback host
+(`docker-compose.prod.yml:118`), jadi tidak terjangkau LAN maupun internet —
+diverifikasi 2026-11-01 dari luar: `https://local.sewara.my.id:8081` →
+`ECONNREFUSED`. Yang tetap harus dijaga adalah akun SSH host dan keanggotaan
+grup `docker` (dua-duanya praktis setara akses DB lewat `docker exec`).
+
+### Kalau hanya butuh satu query cepat
+
+Tanpa Adminer sama sekali:
+
+```bash
+docker exec -i sewara-db-1 psql -U sewara -d sewara -c "SELECT id, no_invoice, jaminan_sewa FROM transactions ORDER BY id DESC LIMIT 5;"
+```
+
+### Peta tabel akun (biar tidak salah lihat)
+
+| Tabel | Isi | Kunci |
+|---|---|---|
+| `auth.users` | identitas + kredensial: `email`, `encrypted_password` (bcrypt `$2a$10$`, tidak bisa dibalik), `email_confirmed_at` | `id` |
+| `public.profiles` | akun aplikasi: `role`, `nama_lengkap`, `username`, `nama_invoice`, `is_active`, `status`, `owner_id` (tenant), `subscribed_until`, `failed_login`/`locked_until` | **`user_id`** (FK ke `auth.users.id`; kolom `id` tidak ada) |
+| `auth.sessions` | sesi login; menghapus satu baris = user itu langsung logout | `user_id` |
+| `admin_logs`, `activity_logs` | jejak aksi admin/user | `id` |
+
+`members` bukan akun login — itu data pelanggan/penyewa. Perubahan akun
+sebaiknya lewat aplikasi/API, bukan SQL langsung (SQL langsung melewati logika
+aplikasi: audit, rate-limit login, normalisasi tenant). Lewat psql/Adminer kamu
+melihat **semua** tenant, sedangkan aplikasi menyaring per tenant.
+
+### Alternatif DBeaver (disiapkan, belum dipakai)
+
+Ditolak 2026-11-01 ("cukup Adminer dulu"). Kalau nanti dibutuhkan: container
+`db` tidak mempublikasikan port, jadi tambahkan pintu socat di network compose,
+lalu pakai tab SSH DBeaver (atau `ssh -L 5433:127.0.0.1:5433`):
+
+```bash
+docker run -d --name sewara-db-tunnel --restart unless-stopped \
+  --network sewara_internal -p 127.0.0.1:5433:5432 \
+  alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:db:5432
+# selesai: docker rm -f sewara-db-tunnel
+```
+
+Jangan bind ke `0.0.0.0` — itu membuka DB ke seluruh LAN dengan password yang sama.
 
 ### Nanti: Cloudflare Access (kalau mau dari HP tanpa SSH)
 
@@ -700,8 +786,12 @@ Yang masih menunggu di VPS: pemindahan data (Fase B) + vhost host.
    setelah dasar alamat API jadi relatif (`bb6a840`; bundel lama masih memuat
    `localhost:4000`/`10.1.1.121`), lalu `deploy-vps.sh` mode auto untuk memastikan
    `/srv/sewara/api-image.txt` tertulis; isi `rclone.conf` + jalankan
-   `sewara-backup.service` sekali; dan arahkan cloudflared ke stack ini kalau mau
-   dipakai sebagai staging ber-URL.
+   `sewara-backup.service` sekali.
+   **Staging ber-URL: aktif 2026-11-01** lewat tunnel Cloudflare milik homelab,
+   `https://local.sewara.my.id` (on/off situasional, port tujuan kadang diganti
+   acak). Bundel yang disajikan sudah terbukti bersih dari `localhost:4000` dan
+   `10.1.1.121`, jadi `deploy-vps.sh frontend` untuk homelab praktis sudah tidak
+   mendesak. Ulasan + kewajiban https (secure context): §Akses UI staging.
    Kondisi mesin: `rizkiserver`, Ubuntu 26.04, 2 vCPU, RAM 1,4 GB, disk 46 GB
    sisa; yang sudah jalan: nginx, `postgresql@18` host, cloudflared, tailscaled,
    samba, hermes (RSS ±310 MB). Node untuk build frontend: `/usr/bin/node` →
