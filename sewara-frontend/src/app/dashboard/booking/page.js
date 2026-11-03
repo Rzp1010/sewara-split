@@ -1283,7 +1283,6 @@ export default function BookingPage() {
       }
 
       const invDiubah = new Set();
-      const reservasiSave = new Map();
       for (let item of c) {
         if (item.ref.jenis === "satuan") {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
@@ -1298,42 +1297,9 @@ export default function BookingPage() {
             if (snIdx !== -1) dbItem.sns.splice(snIdx, 1);
           }
           if (snList.length) invDiubah.add(dbItem.id);
-        } else {
-          let assigned = [];
-          for (let komp of item.ref.komponen || []) {
-            let dbKomp = tempInv.find((i) => i.id == komp.idBarang);
-            let butuh = komp.qty * item.qty;
-            const bebas = snsBebasIdx(
-              idx,
-              komp.idBarang,
-              ambilISO,
-              kembaliISO,
-              excludeId,
-            );
-            const reserved =
-              reservasiSave.get(String(komp.idBarang)) || new Set();
-            const tersedia = bebas.filter((s) => !reserved.has(s));
-            if (tersedia.length < butuh)
-              return notify(
-                `Stok Komponen '${dbKomp?.nama || "?"}' kurang.`,
-                "error",
-              );
-            const dipilih = tersedia.slice(0, butuh);
-            if (dbKomp)
-              dbKomp.sns = (dbKomp.sns || []).filter(
-                (s) => !dipilih.includes(s),
-              );
-            if (dbKomp) invDiubah.add(dbKomp.id);
-            dipilih.forEach((s) => reserved.add(s));
-            reservasiSave.set(String(komp.idBarang), reserved);
-            assigned.push({
-              idKomp: komp.idBarang,
-              nama: dbKomp?.nama || "?",
-              sns: dipilih,
-            });
-          }
-          item.assignedSNs = assigned;
         }
+        // Paket: S/N komponen dipilih saat Serahkan (status/page.js), jadi tidak
+        // ada yang dicadangkan di sini; biarkan assignedSNs apa adanya.
       }
       const invUpdate = tempInv.filter((i) => invDiubah.has(i.id));
 
@@ -1831,7 +1797,6 @@ export default function BookingPage() {
 
       // Kurangi stok untuk barang baru di editItems (pakai salinan agar tidak memutasi state)
       const editItemsBaru = editItems.map((item) => ({ ...item }));
-      const reservasiSave = new Map();
       for (let item of editItemsBaru) {
         if (item.ref.jenis === "satuan") {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
@@ -1843,36 +1808,8 @@ export default function BookingPage() {
             if (snIdx !== -1) dbItem.sns.splice(snIdx, 1);
           }
           if (snList.length) invDiubah.add(dbItem.id);
-        } else {
-          let assigned = [];
-          for (let komp of item.ref.komponen || []) {
-            let dbKomp = tempInv.find((i) => i.id == komp.idBarang);
-            let butuh = komp.qty * item.qty;
-            const bebas = snsBebasIdx(idx, komp.idBarang, ambil, kembali, t.id);
-            const reserved =
-              reservasiSave.get(String(komp.idBarang)) || new Set();
-            const tersedia = bebas.filter((s) => !reserved.has(s));
-            if (tersedia.length < butuh)
-              return notify(
-                `Stok komponen '${dbKomp?.nama || "?"}' tidak cukup!`,
-                "error",
-              );
-            const dipilih = tersedia.slice(0, butuh);
-            if (dbKomp)
-              dbKomp.sns = (dbKomp.sns || []).filter(
-                (s) => !dipilih.includes(s),
-              );
-            if (dbKomp) invDiubah.add(dbKomp.id);
-            dipilih.forEach((s) => reserved.add(s));
-            reservasiSave.set(String(komp.idBarang), reserved);
-            assigned.push({
-              idKomp: komp.idBarang,
-              nama: dbKomp?.nama || "?",
-              sns: dipilih,
-            });
-          }
-          item.assignedSNs = assigned;
         }
+        // Paket: S/N komponen dipilih saat Serahkan; tidak ada pencadangan di sini.
       }
 
       let totalBiaya = 0;
