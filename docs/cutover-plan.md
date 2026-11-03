@@ -319,6 +319,10 @@ maka endpoint baru sejak itu wajib di Go — frontend tetap bebas.
 
 ### Utang terukur: `transactions.items` tanpa `ref` (2026-10-31)
 
+Rencana perbaikan yang menyentuhnya (snapshot `ref` diisi server, arsip beku, kebijakan
+hapus inventory) ada di [`arsip-transaksi.md`](./arsip-transaksi.md) — statusnya masih
+wacana per 2026-11-02.
+
 **Gejala:** `/dashboard/booking` menampilkan halaman error bawaan Next 16 —
 teks **"This page couldn't load"** (dari
 `node_modules/next/dist/client/components/builtin/global-error.js:46`, bukan kode
