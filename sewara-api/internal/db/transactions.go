@@ -181,6 +181,16 @@ func jsonbAwal(raw json.RawMessage, jenis, def string) json.RawMessage {
 	return json.RawMessage(def)
 }
 
+// jsonbApaSaja meneruskan JSON apa pun yang valid tanpa cek tipe. Dipakai untuk
+// kolom yang di RPC Next disimpan apa adanya (printilan: COALESCE(p->'printilan','[]')),
+// karena klien mengirim objek {mode,daftar,terpilih,custom}.
+func jsonbApaSaja(raw json.RawMessage, def string) json.RawMessage {
+	if jsonJenis(raw) != "" {
+		return raw
+	}
+	return json.RawMessage(def)
+}
+
 // TransactionItemInput adalah payload item dari client.
 type TransactionItemInput struct {
 	InventoryID        *int64          `json:"inventory_id"`
@@ -578,7 +588,7 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 			tambah(`"riwayatDilayani" = $%d::jsonb`, tx.RiwayatDilayani)
 		}
 		if tx.ada("printilan") {
-			tambah("printilan = $%d::jsonb", jsonbAwal(tx.Printilan, "array", "[]"))
+			tambah("printilan = $%d::jsonb", jsonbApaSaja(tx.Printilan, "[]"))
 		}
 
 		args = append(args, tenantID)
@@ -606,7 +616,7 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 			status, jsonbAwal(tx.Items, "array", "[]"), tx.Denda, tx.Biaya, tx.DurasiTeks, tx.TotalAkhir,
 			jsonbAwal(tx.Pembayaran, "object", "{}"), jsonbAwal(tx.RiwayatDilayani, "array", "[]"),
 			tx.DilayaniOleh, jsonbAwal(tx.Diskon, "object", "{}"), tx.MemberID, tx.DPHangus, tx.DPHangusAturan,
-			jsonbAwal(tx.Printilan, "array", "[]"), tenantID))
+			jsonbApaSaja(tx.Printilan, "[]"), tenantID))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("simpan transaction parent: %w", err)
