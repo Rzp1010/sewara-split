@@ -212,6 +212,10 @@ export default function BookingPage() {
   const [buktiFile, setBuktiFile] = useState(null);
   const [printilanTerpilih, setPrintilanTerpilih] = useState([]);
   const [printilanCustom, setPrintilanCustom] = useState("");
+  // Modal edit punya state aksesoris sendiri; kalau memakai state form booking,
+  // membuka modal menimpa centang yang sedang diisi di form.
+  const [editPrintilanTerpilih, setEditPrintilanTerpilih] = useState([]);
+  const [editPrintilanCustom, setEditPrintilanCustom] = useState("");
   const [printilanDaftar, setPrintilanDaftar] = useState([]);
   const [printilanMode, setPrintilanMode] = useState("dicentang");
   const [cariJadwal, setCariJadwal] = useState("");
@@ -1067,12 +1071,15 @@ export default function BookingPage() {
     setShowSaran(false);
   }
 
-  function buildPrintilanSnapshot() {
+  function buildPrintilanSnapshot(
+    terpilih = printilanTerpilih,
+    custom = printilanCustom,
+  ) {
     return {
       mode: printilanMode,
       daftar: printilanDaftar,
-      terpilih: printilanTerpilih,
-      custom: printilanCustom.trim(),
+      terpilih,
+      custom: custom.trim(),
     };
   }
 
@@ -1654,8 +1661,8 @@ export default function BookingPage() {
     setEditItems(JSON.parse(JSON.stringify(t.items)));
     setEditSelectedId("");
     const p = t.printilan || {};
-    setPrintilanTerpilih(p.terpilih || []);
-    setPrintilanCustom(p.custom || "");
+    setEditPrintilanTerpilih(p.terpilih || []);
+    setEditPrintilanCustom(p.custom || "");
     setEditModal(t);
   }
 
@@ -1843,7 +1850,10 @@ export default function BookingPage() {
           { aksi: "edit", nama: namaPelayan, tgl: new Date().toISOString() },
         ],
         dilayani_oleh: namaPelayan,
-        printilan: buildPrintilanSnapshot(),
+        printilan: buildPrintilanSnapshot(
+          editPrintilanTerpilih,
+          editPrintilanCustom,
+        ),
       };
       const invUpdate = tempInv.filter((i) => invDiubah.has(i.id));
       if (!(await updateTransactions([trxBaru])))
@@ -3079,16 +3089,18 @@ export default function BookingPage() {
                         >
                           <input
                             type="checkbox"
-                            checked={printilanTerpilih.includes(item)}
+                            checked={editPrintilanTerpilih.includes(item)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintilanTerpilih([
-                                  ...printilanTerpilih,
+                                setEditPrintilanTerpilih([
+                                  ...editPrintilanTerpilih,
                                   item,
                                 ]);
                               } else {
-                                setPrintilanTerpilih(
-                                  printilanTerpilih.filter((x) => x !== item),
+                                setEditPrintilanTerpilih(
+                                  editPrintilanTerpilih.filter(
+                                    (x) => x !== item,
+                                  ),
                                 );
                               }
                             }}
@@ -3100,9 +3112,9 @@ export default function BookingPage() {
                     </div>
                     <input
                       type="text"
-                      value={printilanCustom}
-                      onChange={(e) => setPrintilanCustom(e.target.value)}
-                  placeholder="Aksesoris lain (pisahkan dengan koma)..."
+                      value={editPrintilanCustom}
+                      onChange={(e) => setEditPrintilanCustom(e.target.value)}
+                      placeholder="Aksesoris lain (pisahkan dengan koma)..."
                       className="mt-3 w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
                     />
                   </div>
