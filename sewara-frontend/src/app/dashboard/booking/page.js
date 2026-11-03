@@ -222,6 +222,9 @@ export default function BookingPage() {
   const [debouncedSearch] = useDebounce(cariJadwal, 300);
   const [hasilCariJadwal, setHasilCariJadwal] = useState([]);
   const [loading, setLoading] = useState("");
+  // true selama simpan booking: muat() dan listener dataChanged menahan diri,
+  // jadi satu indikator loading menutup simpan + muat ulang data.
+  const sedangSimpan = useRef(false);
   const [isIndexing, setIsIndexing] = useState(false);
   const [jaminanTerpilih, setJaminanTerpilih] = useState(["E-KTP"]);
   const [daftarJaminan, setDaftarJaminan] = useState(DEFAULT_JAMINAN);
@@ -344,7 +347,9 @@ export default function BookingPage() {
   }, []);
 
   const muat = useCallback(async () => {
-    setLoading("Memuat data...");
+    // Saat booking/faktur sedang disimpan, indikator milik pemanggil yang dipakai
+    // supaya tidak muncul "Memuat data..." kedua setelah "Menyimpan booking...".
+    if (!sedangSimpan.current) setLoading("Memuat data...");
     setIsIndexing(true);
     try {
       const [inventoryData, transactionData] = await Promise.all([
@@ -358,7 +363,7 @@ export default function BookingPage() {
       notify("Gagal memuat data booking", "error");
     } finally {
       setIsIndexing(false);
-      setLoading("");
+      if (!sedangSimpan.current) setLoading("");
     }
   }, [notify]);
 
@@ -611,7 +616,9 @@ export default function BookingPage() {
   }, [muat, refresh]);
 
   useEffect(() => {
-    const handler = () => setRefresh((r) => r + 1);
+    const handler = () => {
+      if (!sedangSimpan.current) setRefresh((r) => r + 1);
+    };
     window.addEventListener("dataChanged", handler);
     return () => window.removeEventListener("dataChanged", handler);
   }, []);
@@ -1105,7 +1112,7 @@ export default function BookingPage() {
     setPrintilanTerpilih([]);
     setPrintilanCustom("");
     setKalkulasi({ error: "Pilih waktu", biaya: 0, durasi_teks: "-" });
-    setRefresh((r) => r + 1);
+    if (!sedangSimpan.current) setRefresh((r) => r + 1);
   }
 
   async function buatBooking() {
@@ -1134,6 +1141,7 @@ export default function BookingPage() {
     if (!ambilISO || !kembaliISO)
       return notify("Isi waktu ambil & kembali!", "error");
 
+    sedangSimpan.current = true;
     setLoading("Menyimpan booking...");
     try {
       const idsInv = new Set();
@@ -1487,6 +1495,9 @@ export default function BookingPage() {
       resetFormBooking();
       notify(`Booking berhasil! Invoice: ${trxBaru.no_invoice}`);
     } finally {
+      // Muat ulang di dalam indikator yang sama (muat() senyap saat sedangSimpan).
+      await muat();
+      sedangSimpan.current = false;
       setLoading("");
     }
   }
