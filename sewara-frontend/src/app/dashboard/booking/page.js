@@ -1463,6 +1463,12 @@ export default function BookingPage() {
         printilan: buildPrintilanSnapshot(),
       };
 
+      if (ambilWaktu && new Date(ambilWaktu).getTime() < Date.now()) {
+        return notify(
+          "Waktu ambil sudah lewat. Pilih waktu sekarang atau setelahnya.",
+          "error",
+        );
+      }
       const okSimpan = await tambahTransactions([trxBaru]);
       if (!okSimpan) {
         const pesan = getLastDbError();
@@ -1503,6 +1509,7 @@ export default function BookingPage() {
   }
 
   const filterTime = (time) => {
+    if (time.getTime() < Date.now()) return false;
     const h = time.getHours();
     const mode = getSetting("jam_mode", "buka_tutup");
     if (mode !== "buka_tutup") return true;
