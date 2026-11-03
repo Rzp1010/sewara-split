@@ -18,6 +18,7 @@ import {
   catatanUnit,
   parseJaminan,
   terBlacklist,
+  bebasJumlahPerPeriode,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import { useNotify } from "@/components/NotificationProvider";
@@ -230,6 +231,10 @@ export default function BookingPage() {
   const [daftarJaminan, setDaftarJaminan] = useState(DEFAULT_JAMINAN);
   const [snOptions, setSnOptions] = useState([]);
   const [snDipilih, setSnDipilih] = useState("");
+  const [snModalItem, setSnModalItem] = useState(null);
+  const [snModalTerpilih, setSnModalTerpilih] = useState([]);
+  const [editSnModalItem, setEditSnModalItem] = useState(null);
+  const [editSnModalTerpilih, setEditSnModalTerpilih] = useState([]);
   const [editSnOptions, setEditSnOptions] = useState([]);
   const [editSnDipilih, setEditSnDipilih] = useState("");
   const [showEditSn, setShowEditSn] = useState(false);
@@ -952,40 +957,28 @@ export default function BookingPage() {
     const c = [...cartRef.current];
     const mulaiISO = ambilWaktu ? new Date(ambilWaktu).toISOString() : "";
     const selesaiISO = kembaliWaktu ? new Date(kembaliWaktu).toISOString() : "";
+    const exist = c.find((item) => item.idBarang == idBarang);
+    const stok = pakaiPeriode
+      ? bebasJumlahPerPeriode(inv, trx, refBarang, mulaiISO, selesaiISO)
+      : getStok(refBarang, inv);
+    const qtyBaru = exist ? exist.qty + 1 : 1;
+    if (qtyBaru > stok)
+      return notify(`Unit bebas tidak cukup (sisa ${stok}).`, "error");
 
-    if (refBarang.jenis === "satuan") {
-      const sn = snDipilih;
-      if (!sn) return notify("Pilih Nomor Seri!", "error");
-      if (!mulaiISO || !selesaiISO)
-        return notify("Isi waktu ambil & kembali dulu!", "error");
-      const terpakai = snsTerpakaiIdx(indeks, idBarang, mulaiISO, selesaiISO);
-      if (terpakai.includes(sn))
-        return notify("S/N sudah di-booking pada periode tersebut!", "error");
-      const exist = c.find((x) => x.idBarang == idBarang);
-      if (exist) {
-        if (exist.sn.split(", ").includes(sn))
-          return notify("S/N sudah ada di keranjang!", "error");
-        exist.sn += ", " + sn;
-        exist.qty += 1;
-      } else {
-        c.push({ idBarang, ref: refBarang, qty: 1, sn, subtotal: 0 });
-      }
+    if (exist) {
+      if (exist.sn) notify("S/N yang dikunci dilepas karena jumlah unit berubah.", "warning");
+      exist.qty = qtyBaru;
+      if (refBarang.jenis === "satuan") exist.sn = "";
     } else {
-      const stok = getCachedStock(refBarang);
-      const qty = 1;
-      if (qty < 1 || qty > stok)
-        return notify("Stok paket tidak mencukupi!", "error");
-      const exist = c.find((ci) => ci.idBarang == idBarang);
-      if (exist) {
-        if (exist.qty + qty > stok)
-          return notify("Melebihi batas stok!", "error");
-        exist.qty += qty;
-      } else {
-        c.push({ idBarang, ref: refBarang, qty, subtotal: 0 });
-      }
+      c.push({
+        idBarang,
+        ref: refBarang,
+        qty: 1,
+        sn: refBarang.jenis === "satuan" ? "" : undefined,
+        subtotal: 0,
+      });
     }
     hitungTotal(c);
-    // Refresh pilihan: produk & S/N kembali kosong utk input berikutnya
     setSelectedProductId("");
     setSnDipilih("");
     setSnOptions([]);
@@ -997,6 +990,40 @@ export default function BookingPage() {
     hitungTotal(c);
   }
 
+  function ubahQtyKeranjang(idx, nilai) {
+    const c = [...cartRef.current];
+    const qty = Math.max(0, parseInt(nilai, 10) || 0);
+    if (!qty) return hapusDariKeranjang(idx);
+    const item = c[idx];
+    const stok = pakaiPeriode
+      ? bebasJumlahPerPeriode(inv, trx, item.ref, mulaiISO, selesaiISO)
+      : getStok(item.ref, inv);
+    if (qty > stok)
+      return notify(`Unit bebas tidak cukup (sisa ${stok}).`, "error");
+    const sns = (item.sn || "").split(", ").filter(Boolean);
+    if (sns.length && sns.length !== qty)
+      return notify("Jumlah S/N terkunci harus sama dengan jumlah unit.", "error");
+    item.qty = qty;
+    hitungTotal(c);
+  }
+
+  function kunciSNKeranjang(idx) {
+    const item = cartRef.current[idx];
+    if (!item || item.ref.jenis !== "satuan") return;
+    setSnModalTerpilih((item.sn || "").split(", ").filter(Boolean));
+    setSnModalItem(idx);
+  }
+
+  function simpanKunciSNKeranjang() {
+    const c = [...cartRef.current];
+    const item = c[snModalItem];
+    if (!item || snModalTerpilih.length !== item.qty)
+      return notify("Pilih S/N sebanyak jumlah unit.", "error");
+    item.sn = snModalTerpilih.join(", ");
+    hitungTotal(c);
+    setSnModalItem(null);
+  }
+
   function revalidasiKeranjang(mulaiISO, selesaiISO) {
     if (!mulaiISO || !selesaiISO) return;
     const c = [...cartRef.current];
@@ -1004,6 +1031,10 @@ export default function BookingPage() {
     let berubah = false;
     c.forEach((item) => {
       if (item.ref.jenis === "satuan") {
+        if (!item.sn) {
+          hasil.push(item);
+          return;
+        }
         const terpakai = snsTerpakaiCepat(item.idBarang, mulaiISO, selesaiISO);
         const snsBaru = item.sn
           .split(", ")
@@ -1201,7 +1232,14 @@ export default function BookingPage() {
       const excludeId = mergeTarget ? mergeTarget.id : undefined;
 
       for (let item of c) {
+        const refInventaris = rawInv.find((i) => i.id == item.idBarang) || item.ref;
+        const bebas = bebasJumlahPerPeriode(inv, trxAllSebelum, refInventaris, ambilISO, kembaliISO, excludeId);
+        if (item.qty > bebas)
+          return notify(`Unit bebas tidak cukup untuk ${item.ref.nama} (sisa ${bebas}).`, "error");
         if (item.ref.jenis === "satuan") {
+          const snsTerkunci = (item.sn || "").split(", ").filter(Boolean);
+          if (snsTerkunci.length && snsTerkunci.length !== item.qty)
+            return notify("Jumlah S/N terkunci harus sama dengan jumlah unit.", "error");
           const terpakai = snsTerpakaiIdx(
             idx,
             item.idBarang,
@@ -1209,7 +1247,7 @@ export default function BookingPage() {
             kembaliISO,
             excludeId,
           );
-          for (let s of item.sn.split(", ")) {
+          for (let s of (item.sn || "").split(", ").filter(Boolean)) {
             if (terpakai.includes(s))
               return notify(
                 `S/N ${s} pada ${item.ref.nama} sudah di-booking pada periode tersebut.`,
@@ -1254,12 +1292,12 @@ export default function BookingPage() {
               `Barang ${item.ref.nama} tidak ditemukan di inventaris!`,
               "error",
             );
-          let snList = item.sn.split(", ");
+          let snList = (item.sn || "").split(", ").filter(Boolean);
           for (let s of snList) {
             let snIdx = (dbItem.sns || []).indexOf(s);
             if (snIdx !== -1) dbItem.sns.splice(snIdx, 1);
           }
-          invDiubah.add(dbItem.id);
+          if (snList.length) invDiubah.add(dbItem.id);
         } else {
           let assigned = [];
           for (let komp of item.ref.komponen || []) {
@@ -1538,48 +1576,30 @@ export default function BookingPage() {
       : "";
     const stok =
       mulaiISO && selesaiISO
-        ? hitungStokIdx(indeks, refBarang, mulaiISO, selesaiISO, editModal.id)
+        ? bebasJumlahPerPeriode(inv, trx, refBarang, mulaiISO, selesaiISO, editModal.id)
         : getStok(refBarang, inv);
     if (stok < 1) return notify("Stok habis!", "error");
 
     if (refBarang.jenis === "satuan") {
-      const sn = editSnDipilih;
-      if (!sn) return notify("Pilih S/N!", "error");
-      if (!mulaiISO || !selesaiISO)
-        return notify("Isi waktu ambil & kembali dulu!", "error");
-      const terpakai = snsTerpakaiIdx(
-        indeks,
-        editSelectedId,
-        mulaiISO,
-        selesaiISO,
-        editModal.id,
-      );
-      if (terpakai.includes(sn))
-        return notify("S/N sudah di-booking pada periode tersebut!", "error");
+      const qtyInput = document.getElementById("edit_qty_input");
+      const qty = parseInt(qtyInput?.value || 1, 10);
       const exist = editItems.find((x) => x.idBarang == editSelectedId);
+      const totalQty = (exist?.qty || 0) + qty;
+      if (totalQty > stok)
+        return notify(`Unit bebas tidak cukup (sisa ${stok}).`, "error");
       if (exist) {
-        if (exist.sn.split(", ").includes(sn))
-          return notify("S/N sudah ada!", "error");
-        exist.sn += ", " + sn;
-        exist.qty += 1;
+        exist.qty = totalQty;
+        exist.sn = "";
       } else {
-        editItems.push({
-          idBarang: editSelectedId,
-          ref: refBarang,
-          qty: 1,
-          sn,
-          subtotal: 0,
-        });
+        editItems.push({ idBarang: editSelectedId, ref: refBarang, qty, sn: "", subtotal: 0 });
       }
     } else {
       const qtyInput = document.getElementById("edit_qty_input");
       const qty = parseInt(qtyInput?.value || 1);
-      if (qty < 1 || qty > stok)
-        return notify("Stok paket tidak mencukupi!", "error");
       const exist = editItems.find((x) => x.idBarang == editSelectedId);
+      if (qty < 1 || qty + (exist?.qty || 0) > stok)
+        return notify(`Unit bebas tidak cukup (sisa ${stok}).`, "error");
       if (exist) {
-        if (exist.qty + qty > stok)
-          return notify("Melebihi batas stok!", "error");
         exist.qty += qty;
       } else {
         editItems.push({
@@ -1601,6 +1621,40 @@ export default function BookingPage() {
   function hapusEditItem(idx) {
     editItems.splice(idx, 1);
     setEditItems([...editItems]);
+  }
+
+  function ubahQtyEdit(idx, nilai) {
+    const qty = Math.max(0, parseInt(nilai, 10) || 0);
+    if (!qty) return hapusEditItem(idx);
+    const items = [...editItems];
+    const item = items[idx];
+    const mulai = editForm.waktu_ambil_rencana?.toISOString() || "";
+    const selesai = editForm.waktu_kembali_rencana?.toISOString() || "";
+    const stok = mulai && selesai
+      ? bebasJumlahPerPeriode(inv, trx, item.ref, mulai, selesai, editModal?.id)
+      : getStok(item.ref, inv);
+    if (qty > stok) return notify(`Unit bebas tidak cukup (sisa ${stok}).`, "error");
+    const sns = (item.sn || "").split(", ").filter(Boolean);
+    if (sns.length && sns.length !== qty) return notify("Jumlah S/N terkunci harus sama dengan jumlah unit.", "error");
+    items[idx] = { ...item, qty };
+    setEditItems(items);
+  }
+
+  function kunciSNEdit(idx) {
+    const item = editItems[idx];
+    if (item?.ref.jenis !== "satuan") return;
+    setEditSnModalTerpilih((item.sn || "").split(", ").filter(Boolean));
+    setEditSnModalItem(idx);
+  }
+
+  function simpanKunciSNEdit() {
+    const items = [...editItems];
+    const item = items[editSnModalItem];
+    if (!item || editSnModalTerpilih.length !== item.qty)
+      return notify("Pilih S/N sebanyak jumlah unit.", "error");
+    items[editSnModalItem] = { ...item, sn: editSnModalTerpilih.join(", ") };
+    setEditItems(items);
+    setEditSnModalItem(null);
   }
 
   function isiSnEdit(v) {
@@ -1720,7 +1774,7 @@ export default function BookingPage() {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (dbItem) {
             const rujuk = snsRujukLainIdx(idx, t.id, item.idBarang);
-            let snList = item.sn.split(", ");
+            let snList = (item.sn || "").split(", ").filter(Boolean);
             snList.forEach((s) => {
               if (!rujuk.has(s) && !dbItem.sns.includes(s)) dbItem.sns.push(s);
             });
@@ -1743,7 +1797,14 @@ export default function BookingPage() {
 
       // Validasi periode baru terhadap transaksi lain
       for (let item of editItems) {
+        const refInventaris = rawInv.find((i) => i.id == item.idBarang) || item.ref;
+        const stokBebasJumlah = bebasJumlahPerPeriode(inv, trxAllSebelum, refInventaris, ambil, kembali, t.id);
+        if (item.qty > stokBebasJumlah)
+          return notify(`Unit bebas tidak cukup untuk ${item.ref.nama} (sisa ${stokBebasJumlah}).`, "error");
         if (item.ref.jenis === "satuan") {
+          const snsTerkunci = (item.sn || "").split(", ").filter(Boolean);
+          if (snsTerkunci.length && snsTerkunci.length !== item.qty)
+            return notify("Jumlah S/N terkunci harus sama dengan jumlah unit.", "error");
           const terpakai = snsTerpakaiIdx(
             idx,
             item.idBarang,
@@ -1751,7 +1812,7 @@ export default function BookingPage() {
             kembali,
             t.id,
           );
-          for (let s of item.sn.split(", ")) {
+          for (let s of (item.sn || "").split(", ").filter(Boolean)) {
             if (terpakai.includes(s))
               return notify(
                 `S/N ${s} pada ${item.ref.nama} sudah di-booking pada periode tersebut.`,
@@ -1776,12 +1837,12 @@ export default function BookingPage() {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (!dbItem)
             return notify(`Barang ${item.ref.nama} tidak ditemukan!`, "error");
-          let snList = item.sn.split(", ");
+          let snList = (item.sn || "").split(", ").filter(Boolean);
           for (let s of snList) {
             let snIdx = (dbItem.sns || []).indexOf(s);
             if (snIdx !== -1) dbItem.sns.splice(snIdx, 1);
           }
-          invDiubah.add(dbItem.id);
+          if (snList.length) invDiubah.add(dbItem.id);
         } else {
           let assigned = [];
           for (let komp of item.ref.komponen || []) {
@@ -1927,7 +1988,7 @@ export default function BookingPage() {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (dbItem) {
             const rujuk = snsRujukLainIdx(idx, t.id, item.idBarang);
-            let snList = item.sn.split(", ");
+            let snList = (item.sn || "").split(", ").filter(Boolean);
             snList.forEach((s) => {
               if (!rujuk.has(s) && !dbItem.sns.includes(s)) dbItem.sns.push(s);
             });
@@ -2307,18 +2368,6 @@ export default function BookingPage() {
                   placeholder="-- Pilih Katalog --"
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
-                  Serial Number
-                </label>
-                <SearchableSelect
-                  options={snOptions}
-                  value={snDipilih}
-                  onChange={(v) => setSnDipilih(v)}
-                  placeholder="Pilih S/N..."
-                  noSearch
-                />
-              </div>
               <button
                 type="button"
                 onClick={tambahKeKeranjang}
@@ -2380,7 +2429,8 @@ export default function BookingPage() {
                       <td className="text-xs py-3 px-2 border-r border-[var(--border-color)] text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
                         {c.ref.jenis === "satuan" ? (
                           <>
-                            <div className="truncate">{c.sn}</div>
+                            {c.sn ? <div className="truncate">{c.sn}</div> : <div>S/N dipilih saat penyerahan</div>}
+                            <button type="button" onClick={() => kunciSNKeranjang(idx)} className="mt-1 text-xs text-[#7181E0]">{c.sn ? "Ganti S/N" : "Kunci S/N"}</button>
                             {(c.sn || "")
                               .split(", ")
                               .filter(Boolean)
@@ -2430,7 +2480,7 @@ export default function BookingPage() {
                         )}
                       </td>
                       <td className="text-center py-3 px-2 border-r border-[var(--border-color)]">
-                        {c.qty}
+                        <input type="number" min="0" value={c.qty} onChange={(e) => ubahQtyKeranjang(idx, e.target.value)} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${c.ref.nama}`} />
                       </td>
                       <td className="text-right text-[var(--text-primary)] py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.hargaSatuan || 0)}
@@ -2935,6 +2985,44 @@ export default function BookingPage() {
         </div>
       </div>
 
+      {snModalItem !== null && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6">
+            <h3 className="mb-4 text-lg font-semibold">Kunci S/N</h3>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {snsBebasCepat(cart[snModalItem]?.idBarang, mulaiISO, selesaiISO).map((sn) => (
+                <label key={sn} className="flex items-center gap-2">
+                  <input type="checkbox" checked={snModalTerpilih.includes(sn)} disabled={!snModalTerpilih.includes(sn) && snModalTerpilih.length >= (cart[snModalItem]?.qty || 0)} onChange={(e) => setSnModalTerpilih((lama) => e.target.checked ? [...lama, sn] : lama.filter((x) => x !== sn))} />
+                  {sn}
+                </label>
+              ))}
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setSnModalItem(null)}>Batal</button>
+              <button type="button" onClick={simpanKunciSNKeranjang}>Simpan</button>
+            </div>
+          </div>
+        </div>, document.body,
+      )}
+      {editSnModalItem !== null && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6">
+            <h3 className="mb-4 text-lg font-semibold">Kunci S/N</h3>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {snsBebasCepat(editItems[editSnModalItem]?.idBarang, editForm.waktu_ambil_rencana?.toISOString() || "", editForm.waktu_kembali_rencana?.toISOString() || "", editModal?.id).map((sn) => (
+                <label key={sn} className="flex items-center gap-2">
+                  <input type="checkbox" checked={editSnModalTerpilih.includes(sn)} disabled={!editSnModalTerpilih.includes(sn) && editSnModalTerpilih.length >= (editItems[editSnModalItem]?.qty || 0)} onChange={(e) => setEditSnModalTerpilih((lama) => e.target.checked ? [...lama, sn] : lama.filter((x) => x !== sn))} />
+                  {sn}
+                </label>
+              ))}
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setEditSnModalItem(null)}>Batal</button>
+              <button type="button" onClick={simpanKunciSNEdit}>Simpan</button>
+            </div>
+          </div>
+        </div>, document.body,
+      )}
       {typeof document !== "undefined" &&
         editModal &&
         createPortal(
@@ -3167,16 +3255,19 @@ export default function BookingPage() {
                             {item.ref.nama}
                           </td>
                           <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
-                            {item.qty}x
+                            <input type="number" min="0" value={item.qty} onChange={(e) => ubahQtyEdit(idx, e.target.value)} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${item.ref.nama}`} />
                           </td>
                           <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
                             {item.ref.jenis === "satuan" ? (
-                              <span
-                                className="text-xs"
-                                style={{ fontFamily: "ui-monospace, monospace" }}
-                              >
-                                {item.sn}
-                              </span>
+                              <div>
+                                <span
+                                  className="text-xs"
+                                  style={{ fontFamily: "ui-monospace, monospace" }}
+                                >
+                                  {item.sn || "S/N dipilih saat penyerahan"}
+                                </span>
+                                <button type="button" onClick={() => kunciSNEdit(idx)} className="ml-2 text-xs text-[#7181E0]">{item.sn ? "Ganti S/N" : "Kunci S/N"}</button>
+                              </div>
                             ) : (
                               <div className="flex flex-col gap-1">
                                 {(item.assignedSNs || []).length === 0 ? (
@@ -3241,34 +3332,17 @@ export default function BookingPage() {
                             document.getElementById("edit_qty_input");
                           if (qtyInp) {
                             const item = inv.find((i) => i.id == v);
-                            if (item?.jenis === "satuan")
-                              qtyInp.style.display = "none";
-                            else {
-                              qtyInp.style.display = "";
-                              qtyInp.value = 1;
-                            }
+                             qtyInp.style.display = "";
+                            qtyInp.value = 1;
                           }
                         }
                       }}
                       placeholder="-- Pilih Barang --"
                     />
-                    <div
-                      id="area_edit_sn"
-                      style={{ display: showEditSn ? "" : "none" }}
-                    >
-                      <SearchableSelect
-                        options={editSnOptions}
-                        value={editSnDipilih}
-                        onChange={(v) => setEditSnDipilih(v)}
-                        placeholder="Pilih S/N..."
-                        noSearch
-                      />
-                    </div>
                     <input
                       type="number"
                       id="edit_qty_input"
                       className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
-                      style={{ display: "none" }}
                       defaultValue={1}
                       min={1}
                     />

@@ -305,6 +305,10 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 			writeError(w, http.StatusForbidden, CodeForbidden, err.Error())
 			return
 		}
+		if errors.Is(err, db.ErrUnitTidakCukup) {
+			writeError(w, http.StatusConflict, CodeValidationError, err.Error())
+			return
+		}
 		s.log.Error("gagal menyimpan transaksi", "err", err, "id", tx.ID)
 		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
 		return

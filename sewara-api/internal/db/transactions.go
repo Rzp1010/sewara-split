@@ -505,6 +505,12 @@ func (d *DB) SaveTransaction(ctx context.Context, userID string, tx TransactionI
 		}
 	}
 
+	// Kunci baris transaksi aktif milik tenant agar dua penyimpanan bersamaan
+	// untuk unit yang sama berjalan berurutan sebelum menghitung beban.
+	if err := cekKetersediaanTransaksi(ctx, pgTx, tenantID, tx, items); err != nil {
+		return nil, err
+	}
+
 	var result Transaction
 	exists := adaTenant
 

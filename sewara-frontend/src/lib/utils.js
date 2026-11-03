@@ -406,3 +406,80 @@ export function stokBebasPerPeriode(
   }
   return 0;
 }
+
+// Beban unit per barang dari satu item transaksi: pakai jumlah S/N terpasang
+// kalau ada, selain itu pakai qty (booking baru yang S/N-nya belum dipilih).
+function bebanItemQty(item) {
+  const hasil = [];
+  if (item?.ref?.jenis === "satuan") {
+    const terpasang = item.sn ? item.sn.split(", ").filter(Boolean).length : 0;
+    hasil.push({
+      idBarang: item.idBarang,
+      qty: terpasang > 0 ? terpasang : item.qty || 1,
+    });
+  } else if (item?.ref?.jenis === "bundling") {
+    const qtyPaket = item.qty || 1;
+    (item.ref?.komponen || []).forEach((k) => {
+      const terpasang = (item.assignedSNs || []).find(
+        (a) => String(a.idKomp) === String(k.idBarang),
+      );
+      hasil.push({
+        idBarang: k.idBarang,
+        qty: terpasang?.sns?.length || qtyPaket * (k.qty || 1),
+      });
+    });
+  }
+  return hasil;
+}
+
+/**
+ * Sisa unit pada rentang waktu, DIHITUNG DARI JUMLAH (bukan daftar S/N), supaya
+ * booking yang belum memilih S/N tetap ikut mengurangi ketersediaan.
+ * `item` = item inventaris (punya jenis/sns/komponen).
+ */
+export function bebasJumlahPerPeriode(
+  invData,
+  trxAll,
+  item,
+  mulaiISO,
+  selesaiISO,
+  kecualiId,
+) {
+  // `inventory.sns` = unit bebas (booking lama mencabut S/N-nya saat disimpan),
+  // jadi kepemilikan harus direkonstruksi: S/N inventaris ∪ S/N yang masih
+  // dirujuk transaksi aktif (lihat `snsDimiliki`).
+  const totalUnit = (idBarang) => snsDimiliki(invData, trxAll, idBarang).length;
+  const terpakaiUnit = (idBarang) => {
+    let jumlah = 0;
+    trxAktif(trxAll).forEach((t) => {
+      if (t.id === kecualiId) return;
+      if (
+        !periodeOverlap(
+          mulaiISO,
+          selesaiISO,
+          t.waktu_ambil_rencana,
+          t.waktu_kembali_rencana,
+        )
+      )
+        return;
+      (t.items || []).forEach((it) =>
+        bebanItemQty(it).forEach((b) => {
+          if (String(b.idBarang) === String(idBarang)) jumlah += b.qty;
+        }),
+      );
+    });
+    return jumlah;
+  };
+  const bebas = (idBarang) =>
+    Math.max(0, totalUnit(idBarang) - terpakaiUnit(idBarang));
+  if (item?.jenis === "satuan") return bebas(item.id);
+  if (item?.jenis === "bundling") {
+    if (!item.komponen || item.komponen.length === 0) return 0;
+    return Math.min(
+      ...item.komponen.map((k) =>
+        Math.floor(bebas(k.idBarang) / (k.qty || 1)),
+      ),
+    );
+  }
+  return 0;
+}
