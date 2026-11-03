@@ -36,6 +36,7 @@ const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
 import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import BatalBookingModal from "@/components/BatalBookingModal";
+import ModalKunciSN from "@/components/booking/ModalKunciSN";
 
 import {
   DEFAULT_JAMINAN,
@@ -2793,43 +2794,38 @@ export default function BookingPage() {
         </div>
       </div>
 
-      {snModalItem !== null && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6">
-            <h3 className="mb-4 text-lg font-semibold">Kunci S/N</h3>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
-              {snsBebasCepat(cart[snModalItem]?.idBarang, mulaiISO, selesaiISO).map((sn) => (
-                <label key={sn} className="flex items-center gap-2">
-                  <input type="checkbox" checked={snModalTerpilih.includes(sn)} disabled={!snModalTerpilih.includes(sn) && snModalTerpilih.length >= (cart[snModalItem]?.qty || 0)} onChange={(e) => setSnModalTerpilih((lama) => e.target.checked ? [...lama, sn] : lama.filter((x) => x !== sn))} />
-                  {sn}
-                </label>
-              ))}
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setSnModalItem(null)}>Batal</button>
-              <button type="button" onClick={simpanKunciSNKeranjang}>Simpan</button>
-            </div>
-          </div>
-        </div>, document.body,
+      {snModalItem !== null && (
+        <ModalKunciSN
+          daftarSN={snsBebasCepat(cart[snModalItem]?.idBarang, mulaiISO, selesaiISO)}
+          terpilih={snModalTerpilih}
+          butuh={cart[snModalItem]?.qty || 0}
+          onToggle={(sn, checked) =>
+            setSnModalTerpilih((lama) =>
+              checked ? [...lama, sn] : lama.filter((x) => x !== sn),
+            )
+          }
+          onBatal={() => setSnModalItem(null)}
+          onSimpan={simpanKunciSNKeranjang}
+        />
       )}
-      {editSnModalItem !== null && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6">
-            <h3 className="mb-4 text-lg font-semibold">Kunci S/N</h3>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
-              {snsBebasCepat(editItems[editSnModalItem]?.idBarang, editForm.waktu_ambil_rencana?.toISOString() || "", editForm.waktu_kembali_rencana?.toISOString() || "", editModal?.id).map((sn) => (
-                <label key={sn} className="flex items-center gap-2">
-                  <input type="checkbox" checked={editSnModalTerpilih.includes(sn)} disabled={!editSnModalTerpilih.includes(sn) && editSnModalTerpilih.length >= (editItems[editSnModalItem]?.qty || 0)} onChange={(e) => setEditSnModalTerpilih((lama) => e.target.checked ? [...lama, sn] : lama.filter((x) => x !== sn))} />
-                  {sn}
-                </label>
-              ))}
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setEditSnModalItem(null)}>Batal</button>
-              <button type="button" onClick={simpanKunciSNEdit}>Simpan</button>
-            </div>
-          </div>
-        </div>, document.body,
+      {editSnModalItem !== null && (
+        <ModalKunciSN
+          daftarSN={snsBebasCepat(
+            editItems[editSnModalItem]?.idBarang,
+            editForm.waktu_ambil_rencana?.toISOString() || "",
+            editForm.waktu_kembali_rencana?.toISOString() || "",
+            editModal?.id,
+          )}
+          terpilih={editSnModalTerpilih}
+          butuh={editItems[editSnModalItem]?.qty || 0}
+          onToggle={(sn, checked) =>
+            setEditSnModalTerpilih((lama) =>
+              checked ? [...lama, sn] : lama.filter((x) => x !== sn),
+            )
+          }
+          onBatal={() => setEditSnModalItem(null)}
+          onSimpan={simpanKunciSNEdit}
+        />
       )}
       {typeof document !== "undefined" &&
         editModal &&
