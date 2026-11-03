@@ -793,6 +793,8 @@ export default function StatusPage() {
       trx.waktu_ambil_rencana,
       trx.waktu_ambil_aktual,
       trx.waktu_kembali_rencana,
+      getSetting("aturan_ambil_cepat", "aktual"),
+      getSetting("aturan_ambil_telat", "rencana"),
     );
     if (kembaliBaru) {
       trx.waktu_kembali_rencana = kembaliBaru;

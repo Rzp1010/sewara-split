@@ -501,9 +501,9 @@ export default function PengaturanPage() {
         jam_tutup: String(getSetting("jam_tutup", "22") ?? "22"),
         notif_jam: String(getSetting("notif_jam", "2") || "2"),
         aturan_ambil_cepat:
-          getSetting("aturan_ambil_cepat", "rencana") || "rencana",
+          getSetting("aturan_ambil_cepat", "aktual") || "aktual",
         aturan_ambil_telat:
-          getSetting("aturan_ambil_telat", "aktual") || "aktual",
+          getSetting("aturan_ambil_telat", "rencana") || "rencana",
         aturan_dp: getSetting("aturan_dp", "bebas") || "bebas",
         gabung_status: getSetting("gabung_status", "booking") || "booking",
         basis_pendapatan:
@@ -631,8 +631,8 @@ export default function PengaturanPage() {
         setSetting("jam_buka", f.jam_buka === "" ? 6 : Number(f.jam_buka));
         setSetting("jam_tutup", f.jam_tutup === "" ? 22 : Number(f.jam_tutup));
         setSetting("notif_jam", f.notif_jam === "" ? "2" : f.notif_jam);
-        setSetting("aturan_ambil_cepat", f.aturan_ambil_cepat || "rencana");
-        setSetting("aturan_ambil_telat", f.aturan_ambil_telat || "aktual");
+        setSetting("aturan_ambil_cepat", f.aturan_ambil_cepat || "aktual");
+        setSetting("aturan_ambil_telat", f.aturan_ambil_telat || "rencana");
         setSetting("aturan_dp", f.aturan_dp || "bebas");
         setSetting("gabung_status", f.gabung_status || "booking");
         setSetting("basis_pendapatan", f.basis_pendapatan || "selesai");
@@ -1175,6 +1175,37 @@ export default function PengaturanPage() {
           </KartuSeksi>
 
           <KartuSeksi judul="Pembayaran">
+          <div className="space-y-4">
+            <BarisKontrol
+              label="Jika Ambil SEBELUM Jadwal"
+              hint="Menentukan jadwal kembali saat barang diambil lebih awal dari 30 menit. Ikuti Aktual = jadwal kembali ikut maju."
+              control={
+                <select
+                  value={f.aturan_ambil_cepat}
+                  onChange={ubah("aturan_ambil_cepat")}
+                  className={INPUT_CLS}
+                >
+                  <option value="aktual">Ikuti Aktual (jadwal kembali ikut maju)</option>
+                  <option value="rencana">Ikuti Jadwal (tetap dari jadwal awal)</option>
+                </select>
+              }
+            />
+            <BarisKontrol
+              label="Jika Ambil SETELAH Jadwal"
+              hint="Menentukan jadwal kembali saat barang diambil lebih lambat dari 30 menit. Ikuti Jadwal = tidak memundurkan jadwal kembali; keterlambatan dihitung saat Terima Kembali."
+              control={
+                <select
+                  value={f.aturan_ambil_telat}
+                  onChange={ubah("aturan_ambil_telat")}
+                  className={INPUT_CLS}
+                >
+                  <option value="rencana">Ikuti Jadwal (tidak mundur)</option>
+                  <option value="aktual">Ikuti Aktual (jadwal kembali ikut mundur)</option>
+                </select>
+              }
+            />
+          </div>
+
           <BarisKontrol
             label="Aturan DP (Uang Muka)"
             hint={f.aturan_dp === "wajib"

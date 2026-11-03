@@ -88,11 +88,27 @@ export function terBlacklist(list, { nama, hp } = {}) {
 const TOLERANSI_MENIT = 30;
 export const TOLERANSI_AMBIL_MENIT = TOLERANSI_MENIT;
 
-export function geserWaktuKembaliRencana(ambilRencana, ambilAktual, kembaliRencana) {
+// Deadline kembali ikut jam ambil hanya di luar toleransi 30 menit, dan hanya
+// untuk arah yang diizinkan setelan tenant: `aturan_ambil_cepat` (ambil lebih
+// awal) / `aturan_ambil_telat` (ambil lebih lambat). Default "ikuti yang paling
+// duluan": lebih awal ikut aktual, lebih lambat tetap rencana.
+export function geserWaktuKembaliRencana(
+  ambilRencana,
+  ambilAktual,
+  kembaliRencana,
+  aturanCepat = "aktual",
+  aturanTelat = "rencana",
+) {
   if (!ambilRencana || !ambilAktual || !kembaliRencana) return null;
-  const selisih = new Date(ambilAktual) - new Date(ambilRencana);
-  if (Math.abs(selisih) <= TOLERANSI_AMBIL_MENIT * 60000) return null;
-  return new Date(new Date(kembaliRencana).getTime() + selisih).toISOString();
+  const selisih = new Date(ambilRencana) - new Date(ambilAktual); // > 0 = ambil lebih awal
+  const batas = TOLERANSI_AMBIL_MENIT * 60000;
+  if (selisih >= batas && aturanCepat === "aktual") {
+    return new Date(new Date(kembaliRencana).getTime() - selisih).toISOString();
+  }
+  if (selisih <= -batas && aturanTelat === "aktual") {
+    return new Date(new Date(kembaliRencana).getTime() - selisih).toISOString();
+  }
+  return null;
 }
 
 export function idBarangItem(item) {
