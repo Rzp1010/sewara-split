@@ -68,6 +68,7 @@ const KEYS_TAB = {
     "gabung_status",
     "basis_pendapatan",
     "denda_aktif",
+    "kebijakan_telat",
     "denda_dispensasi_menit",
     "auto_logout_minutes",
     "dp_hangus_aktif",
@@ -508,6 +509,7 @@ export default function PengaturanPage() {
         basis_pendapatan:
           getSetting("basis_pendapatan", "selesai") || "selesai",
         denda_aktif: getSetting("denda_aktif", "1") || "1",
+        kebijakan_telat: getSetting("kebijakan_telat", getSetting("denda_aktif", "1") === "0" ? "tanpa" : "perjam"),
         denda_dispensasi_menit: String(
           getSetting("denda_dispensasi_menit", "15") ?? "15",
         ),
@@ -635,6 +637,7 @@ export default function PengaturanPage() {
         setSetting("gabung_status", f.gabung_status || "booking");
         setSetting("basis_pendapatan", f.basis_pendapatan || "selesai");
         setSetting("denda_aktif", f.denda_aktif === "1" ? "1" : "0");
+        setSetting("kebijakan_telat", f.kebijakan_telat || "perjam");
         setSetting(
           "denda_dispensasi_menit",
           f.denda_dispensasi_menit === "" ? "15" : f.denda_dispensasi_menit,
@@ -1159,29 +1162,6 @@ export default function PengaturanPage() {
             />
           </Field>
 
-          <div className="space-y-4">
-            <BarisKontrol
-              label="Jika Ambil SEBELUM Jadwal"
-              hint="Mempengaruhi hitungan biaya sewa."
-              control={
-                <select value={f.aturan_ambil_cepat} onChange={ubah("aturan_ambil_cepat")} className={INPUT_CLS}>
-                  <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
-                  <option value="aktual">Ikuti Aktual (dari waktu ambil sebenarnya)</option>
-                </select>
-              }
-            />
-            <BarisKontrol
-              label="Jika Ambil SETELAH Jadwal"
-              hint="Mempengaruhi hitungan biaya saat Serahkan / Terima Kembali."
-              control={
-                <select value={f.aturan_ambil_telat} onChange={ubah("aturan_ambil_telat")} className={INPUT_CLS}>
-                  <option value="rencana">Ikuti Jadwal (dari jadwal awal)</option>
-                  <option value="aktual">Ikuti Aktual (dari waktu ambil sebenarnya)</option>
-                </select>
-              }
-            />
-          </div>
-
           <BarisKontrol
             label="Gabung Booking Identitas Sama"
             hint="Tawaran gabung item muncul saat identitas penyewa & periode sama persis dengan booking aktif."
@@ -1244,13 +1224,20 @@ export default function PengaturanPage() {
             }
           />
 
-          <ToggleBaris
-            checked={f.denda_aktif === "1"}
-            onChange={(v) => setNilai("denda_aktif", v ? "1" : "0")}
-            label="Denda Keterlambatan"
-            hint={f.denda_aktif === "1"
-              ? "Transaksi telat dihitung denda otomatis — admin masih bisa memilih tanpa denda saat Terima Kembali."
-              : "Transaksi telat diproses tanpa peringatan denda sama sekali."}
+          <BarisKontrol
+            label="Kebijakan Keterlambatan"
+            hint="Toleransi menit tetap dipakai sebelum konsekuensi apa pun."
+            control={
+              <select
+                value={f.kebijakan_telat}
+                onChange={ubah("kebijakan_telat")}
+                className={INPUT_CLS}
+              >
+                <option value="perpanjang">Perpanjang otomatis (harga mengikuti durasi aktual)</option>
+                <option value="perjam">Denda per jam (tarif denda barang)</option>
+                <option value="tanpa">Tanpa konsekuensi</option>
+              </select>
+            }
           />
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">

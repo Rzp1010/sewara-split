@@ -83,11 +83,48 @@ export function terBlacklist(list, { nama, hp } = {}) {
   );
 }
 
+// ponytail: toleransi tetap (bukan setelan) — menyerap derau slot picker 30 menit;
+// jadikan setelan kalau nanti ada tenant yang benar-benar butuh angka berbeda.
+const TOLERANSI_MENIT = 30;
+export const TOLERANSI_AMBIL_MENIT = TOLERANSI_MENIT;
+
+export function geserWaktuKembaliRencana(ambilRencana, ambilAktual, kembaliRencana) {
+  if (!ambilRencana || !ambilAktual || !kembaliRencana) return null;
+  const selisih = new Date(ambilAktual) - new Date(ambilRencana);
+  if (Math.abs(selisih) <= TOLERANSI_AMBIL_MENIT * 60000) return null;
+  return new Date(new Date(kembaliRencana).getTime() + selisih).toISOString();
+}
+
+export function idBarangItem(item) {
+  if (item?.ref?.jenis === "satuan") return item.idBarang == null ? [] : [item.idBarang];
+  if (item?.ref?.jenis === "bundling") return [...new Set((item.assignedSNs || []).map((a) => a.idKomp).filter((id) => id != null))];
+  return [];
+}
+
+export function hitungUsulanPerpanjangan(items, ambilISO, kembaliISO, diskonTotal = 0) {
+  const dur = hitungDurasi(ambilISO, kembaliISO);
+  if (dur.error) return null;
+  let bruto = 0;
+  const itemsBaru = (items || []).map((item) => {
+    const hargaSatuan = hitungSubtotal(item, dur);
+    const subtotal = hargaSatuan * item.qty;
+    bruto += subtotal;
+    return { ...item, hargaSatuan, subtotal };
+  });
+  return { dur, items: itemsBaru, biaya: Math.max(0, bruto - diskonTotal) };
+}
+
 export function hitungDurasi(ambil, kembali) {
   if (!ambil || !kembali) return { error: "Pilih tanggal!" };
   const diff = new Date(kembali) - new Date(ambil);
   if (diff <= 0) return { error: "Waktu tidak valid!" };
-  const totalJam = Math.ceil(diff / 3600000);
+  // Deviasi <= 30 menit tidak dihitung sebagai jam tambahan (24 jam 5 menit tetap
+  // "1 Hari", tidak jadi 25 jam / +50% harga). Minimal 1 jam supaya sewa pendek
+  // tidak jatuh ke Rp0 di hitungSubtotal (totalJam 0 -> 0).
+  const totalJam = Math.max(
+    1,
+    Math.ceil(Math.max(0, diff - TOLERANSI_MENIT * 60_000) / 3600000),
+  );
   const hari = Math.floor(totalJam / 24);
   const sisaJam = totalJam % 24;
   return {

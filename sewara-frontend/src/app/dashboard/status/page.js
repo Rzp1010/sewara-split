@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react";
-import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar } from "@/lib/db";
+import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar, getLastDbError } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import {
   formatAngkaInput,
   formatRupiah,
   formatTanggal,
-  hitungDurasiDenganAturan,
+  geserWaktuKembaliRencana,
+  idBarangItem,
+  hitungUsulanPerpanjangan,
   hitungSubtotal,
   hitungPembayaran,
   kondisiUnit,
@@ -215,6 +217,11 @@ const KartuTrx = memo(function KartuTrx({
           </span>
         );
       })()}
+      {t.pembayaran?.perluPerpanjang && (
+        <span className="mb-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">
+          Perpanjangan menunggu: {t.pembayaran.perluPerpanjang.dari} → {t.pembayaran.perluPerpanjang.ke}
+        </span>
+      )}
       {t.dilayani_oleh && (
         <div className="text-xs text-[var(--text-secondary)] mb-2">
           Dilayani oleh: {t.dilayani_oleh}
@@ -353,6 +360,8 @@ export default function StatusPage() {
   }
   const [userRole, setUserRole] = useState("");
   const [kondisiModal, setKondisiModal] = useState(null);
+  const [perpanjanganModal, setPerpanjanganModal] = useState(false);
+  const [janjiModal, setJanjiModal] = useState([]);
   const [editBayarIdx, setEditBayarIdx] = useState(null);
   const [editBayarJumlah, setEditBayarJumlah] = useState("");
   const [editBayarMetode, setEditBayarMetode] = useState("Tunai");
@@ -749,6 +758,21 @@ export default function StatusPage() {
     ],
   );
 
+  function kebijakanTelat() {
+    return getSetting("kebijakan_telat", getSetting("denda_aktif", "1") === "0" ? "tanpa" : "perjam");
+  }
+
+  function janjiBerikutnya(transaksi, daftarTrx) {
+    const ids = new Set((transaksi.items || []).flatMap(idBarangItem).map(String));
+    const batas = new Date(transaksi.waktu_ambil_aktual || Date.now()).getTime();
+    return (daftarTrx || []).filter((t) =>
+      t.id !== transaksi.id && ["Booking", "Disewa"].includes(t.status) &&
+      (t.items || []).some((item) => idBarangItem(item).some((id) => ids.has(String(id)))) &&
+      t.waktu_ambil_rencana && new Date(t.waktu_ambil_rencana).getTime() > batas
+    ).map((t) => ({ no_invoice: t.no_invoice, penyewa: t.penyewa, ambil: t.waktu_ambil_rencana }))
+      .sort((a, b) => new Date(a.ambil) - new Date(b.ambil));
+  }
+
   async function prosesAmbil(trxId) {
     const trx = await getTransactionById(trxId);
     if (!trx) return;
@@ -765,29 +789,17 @@ export default function StatusPage() {
         );
     });
 
-    const aturanCepat = getSetting("aturan_ambil_cepat", "rencana");
-    const aturanTelat = getSetting("aturan_ambil_telat", "aktual");
-    const dur = hitungDurasiDenganAturan(
+    const kembaliBaru = geserWaktuKembaliRencana(
       trx.waktu_ambil_rencana,
       trx.waktu_ambil_aktual,
       trx.waktu_kembali_rencana,
-      null,
-      aturanCepat,
-      aturanTelat,
     );
-    if (!dur.error) {
-      trx.durasi_teks = dur.durasi_teks;
-      let biayaBrutoBaru = 0;
-      (trx.items || []).forEach((item) => {
-        const sub = hitungSubtotal(item, dur);
-        item.hargaSatuan = sub;
-        item.subtotal = sub * item.qty;
-        biayaBrutoBaru += item.subtotal;
-      });
-      const totalDiskonTersimpan = trx.diskon?.totalDiskon || 0;
-      const biayaFinal = Math.max(0, biayaBrutoBaru - totalDiskonTersimpan);
-      trx.biaya = biayaFinal;
-      trx.total_akhir = biayaFinal + (trx.denda || 0);
+    if (kembaliBaru) {
+      trx.waktu_kembali_rencana = kembaliBaru;
+      notify(`Jadwal kembali digeser ke ${formatTanggal(kembaliBaru)}`, "warning");
+      const daftar = await getTransactions();
+      const bentrok = janjiBerikutnya(trx, daftar).filter((j) => new Date(j.ambil) < new Date(kembaliBaru));
+      if (bentrok.length) notify(`Jadwal bentrok dengan ${bentrok.map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`).join(", ")}`, "warning");
     }
 
     const namaPelayan = (await getNamaInvoice()) || "-";
@@ -827,56 +839,77 @@ export default function StatusPage() {
     const aktual = new Date();
     let denda = 0;
     const telatMenit = (aktual - new Date(trx.waktu_kembali_rencana)) / 60000;
-    const dendaAktif = getSetting("denda_aktif", "1") !== "0";
-    const dispensasiMenit =
-      parseInt(getSetting("denda_dispensasi_menit", "15"), 10) || 0;
-    const telatEfektif = Math.max(0, telatMenit - dispensasiMenit);
+    const toleransi = parseInt(getSetting("denda_dispensasi_menit", "15"), 10) || 0;
+    const telatEfektif = Math.max(0, telatMenit - toleransi);
     const telatJam = Math.ceil(telatEfektif / 60);
-    const kenaDenda =
-      dendaAktif && telatMenit > dispensasiMenit && telatJam > 0;
-
-    if (getFITUR().dendaFleksibel) {
-      if (kenaDenda) {
-        (trx.items || []).forEach(
-          (c) => (denda += (c.ref.denda || 0) * c.qty * telatJam),
-        );
-        if (denda > 0) {
-          const pilih = await confirmChoice(
-            `KETERLAMBATAN!\nBarang dari ${trx.penyewa} telat ${telatJam} Jam.\nDenda otomatis: ${formatRupiah(denda)}.\nBagaimana diproses?`,
-            [
-              {
-                label: `Kenakan Denda ${formatRupiah(denda)}`,
-                value: "denda",
-                bg: "bg-red-500 text-white shadow-sm hover:bg-red-600",
-              },
-              {
-                label: "Tanpa Denda",
-                value: "tanpa",
-                bg: "bg-transparent text-[var(--text-secondary)] hover:bg-surface-secondary",
-              },
-            ],
-          );
-          if (pilih === null) return;
-          if (pilih === "tanpa") denda = 0;
-        } else {
-          if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) return;
-        }
-      } else {
-        if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) return;
+    let statusDipaksa = false;
+    let namaPelayan = (await getNamaInvoice()) || "-";
+    let aksiPerpanjangan = null;
+    let catatanPerpanjangan = "";
+    const modeTelat = kebijakanTelat();
+    if (modeTelat === "perpanjang" && telatEfektif > 0) {
+      const usulan = hitungUsulanPerpanjangan(trx.items, trx.waktu_ambil_aktual, aktual.toISOString(), trx.diskon?.totalDiskon || 0);
+      const daftar = await getTransactions();
+      const bentrok = janjiBerikutnya(trx, daftar).filter((j) => new Date(j.ambil) < aktual);
+      const peringatan = bentrok.length ? `PERINGATAN: jadwal bentrok ${bentrok.map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`).join(", ")}\n\n` : "";
+      const pilihan = [];
+      if (usulan && [ROLE_OWNER, ROLE_SUPERADMIN].includes(userRole)) {
+        pilihan.push({
+          label: `Setujui Perpanjangan ${trx.durasi_teks} → ${usulan.dur.durasi_teks} (${formatRupiah(usulan.biaya)})`,
+          value: "setuju",
+        });
       }
-    } else if (kenaDenda) {
-      (trx.items || []).forEach(
-        (c) => (denda += (c.ref.denda || 0) * c.qty * telatJam),
+      pilihan.push(
+        { label: "Tunda (minta persetujuan owner)", value: "tunda" },
+        { label: "Tanpa Tambahan", value: "tolak" },
       );
-      if (
-        !(await konfirm(
-          `KETERLAMBATAN!\nTelat ${telatJam} Jam.\nDenda tambahan: ${formatRupiah(denda)}.\nProses?`,
-        ))
-      )
+      const pilih = await confirmChoice(
+        `${peringatan}Keterlambatan ${telatJam} jam.`,
+        pilihan,
+      );
+      if (!pilih) return;
+      if (pilih === "setuju" && usulan) {
+        trx.items = usulan.items;
+        trx.biaya = usulan.biaya;
+        trx.durasi_teks = usulan.dur.durasi_teks;
+        trx.total_akhir = usulan.biaya;
+        aksiPerpanjangan = "perpanjang";
+      } else if (pilih === "tunda") {
+        trx.pembayaran = {
+          ...(trx.pembayaran || {}),
+          perluPerpanjang: {
+            jam: telatJam,
+            dari: trx.durasi_teks,
+            ke: usulan?.dur.durasi_teks || "",
+            biayaUsulan: usulan?.biaya || trx.biaya,
+            tgl: new Date().toISOString(),
+            oleh: namaPelayan,
+          },
+        };
+        statusDipaksa = true;
+      } else {
+        aksiPerpanjangan = "perpanjang-ditolak";
+      }
+      catatanPerpanjangan = `${trx.durasi_teks} -> ${usulan?.dur.durasi_teks || trx.durasi_teks}, biaya ${formatRupiah(usulan?.biaya ?? trx.biaya)}${peringatan ? `\n${peringatan.trim()}` : ""}`;
+    } else if (modeTelat === "perjam" && telatEfektif > 0) {
+      (trx.items || []).forEach((c) => (denda += (c.ref.denda || 0) * c.qty * telatJam));
+      if (denda > 0) {
+        const pilih = await confirmChoice(
+          `KETERLAMBATAN!\nTelat ${telatJam} Jam.\nDenda: ${formatRupiah(denda)}.`,
+          [
+            {
+              label: `Kenakan Denda ${formatRupiah(denda)}`,
+              value: "denda",
+            },
+            { label: "Tanpa Denda", value: "tanpa" },
+          ],
+        );
+        if (pilih === null) return;
+        if (pilih === "tanpa") denda = 0;
+      } else if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) {
         return;
-    } else {
-      if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) return;
-    }
+      }
+    } else if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) return;
 
     // Daftar transaksi penuh (dengan items) untuk cek S/N yang masih dipinjam
     // booking lain — getTransactionById di atas tidak cukup untuk ini.
@@ -969,13 +1002,14 @@ export default function StatusPage() {
     trx.denda = denda;
     trx.total_akhir = (trx.biaya || 0) + denda;
     const statusBaru =
-      getFITUR().boardBelumSelesai && hitungPembayaran(trx).status !== "Lunas"
+      statusDipaksa ? "Belum Selesai" : getFITUR().boardBelumSelesai && hitungPembayaran(trx).status !== "Lunas"
         ? "Belum Selesai"
         : "Selesai";
     trx.status = statusBaru;
-    const namaPelayan = (await getNamaInvoice()) || "-";
+    if (aksiPerpanjangan === "perpanjang-ditolak" && trx.pembayaran) delete trx.pembayaran.perluPerpanjang;
     trx.riwayatDilayani = [
       ...(trx.riwayatDilayani || []),
+      ...(aksiPerpanjangan ? [{ aksi: aksiPerpanjangan, nama: namaPelayan, tgl: new Date().toISOString(), catatan: catatanPerpanjangan }] : []),
       { aksi: "terima", nama: namaPelayan, tgl: new Date().toISOString() },
     ];
     trx.dilayani_oleh = namaPelayan;
@@ -1018,6 +1052,66 @@ export default function StatusPage() {
     setRefresh((r) => r + 1);
     notify(`Barang sudah diterima.\nTotal: ${formatRupiah(trx.total_akhir)}`);
     if (hitungPembayaran(trx).status !== "Lunas") bukaBayar(trx);
+  }
+
+  async function bukaPerpanjanganModal() {
+    const daftar = await getTransactions();
+    setJanjiModal(
+      trx.concat(belumSelesai)
+        .filter((t) => t.pembayaran?.perluPerpanjang)
+        .map((t) => ({
+          id: t.id,
+          janji: janjiBerikutnya(t, daftar).filter(
+            (j) => new Date(j.ambil) < new Date(t.waktu_kembali_aktual || Date.now()),
+          ),
+        })),
+    );
+    setPerpanjanganModal(true);
+  }
+
+  async function setujuiPerpanjangan(t) {
+    const x = await getTransactionById(t.id);
+    if (!x?.waktu_kembali_aktual) return notify("Tanggal kembali aktual belum ada.", "error");
+    const u = hitungUsulanPerpanjangan(x.items, x.waktu_ambil_aktual, x.waktu_kembali_aktual, x.diskon?.totalDiskon || 0);
+    if (!u) return notify("Usulan perpanjangan tidak valid.", "error");
+    const lama = x.durasi_teks;
+    x.items = u.items;
+    x.biaya = u.biaya;
+    x.durasi_teks = u.dur.durasi_teks;
+    x.total_akhir = u.biaya;
+    x.denda = x.denda || 0;
+    if (x.pembayaran) delete x.pembayaran.perluPerpanjang;
+    x.riwayatDilayani = [
+      ...(x.riwayatDilayani || []),
+      {
+        aksi: "perpanjang",
+        nama: (await getNamaInvoice()) || "-",
+        tgl: new Date().toISOString(),
+        catatan: `${lama} -> ${u.dur.durasi_teks}, biaya ${formatRupiah(u.biaya)}`,
+      },
+    ];
+    x.status = getFITUR().boardBelumSelesai && hitungPembayaran(x).status !== "Lunas" ? "Belum Selesai" : "Selesai";
+    if (!(await updateTransactions([x]))) return notify(getLastDbError() || "Gagal menyimpan perpanjangan.", "error");
+    setRefresh((r) => r + 1);
+    notify("Perpanjangan disetujui.");
+  }
+
+  async function tolakPerpanjangan(t) {
+    const x = await getTransactionById(t.id);
+    if (!x) return;
+    if (x.pembayaran) delete x.pembayaran.perluPerpanjang;
+    x.riwayatDilayani = [
+      ...(x.riwayatDilayani || []),
+      {
+        aksi: "perpanjang-ditolak",
+        nama: (await getNamaInvoice()) || "-",
+        tgl: new Date().toISOString(),
+        catatan: `harga tetap ${x.durasi_teks}`,
+      },
+    ];
+    if (!(await updateTransactions([x]))) return notify(getLastDbError() || "Gagal menyimpan perpanjangan.", "error");
+    setRefresh((r) => r + 1);
+    notify("Perpanjangan ditolak; harga tetap.");
   }
 
   function submitKondisiModal() {
@@ -1341,7 +1435,24 @@ export default function StatusPage() {
   return (
     <>
       <div className="min-h-full bg-[var(--bg-body)]">
-        <h2 className="mb-6 text-2xl font-bold">Status Sewa</h2>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Status Sewa</h2>
+          {(() => {
+            const jumlahMenunggu = [...trx, ...belumSelesai].filter(
+              (t) => t.pembayaran?.perluPerpanjang,
+            ).length;
+            return (
+              <button
+                type="button"
+                disabled={jumlahMenunggu === 0}
+                className={`rounded-lg px-3 py-2 text-sm ${jumlahMenunggu ? "bg-amber-100 text-amber-900" : "cursor-not-allowed bg-gray-100 text-gray-400"}`}
+                onClick={bukaPerpanjanganModal}
+              >
+                Perpanjangan menunggu ({jumlahMenunggu})
+              </button>
+            );
+          })()}
+        </div>
 
         <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg mb-4">
           {/* Single row: Date range + Search + Toggle */}
@@ -2172,6 +2283,31 @@ export default function StatusPage() {
           document.body,
         )}
 
+      {typeof document !== "undefined" && perpanjanganModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-[var(--bg-surface)] p-6">
+            <header className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Perpanjangan menunggu</h2>
+              <button type="button" onClick={() => setPerpanjanganModal(false)}>Tutup</button>
+            </header>
+            {[...trx, ...belumSelesai].filter((t) => t.pembayaran?.perluPerpanjang).map((t) => {
+              const penanda = t.pembayaran.perluPerpanjang;
+              const janji = janjiModal.find((j) => j.id === t.id)?.janji || [];
+              return <div key={t.id} className="mb-3 rounded-lg border border-[var(--border-color)] p-4">
+                <p className="font-medium">{t.no_invoice} — {t.penyewa}</p>
+                <p>{penanda.dari} → {penanda.ke}</p>
+                <p>Biaya usulan: {formatRupiah(penanda.biayaUsulan)}</p>
+                <p>Tanggal usulan: {formatTanggal(penanda.tgl)}</p>
+                <p>Jadwal bentrok: {janji.length ? janji.map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`).join(", ") : "tidak ada jadwal bentrok"}</p>
+                <div className="mt-3 flex gap-2">
+                  {[ROLE_OWNER, ROLE_SUPERADMIN].includes(userRole) && <button type="button" onClick={() => setujuiPerpanjangan(t)}>Setujui</button>}
+                  <button type="button" onClick={() => tolakPerpanjangan(t)}>Tanpa Tambahan</button>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>, document.body,
+      )}
       {typeof document !== "undefined" &&
         kondisiModal &&
         createPortal(
