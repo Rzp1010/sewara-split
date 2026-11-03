@@ -37,6 +37,8 @@ import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import BatalBookingModal from "@/components/BatalBookingModal";
 import ModalKunciSN from "@/components/booking/ModalKunciSN";
+import PanelJaminan from "@/components/booking/PanelJaminan";
+import PanelAksesoris from "@/components/booking/PanelAksesoris";
 
 import {
   DEFAULT_JAMINAN,
@@ -2014,30 +2016,11 @@ export default function BookingPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
-                  Jaminan
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {daftarJaminan.map((o) => {
-                    const aktif = jaminanTerpilih.includes(o);
-                    const nonaktif =
-                      o !== TANPA_JAMINAN && jaminanTerpilih.includes(TANPA_JAMINAN);
-                    return (
-                      <button
-                        key={o}
-                        type="button"
-                        disabled={nonaktif}
-                        onClick={() => setJaminanTerpilih((p) => toggleJaminan(p, o))}
-                        className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-primary)] border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
-                      >
-                        {aktif ? "✓ " : ""}
-                        {o}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <PanelJaminan
+                daftar={daftarJaminan}
+                terpilih={jaminanTerpilih}
+                onToggle={(o) => setJaminanTerpilih((p) => toggleJaminan(p, o))}
+              />
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Alamat
@@ -2501,46 +2484,19 @@ export default function BookingPage() {
             )}
           </div>
 
-          {printilanDaftar.length > 0 && (
-            <div className="mt-6 mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg">
-              <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
-                Aksesoris
-              </label>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {printilanDaftar.map((item) => (
-                  <label
-                    key={item}
-                    className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={printilanTerpilih.includes(item)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setPrintilanTerpilih([...printilanTerpilih, item]);
-                        } else {
-                          setPrintilanTerpilih(
-                            printilanTerpilih.filter((x) => x !== item),
-                          );
-                        }
-                      }}
-                      className="h-4 w-4 rounded border-[var(--border-color)] accent-[#7181E0]"
-                    />
-                    {item}
-                  </label>
-                ))}
-              </div>
-              <div className="mt-3">
-                <input
-                  type="text"
-                  value={printilanCustom}
-                  onChange={(e) => setPrintilanCustom(e.target.value)}
-                      placeholder="Aksesoris lain (pisahkan dengan koma)..."
-                  className="w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
-                />
-              </div>
-            </div>
-          )}
+          <PanelAksesoris
+            daftar={printilanDaftar}
+            terpilih={printilanTerpilih}
+            custom={printilanCustom}
+            onToggle={(item, dicentang) =>
+              setPrintilanTerpilih(
+                dicentang
+                  ? [...printilanTerpilih, item]
+                  : printilanTerpilih.filter((x) => x !== item),
+              )
+            }
+            onChangeCustom={setPrintilanCustom}
+          />
 
           <div
             className="bg-[var(--bg-surface)] border rounded-xl shadow-lg border-[var(--border-color)] p-6 border-2 mt-4"
@@ -2987,47 +2943,20 @@ export default function BookingPage() {
 
                 {/* Aksesoris */}
                 {printilanDaftar.length > 0 && (
-                  <div className="mt-3 bg-[var(--bg-subtle)] rounded-lg p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">
-                      Aksesoris
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      {printilanDaftar.map((item) => (
-                        <label
-                          key={item}
-                          className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={editPrintilanTerpilih.includes(item)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setEditPrintilanTerpilih([
-                                  ...editPrintilanTerpilih,
-                                  item,
-                                ]);
-                              } else {
-                                setEditPrintilanTerpilih(
-                                  editPrintilanTerpilih.filter(
-                                    (x) => x !== item,
-                                  ),
-                                );
-                              }
-                            }}
-                            className="h-4 w-4 rounded border-[var(--border-color)] accent-[#7181E0]"
-                          />
-                          {item}
-                        </label>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      value={editPrintilanCustom}
-                      onChange={(e) => setEditPrintilanCustom(e.target.value)}
-                      placeholder="Aksesoris lain (pisahkan dengan koma)..."
-                      className="mt-3 w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
-                    />
-                  </div>
+                  <PanelAksesoris
+                    varian="modal"
+                    daftar={printilanDaftar}
+                    terpilih={editPrintilanTerpilih}
+                    custom={editPrintilanCustom}
+                    onToggle={(item, dicentang) =>
+                      setEditPrintilanTerpilih(
+                        dicentang
+                          ? [...editPrintilanTerpilih, item]
+                          : editPrintilanTerpilih.filter((x) => x !== item),
+                      )
+                    }
+                    onChangeCustom={setEditPrintilanCustom}
+                  />
                 )}
 
                 {/* Barang */}
