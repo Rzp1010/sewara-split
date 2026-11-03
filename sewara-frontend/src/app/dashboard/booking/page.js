@@ -255,7 +255,7 @@ export default function BookingPage() {
   const [blacklistHit, setBlacklistHit] = useState(null);
 
   // Cek blacklist saat nama/HP penyewa berubah (debounce 500ms).
-  const identitasCek = useDebounce(`${namaPenyewa}|${hp_penyewa}`, 500);
+  const [identitasCek] = useDebounce(`${namaPenyewa}|${hp_penyewa}`, 500);
   useEffect(() => {
     const [nama, hp] = String(identitasCek || "").split("|");
     if (!nama.trim() || !hp.trim()) {

@@ -467,8 +467,10 @@ export async function uploadBuktiBayar(file, transaksiId) {
       signal: ctl.signal,
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.message || 'Upload gagal');
-    return data.path || null;
+    if (!res.ok || !data.ok)
+      throw new Error(data.error?.message || data.message || 'Upload gagal');
+    // Server membungkus hasil: {ok:true,data:{path}}.
+    return data.data?.path || null;
   } catch (e) {
     console.error('uploadBuktiBayar error:', e.name === 'AbortError' ? 'upload timeout 90s' : e.message);
     return null;
@@ -548,7 +550,7 @@ export async function eksporBuktiBayar(bulan) {
       let msg = 'Gagal mengekspor bukti bayar.';
       try {
         const data = await res.json();
-        msg = data.message || msg;
+        msg = data.error?.message || data.message || msg;
       } catch {
         /* biarkan pesan default */
       }
