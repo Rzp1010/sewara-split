@@ -53,6 +53,8 @@ import {
   persentaseMemberEfektif,
   batasAmbilMundur,
 } from "@/lib/booking/helpers";
+import { hitungDiskonMurni } from "@/lib/booking/diskon";
+import { filterTime, lewatJamTutup } from "@/lib/booking/jam";
 
 export default function BookingPage() {
   const { notify, confirm, confirmChoice } = useNotify();
@@ -542,89 +544,22 @@ export default function BookingPage() {
     return new Date(iso).toISOString().slice(0, 16);
   }
 
+  // Pembungkus: inti perhitungan ada di lib/booking/diskon.js (murni, bisa
+  // dipakai ulang modal edit yang dipanggil halaman lain).
   function hitungDiskon(biaya, memberOverride, promoOverride, nowOverride, durasiOverride) {
-    if (!getFITUR().memberPromo)
-      return {
-        diskonMember: 0,
-        diskonPromo: 0,
-        totalDiskon: 0,
-        biayaAkhir: biaya,
-        persenEfektif: 0,
-        sumberDiskon: null,
-      };
-    const biayaNum = Number(biaya) || 0;
-    const member =
-      memberOverride !== undefined ? memberOverride : memberDipilih;
-    const promo = promoOverride !== undefined ? promoOverride : promoDipilih;
-    const { stack, maksPersen, minTransaksi } = aturanDiskon;
-    const totalJam =
-      durasiOverride !== undefined ? durasiOverride : kalkulasi.totalJam;
-
-    const { persen: persenEfektif, sumber: sumberDiskon } =
-      persentaseMemberEfektif(member, totalJam);
-    const memberAktif =
-      member && member.status === "aktif" && persenEfektif > 0;
-    const diskonMember = memberAktif
-      ? Math.round((biayaNum * persenEfektif) / 100)
-      : 0;
-
-    let diskonPromo = 0;
-    if (
-      promo &&
-      promo.status === "aktif" &&
-      !promoSudahKadaluarsa(
-        promo,
-        nowOverride !== undefined ? nowOverride : kini,
-      ) &&
-      Number(promo.diskon_persen) > 0
-    ) {
-      const now = nowOverride !== undefined ? nowOverride : kini;
-      const dari = promo.berlaku_dari
-        ? new Date(promo.berlaku_dari).getTime()
-        : null;
-      const sampai = promo.berlaku_sampai
-        ? new Date(promo.berlaku_sampai).getTime()
-        : null;
-      const masaBerlaku = (!dari || now >= dari) && (!sampai || now <= sampai);
-      const kuotaOk =
-        promo.kuota == null ||
-        Number(promo.terpakai || 0) < Number(promo.kuota);
-      const minOk = biayaNum >= (Number(minTransaksi) || 0);
-      if (masaBerlaku && kuotaOk && minOk) {
-        diskonPromo = Math.round(
-          (biayaNum * Number(promo.diskon_persen)) / 100,
-        );
-      }
-    }
-
-    let totalDiskon;
-    if (stack === "gabung") totalDiskon = diskonMember + diskonPromo;
-    else if (stack === "satu") {
-      // One discount mode: when no member exists, promo remains eligible.
-      totalDiskon =
-        memberAktif && pilihSatu !== "promo" ? diskonMember : diskonPromo;
-    } else totalDiskon = Math.max(diskonMember, diskonPromo);
-
-    const cap = Math.round((biayaNum * (Number(maksPersen) || 0)) / 100);
-    totalDiskon = Math.min(totalDiskon, cap);
-    const dasarDiskonCustom = Math.max(0, biayaNum - totalDiskon);
-    const nilaiCustom =
-      Number(String(diskonCustomInput).replace(/\D/g, "")) || 0;
-    const diskonCustom =
-      diskonCustomTipe === "%"
-        ? Math.round((dasarDiskonCustom * Math.min(nilaiCustom, 100)) / 100)
-        : Math.min(nilaiCustom, dasarDiskonCustom);
-    totalDiskon += diskonCustom;
-    const biayaAkhir = Math.max(0, biayaNum - totalDiskon);
-    return {
-      diskonMember,
-      diskonPromo,
-      diskonCustom,
-      totalDiskon,
-      biayaAkhir,
-      persenEfektif,
-      sumberDiskon,
-    };
+    return hitungDiskonMurni(biaya, {
+      member: memberOverride !== undefined ? memberOverride : memberDipilih,
+      promo: promoOverride !== undefined ? promoOverride : promoDipilih,
+      totalJam:
+        durasiOverride !== undefined ? durasiOverride : kalkulasi.totalJam,
+      aturanDiskon,
+      pilihSatu,
+      diskonCustomInput,
+      diskonCustomTipe,
+      now: nowOverride !== undefined ? nowOverride : kini,
+      fiturMemberPromo: getFITUR().memberPromo,
+      promoKadaluarsa: promoSudahKadaluarsa,
+    });
   }
 
   async function terapkanPromo() {
@@ -1389,24 +1324,6 @@ export default function BookingPage() {
       sedangSimpan.current = false;
       setLoading("");
     }
-  }
-
-  const filterTime = (time) => {
-    if (time.getTime() < batasAmbilMundur().getTime()) return false;
-    const h = time.getHours();
-    const mode = getSetting("jam_mode", "buka_tutup");
-    if (mode !== "buka_tutup") return true;
-    const buka = parseInt(getSetting("jam_buka", "6"), 10) || 6;
-    const tutup = parseInt(getSetting("jam_tutup", "22"), 10) || 22;
-    return h >= buka && h <= tutup;
-  };
-
-  // ponytail: bandingkan jam-kasar; window lintas tengah malam (tutup<buka) belum didukung, sama seperti filterTime.
-  function lewatJamTutup(date) {
-    if (!date) return false;
-    if (getSetting("jam_mode", "buka_tutup") !== "buka_tutup") return false;
-    const tutup = parseInt(getSetting("jam_tutup", "22"), 10) || 22;
-    return new Date(date).getHours() > tutup;
   }
 
   function tambahEditItem() {
