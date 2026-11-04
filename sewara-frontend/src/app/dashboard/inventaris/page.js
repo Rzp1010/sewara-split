@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useDebounce } from "use-debounce";
 import { getStok, getInventory, updateInventory, hapusInventory, getTransactionsAktif, getLastDbError } from "@/lib/db";
 import Image from "next/image";
 import { createPortal } from "react-dom";
@@ -70,6 +71,8 @@ export default function InventarisPage() {
   const [csvLoading, setCsvLoading] = useState(false);
   const [trxAktif, setTrxAktif] = useState([]);
   const [tampilkanKosong, setTampilkanKosong] = useState(false);
+  const [kataKunci, setKataKunci] = useState("");
+  const [kataKunciDebounce] = useDebounce(kataKunci, 200);
 
   async function muat() {
     setLoading(true);
@@ -827,7 +830,27 @@ export default function InventarisPage() {
     <div className="min-h-full bg-[var(--bg-body)]">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-bold">Daftar Katalog Produk</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="relative w-full sm:w-72">
+            <input
+              type="search"
+              value={kataKunci}
+              onChange={(e) => setKataKunci(e.target.value)}
+              placeholder="Cari nama / tag / S/N / keterangan..."
+              aria-label="Cari inventaris"
+              className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 pr-9 text-sm text-[var(--text-primary)]"
+            />
+            {kataKunci && (
+              <button
+                type="button"
+                onClick={() => setKataKunci("")}
+                aria-label="Bersihkan pencarian"
+                className="absolute right-2 top-1/2 -translate-y-1/2 border-0 bg-transparent px-1 text-lg leading-none text-[var(--text-secondary)]"
+              >
+                ×
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -1283,9 +1306,38 @@ export default function InventarisPage() {
               })()}
             {(() => {
               // Render-scope filter: jangan mutasi state inv (Del/edit/muat pakai inv penuh).
-              const invTampil = tampilkanKosong
-                ? inv
-                : inv.filter((i) => totalDimiliki(i, inv) > 0);
+              const pencarian = kataKunciDebounce.trim().toLocaleLowerCase();
+              const invCari = pencarian
+                ? inv.filter((i) => {
+                    const cocok = [i.nama, i.tag, i.keterangan, ...(i.sns || [])]
+                      .some((nilai) => String(nilai || "").toLocaleLowerCase().includes(pencarian));
+                    return cocok;
+                  })
+                : inv;
+              const invTampil = pencarian
+                ? invCari
+                : tampilkanKosong
+                  ? inv
+                  : inv.filter((i) => totalDimiliki(i, inv) > 0);
+              if (pencarian && invTampil.length === 0) {
+                return (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+                      Tidak ada barang yang cocok dengan pencarian.
+                    </td>
+                  </tr>
+                );
+              }
+              const indikatorCari = pencarian ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-2 text-xs text-[var(--text-secondary)]">
+                    {invTampil.length} hasil
+                    <button type="button" onClick={() => setKataKunci("")} className="ml-2 border-0 bg-transparent text-[var(--text-primary)] underline">
+                      Bersihkan
+                    </button>
+                  </td>
+                </tr>
+              ) : null;
               const tagSet = [
                 ...new Set(
                   invTampil.map((i) => (i.tag || "").trim()).filter(Boolean),
@@ -1300,7 +1352,7 @@ export default function InventarisPage() {
                 items: invTampil.filter((i) => !(i.tag || "").trim()),
               });
               let globalIdx = 0;
-              return kelompok
+              return [indikatorCari, ...kelompok
                 .filter((k) => k.items.length > 0)
                 .flatMap((kel) => [
                   <tr key={`${kel.tag}-hdr`} className="bg-[var(--bg-subtle)]">
@@ -1528,7 +1580,7 @@ export default function InventarisPage() {
                       </tr>
                     );
                   }),
-                ]);
+                ])];
             })()}
           </tbody>
         </table>
