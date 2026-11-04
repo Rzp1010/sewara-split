@@ -200,7 +200,7 @@ const KartuTrx = memo(function KartuTrx({
       <div className="mt-1 flex items-center justify-end gap-1.5">
         {t.status === "Booking" && <button type="button" onClick={() => onAmbil(t.id)} className="h-7 rounded-md border-0 bg-[#7181E0] hover:bg-[#5d6fcc] px-2.5 text-[11px] font-semibold text-white">Serahkan</button>}
         {t.status === "Disewa" && <button type="button" onClick={() => onKembali(t.id)} className="h-7 rounded-md border-0 bg-[#579171] hover:bg-[#447057] px-2.5 text-[11px] font-semibold text-white">Terima</button>}
-        <details className="relative">
+        <details className="relative" data-menu>
           <summary aria-label="Buka menu transaksi" className="flex h-[26px] w-[26px] cursor-pointer list-none items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]">⋯</summary>
           <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
             <button type="button" onClick={(e) => tutupMenu(e, () => onDetail(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Detail</button>
@@ -244,6 +244,18 @@ export default function StatusPage() {
   const [filterPanelTerbuka, setFilterPanelTerbuka] = useState(false);
   const filterSettingsLoaded = useRef(false);
   const filterSettingsKey = "status-filter-settings";
+
+  // Menu kartu pakai <details>: klik di luar harus menutupnya (pointerdown
+  // supaya ikut jalan di sentuh).
+  useEffect(() => {
+    const tutupMenuLuar = (e) => {
+      document.querySelectorAll("details[data-menu][open]").forEach((d) => {
+        if (!d.contains(e.target)) d.removeAttribute("open");
+      });
+    };
+    document.addEventListener("pointerdown", tutupMenuLuar);
+    return () => document.removeEventListener("pointerdown", tutupMenuLuar);
+  }, []);
 
   useEffect(() => {
     try {
