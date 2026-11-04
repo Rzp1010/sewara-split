@@ -207,7 +207,7 @@ const KartuTrx = memo(function KartuTrx({
           <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
             <button type="button" onClick={(e) => tutupMenu(e, () => onDetail(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Detail</button>
             <button type="button" onClick={(e) => tutupMenu(e, () => onBayar(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Bayar</button>
-            {t.status === "Disewa" && <button type="button" onClick={(e) => tutupMenu(e, () => onPerpanjang(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Perpanjang</button>}
+            {t.status === "Disewa" && <button type="button" onClick={(e) => tutupMenu(e, () => onPerpanjang(t.id))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Perpanjang</button>}
             {aktif && <>
               <button type="button" onClick={(e) => tutupMenu(e, () => onEdit(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Edit booking</button>
               <button type="button" onClick={(e) => tutupMenu(e, () => onInvoice(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Invoice</button>
