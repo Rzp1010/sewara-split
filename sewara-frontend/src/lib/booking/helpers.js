@@ -18,6 +18,53 @@ export function toggleJaminan(terpilih, opsi) {
     : [...tanpa, opsi];
 }
 
+/**
+ * Pisah teks S/N jadi daftar bersih: pemisah koma, tiap nilai di-trim.
+ * Dipakai seragam supaya "0" dan "0 " tidak dihitung sebagai dua unit.
+ */
+export function pisahSN(teks) {
+  return String(teks || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * S/N yang SEDANG KELUAR: dipegang transaksi Disewa yang belum dikembalikan
+ * (`waktu_kembali_aktual` kosong). Gerbang Serahkan memakai ini supaya unit
+ * yang sudah di tangan penyewa tidak bisa diserahkan lagi hanya karena jadwal
+ * rencananya tidak bertumpuk dengan transaksi berikutnya.
+ */
+export function snsKeluarSekarang(daftarTrx, idBarang, kecualiId) {
+  const sns = new Set();
+  const trx = [];
+  (daftarTrx || []).forEach((t) => {
+    if (t.id === kecualiId) return;
+    if (t.status !== "Disewa" || t.waktu_kembali_aktual) return;
+    const milik = [];
+    (t.items || []).forEach((item) => {
+      if (item.ref?.jenis === "satuan") {
+        if (String(item.idBarang) !== String(idBarang)) return;
+        milik.push(...pisahSN(item.sn));
+      } else if (item.ref?.jenis === "bundling") {
+        (item.assignedSNs || []).forEach((a) => {
+          if (String(a.idKomp) !== String(idBarang)) return;
+          milik.push(...pisahSN((a.sns || []).join(", ")));
+        });
+      }
+    });
+    if (!milik.length) return;
+    milik.forEach((s) => sns.add(s));
+    trx.push({
+      id: t.id,
+      no_invoice: t.no_invoice,
+      penyewa: t.penyewa,
+      sns: milik,
+    });
+  });
+  return { sns, trx };
+}
+
 export function bangunIndeks(trx, inv) {
   const rujuk = new Map();
   const terpakaiSemua = new Map();
@@ -40,9 +87,9 @@ export function bangunIndeks(trx, inv) {
         terpakaiSemua.set(kunci, set);
       };
       if (item.ref?.jenis === "satuan") {
-        tambah(item.idBarang, item.sn ? item.sn.split(", ") : []);
+        tambah(item.idBarang, pisahSN(item.sn));
       } else if (item.ref?.jenis === "bundling") {
-        (item.assignedSNs || []).forEach((a) => tambah(a.idKomp, a.sns || []));
+        (item.assignedSNs || []).forEach((a) => tambah(a.idKomp, pisahSN((a.sns || []).join(", "))));
       }
     });
   });

@@ -94,41 +94,52 @@ export default function InventarisPage() {
 
   // S/N yang sedang dipegang transaksi aktif (Booking/Disewa) per id barang.
   // inventory.sns = rak; booking memindahkan S/N keluar rak, kembali mendorong masuk lagi.
+  // Disimpan sebagai himpunan S/N supaya satu unit yang dirujuk dua transaksi
+  // tidak dihitung dua kali.
   const heldMap = useMemo(() => {
     const map = new Map();
+    const tambah = (idBarang, sns) => {
+      const kunci = String(idBarang);
+      const set = map.get(kunci) || new Set();
+      sns.forEach((s) => set.add(String(s).trim()));
+      map.set(kunci, set);
+    };
     trxAktif.forEach((t) => {
       (t.items || []).forEach((i) => {
         if (!i.idBarang) return;
-        const key = String(i.idBarang);
         if (i.assignedSNs?.length) {
           i.assignedSNs.forEach((a) => {
             if (a.idKomp == null) return;
-            const kunci = String(a.idKomp);
-            map.set(kunci, (map.get(kunci) || 0) + (a.sns || []).length);
+            tambah(a.idKomp, a.sns || []);
           });
         } else if (i.sn) {
-          const banyak = String(i.sn)
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean).length;
-          map.set(key, (map.get(key) || 0) + banyak);
+          tambah(
+            i.idBarang,
+            String(i.sn)
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+          );
         }
       });
     });
     return map;
   }, [trxAktif]);
 
-  // Total kepemilikan = rak + yang dipegang transaksi aktif.
+  // Total kepemilikan = rak + yang dipegang transaksi aktif (unit distinct).
   const totalDimiliki = (item, inv) => {
-    if (item.jenis === "satuan")
-      return (item.sns || []).length + (heldMap.get(String(item.id)) || 0);
+    if (item.jenis === "satuan") {
+      const set = new Set((item.sns || []).map((s) => String(s).trim()));
+      (heldMap.get(String(item.id)) || new Set()).forEach((s) => set.add(s));
+      return set.size;
+    }
     if (!item.komponen || item.komponen.length === 0) return 0;
     return Math.min(
       ...item.komponen.map((k) => {
         const dbItem = inv.find((x) => String(x.id) === String(k.idBarang));
-        const shelf = dbItem ? (dbItem.sns || []).length : 0;
-        const held = heldMap.get(String(k.idBarang)) || 0;
-        return Math.floor((shelf + held) / k.qty);
+        const set = new Set((dbItem?.sns || []).map((s) => String(s).trim()));
+        (heldMap.get(String(k.idBarang)) || new Set()).forEach((s) => set.add(s));
+        return Math.floor(set.size / k.qty);
       }),
     );
   };

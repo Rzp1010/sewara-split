@@ -22,6 +22,7 @@ import {
   snsBebasPerPeriode,
   formatJaminan,
 } from "@/lib/utils";
+import { pisahSN, snsKeluarSekarang } from "@/lib/booking/helpers";
 import { useNotify } from "@/components/NotificationProvider";
 import BuktiDropzone from "@/components/BuktiDropzone";
 import { useTransactionsAktif } from "@/hooks/useTransactions";
@@ -766,9 +767,25 @@ export default function StatusPage() {
     // perlu dikonfirmasi ("Simpan"), yang belum dipilih dari unit bebas.
     if (perluSN.length) {
       const [inv, daftarTrx] = await Promise.all([getInventory(), getTransactions()]);
-      const entri = perluSN.map((e) => ({ ...e, bebas: snsBebasPerPeriode(inv, daftarTrx, e.idBarang, trx.waktu_ambil_rencana, trx.waktu_kembali_rencana, trx.id), pilihan: [...(e.terpasang || [])] }));
+      const entri = perluSN.map((e) => {
+        const keluar = snsKeluarSekarang(daftarTrx, e.idBarang, trx.id);
+        return {
+          ...e,
+          // Unit yang sedang di tangan penyewa (Disewa, belum kembali) tidak
+          // boleh ditawarkan walau jadwal rencananya tidak bertumpuk.
+          bebas: snsBebasPerPeriode(inv, daftarTrx, e.idBarang, trx.waktu_ambil_rencana, trx.waktu_kembali_rencana, trx.id)
+            .filter((s) => !keluar.sns.has(String(s).trim())),
+          keluar,
+          pilihan: [...(e.terpasang || [])],
+        };
+      });
       const kurang = entri.find((e) => e.bebas.length < e.butuh);
-      if (kurang) return notify(`Unit bebas tidak cukup untuk ${kurang.nama} (sisa ${kurang.bebas.length}). Ganti barang atau geser jadwal.`, "error");
+      if (kurang) {
+        const sebab = kurang.keluar.trx.length
+          ? ` Masih keluar di ${kurang.keluar.trx.map((t) => `${t.no_invoice} (${t.penyewa})`).join(", ")} — belum dikembalikan.`
+          : "";
+        return notify(`Unit bebas tidak cukup untuk ${kurang.nama} (sisa ${kurang.bebas.length}).${sebab}`, "error");
+      }
       const pilihan = await new Promise((resolve) => setSnModal({ entries: entri, resolve }));
       if (!pilihan) return;
       for (const e of pilihan) {
@@ -994,7 +1011,7 @@ export default function StatusPage() {
         let db = inv.find((i) => i.id == c.idBarang);
         if (db) {
           const rujuk = snsDirujukLainnya(t, trx.id, c.idBarang);
-          let snList = c.sn.split(", ");
+          let snList = pisahSN(c.sn);
           snList.forEach((s) => {
             if (!rujuk.has(s) && !db.sns.includes(s)) db.sns.push(s);
           });
@@ -1024,7 +1041,7 @@ export default function StatusPage() {
         if (c.ref.jenis === "satuan") {
           daftar.push({
             idBarang: c.idBarang,
-            sns: (c.sn || "").split(", ").filter(Boolean),
+            sns: pisahSN(c.sn),
           });
         } else {
           (c.assignedSNs || []).forEach((a) =>

@@ -268,11 +268,15 @@ export function unduhCSV(dataCsv, namaFile) {
 function snsItemDalamTrx(item, idBarang) {
   if (item.ref?.jenis === "satuan") {
     if (item.idBarang != idBarang) return [];
-    return item.sn ? item.sn.split(", ") : [];
+    // Trim seragam: "0 " dan "0" harus dihitung sebagai unit yang sama.
+    return String(item.sn || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   if (item.ref?.jenis === "bundling") {
     const a = (item.assignedSNs || []).find((x) => x.idKomp == idBarang);
-    return a ? [...a.sns] : [];
+    return a ? (a.sns || []).map((s) => String(s).trim()) : [];
   }
   return [];
 }
