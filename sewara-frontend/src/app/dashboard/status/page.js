@@ -12,6 +12,7 @@ import {
   geserWaktuKembaliRencana,
   idBarangItem,
   hitungUsulanPerpanjangan,
+  tierDurasiBerikut,
   hitungSubtotal,
   hitungPembayaran,
   kondisiUnit,
@@ -901,13 +902,36 @@ export default function StatusPage() {
     const modeTelat = kebijakanTelat();
     if (modeTelat === "perpanjang" && telatEfektif > 0) {
       const ambilAcuan = trx.waktu_ambil_aktual || trx.waktu_ambil_rencana;
-      const usulan = hitungUsulanPerpanjangan(
-        trx.items,
-        ambilAcuan,
-        aktual.toISOString(),
-        trx.diskon?.totalDiskon || 0,
-      );
       const durasiTersimpan = hitungDurasi(ambilAcuan, trx.waktu_kembali_rencana);
+      const durasiBerjalan = hitungDurasi(ambilAcuan, aktual.toISOString());
+      // Perpanjangan mendarat di tier durasi (6/12/24/36/48 jam...), bukan jam
+      // ngasal. Acuan = jam terbesar antara durasi tersimpan dan yang berjalan.
+      const fleksibel = (trx.items || []).some(
+        (c) => (c.ref?.tipeSewa || "fleksibel") !== "harian",
+      );
+      const jamAcuan = Math.max(
+        durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam,
+        durasiBerjalan?.error ? 0 : durasiBerjalan.totalJam,
+      );
+      const tier1 = tierDurasiBerikut(jamAcuan, { fleksibel });
+      // Sewa >= 24 jam boleh tambah 1/2 hari atau langsung 1 hari.
+      const daftarTier =
+        jamAcuan >= 24 ? [tier1, tier1 + 12] : [tier1];
+      const usulan = daftarTier.map((tier) => {
+        const kembali = new Date(
+          new Date(ambilAcuan).getTime() + tier * 3600000,
+        ).toISOString();
+        return {
+          tier,
+          kembali,
+          ...hitungUsulanPerpanjangan(
+            trx.items,
+            ambilAcuan,
+            kembali,
+            trx.diskon?.totalDiskon || 0,
+          ),
+        };
+      });
       const daftar = await getTransactions();
       const bentrok = janjiBerikutnya(trx, daftar, aktual.getTime()).filter(
         (j) => new Date(j.ambil) < aktual,
@@ -915,37 +939,40 @@ export default function StatusPage() {
       const peringatan = bentrok.length
         ? `PERINGATAN: jadwal bentrok ${bentrok.map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`).join(", ")}\n\n`
         : "";
-      const bolehPerpanjang =
-        usulan &&
-        !usulan.dur.error &&
-        durasiTersimpan &&
-        !durasiTersimpan.error &&
-        usulan.dur.totalJam > durasiTersimpan.totalJam &&
-        usulan.biaya > (trx.biaya || 0);
+      const jamTersimpan = durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam;
+      const muat = usulan.filter(
+        (u) =>
+          u &&
+          !u.dur.error &&
+          u.dur.totalJam > jamTersimpan &&
+          u.biaya > (trx.biaya || 0),
+      );
 
-      if (bolehPerpanjang) {
+      if (muat.length) {
         const durasiLama = trx.durasi_teks;
         const pilih = await confirmChoice(
           `${peringatan}Keterlambatan ${telatJam} jam.`,
           [
-            {
-              label: `Setujui Perpanjangan ${trx.durasi_teks} → ${usulan.dur.durasi_teks} (${formatRupiah(usulan.biaya)})`,
-              value: "setuju",
-            },
+            ...muat.map((u, i) => ({
+              label: `Setujui Perpanjangan ${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)})`,
+              value: `tier${i}`,
+            })),
             { label: "Tanpa Tambahan", value: "tolak" },
           ],
         );
         if (pilih === null) return;
-        if (pilih === "setuju") {
-          trx.items = usulan.items;
-          trx.biaya = usulan.biaya;
-          trx.durasi_teks = usulan.dur.durasi_teks;
-          trx.waktu_kembali_rencana = aktual.toISOString();
+        const dipilih =
+          pilih === "tolak" ? null : muat[Number(String(pilih).slice(4))];
+        if (dipilih) {
+          trx.items = dipilih.items;
+          trx.biaya = dipilih.biaya;
+          trx.durasi_teks = dipilih.dur.durasi_teks;
+          trx.waktu_kembali_rencana = dipilih.kembali;
           aksiPerpanjangan = "perpanjang";
-          catatanPerpanjangan = `${durasiLama} -> ${usulan.dur.durasi_teks}, biaya ${formatRupiah(usulan.biaya)}${peringatan ? `\n${peringatan.trim()}` : ""}`;
+          catatanPerpanjangan = `${durasiLama} -> ${dipilih.dur.durasi_teks}, biaya ${formatRupiah(dipilih.biaya)}${peringatan ? `\n${peringatan.trim()}` : ""}`;
         } else {
           aksiPerpanjangan = "perpanjang-ditolak";
-          catatanPerpanjangan = `harga tetap ${trx.durasi_teks}${peringatan ? `\n${peringatan.trim()}` : ""}`;
+          catatanPerpanjangan = `harga tetap ${durasiLama}${peringatan ? `\n${peringatan.trim()}` : ""}`;
         }
       } else if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) {
         return;

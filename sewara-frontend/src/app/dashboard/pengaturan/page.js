@@ -1264,7 +1264,7 @@ export default function PengaturanPage() {
                 onChange={ubah("kebijakan_telat")}
                 className={INPUT_CLS}
               >
-                <option value="perpanjang">Perpanjang otomatis (harga mengikuti durasi aktual)</option>
+                <option value="perpanjang">Perpanjang otomatis ke batas durasi (6/12/24 jam)</option>
                 <option value="perjam">Denda per jam (tarif denda barang)</option>
                 <option value="tanpa">Tanpa konsekuensi</option>
               </select>

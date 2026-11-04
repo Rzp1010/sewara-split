@@ -130,6 +130,26 @@ export function hitungUsulanPerpanjangan(items, ambilISO, kembaliISO, diskonTota
   return { dur, items: itemsBaru, biaya: Math.max(0, bruto - diskonTotal) };
 }
 
+/**
+ * Tier durasi sewa (jam) berikutnya setelah `jam`: 6, 12, lalu kelipatan 12
+ * mulai 24 jam (24 = 1 Hari, 36 = 1 Hari 12 Jam, 48 = 2 Hari, ...).
+ *
+ * Dipakai perpanjangan supaya durasi selalu mendarat di tier yang dihargai
+ * (h6/h12/h24), bukan jam ngasal seperti "13 Jam" / "25 Jam".
+ * `fleksibel: false` (item tipeSewa "harian") melewati tier 6 & 12 karena
+ * sewa harian minimum 1 hari; hasilnya mulai dari 24 jam.
+ */
+export function tierDurasiBerikut(jam, { fleksibel = true } = {}) {
+  const minimal = Math.max(0, Number(jam) || 0);
+  if (fleksibel) {
+    if (minimal < 6) return 6;
+    if (minimal < 12) return 12;
+  }
+  let tier = 24;
+  while (tier <= minimal) tier += 12;
+  return tier;
+}
+
 export function hitungDurasi(ambil, kembali) {
   if (!ambil || !kembali) return { error: "Pilih tanggal!" };
   const diff = new Date(kembali) - new Date(ambil);
@@ -146,8 +166,9 @@ export function hitungDurasi(ambil, kembali) {
   return {
     hari,
     sisaJam,
-    durasi_teks:
-      (hari > 0 ? `${hari} Hari ` : "") + (sisaJam > 0 ? `${sisaJam} Jam` : ""),
+    durasi_teks: (
+      (hari > 0 ? `${hari} Hari ` : "") + (sisaJam > 0 ? `${sisaJam} Jam` : "")
+    ).trim(),
     error: null,
     totalJam,
   };
