@@ -902,15 +902,14 @@ export default function StatusPage() {
         };
       })
       .filter(
-        (u) =>
-          u &&
-          !u.dur.error &&
-          u.dur.totalJam > jamTersimpan &&
-          u.biaya > (trx.biaya || 0),
+        // Durasi harus bertambah; harga boleh tetap — durasi non-tier (mis. 8
+        // jam) sudah dibayar tarif tier berikutnya (h12), jadi membandingkan
+        // biaya akan menyaring opsi yang sah.
+        (u) => u && !u.dur.error && u.dur.totalJam > jamTersimpan,
       );
     if (!muat.length)
       return notify(
-        "Tidak ada tier perpanjangan yang menambah durasi dan biaya. Ubah manual lewat Edit booking.",
+        `Tidak ada tier perpanjangan di atas durasi tersimpan (tier ${daftarTier.join("/")} jam, durasi ${jamTersimpan} jam). Ubah manual lewat Edit booking.`,
         "error",
       );
     const durasiLama = trx.durasi_teks;
@@ -918,8 +917,9 @@ export default function StatusPage() {
       `Perpanjang sewa ${trx.penyewa} (${trx.no_invoice})?`,
       muat.map((u, i) => {
         const bentrok = bentrokUntuk(u.kembali);
+        const tetap = u.biaya === (trx.biaya || 0);
         return {
-          label: `${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)})${bentrok ? ` — BENTROK ${bentrok}` : ""}`,
+          label: `${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)}${tetap ? ", harga tetap" : ""})${bentrok ? ` — BENTROK ${bentrok}` : ""}`,
           value: `tier${i}`,
         };
       }),
