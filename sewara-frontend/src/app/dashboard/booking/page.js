@@ -2270,14 +2270,8 @@ export default function BookingPage() {
         <ModalEditTransaksi
           key={editModal.id}
           trx={editModal}
-          inv={inv}
-          trxAll={trx}
-          daftarMember={daftarMember}
-          daftarPromo={daftarPromo}
-          daftarJaminan={daftarJaminan}
-          printilanDaftar={printilanDaftar}
-          printilanMode={printilanMode}
-          aturanDiskon={aturanDiskon}
+          invAwal={inv}
+          trxAwal={trx}
           loading={loading}
           setLoading={setLoading}
           onClose={() => setEditModal(null)}

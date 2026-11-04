@@ -2,18 +2,22 @@
 
 // Modal edit transaksi (dipakai halaman Booking; siap dipanggil halaman lain,
 // mis. Status Sewa). State edit hidup di dalam komponen ini.
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 import {
   getSetting,
+  getSettingTenant,
   getStok,
+  getInventory,
   getInventoryByIds,
   updateInventory,
   getTransactionsAktif,
   updateTransactions,
   getLastDbError,
   getNamaInvoice,
+  getPelangganSuggestions,
+  getPromoCodes,
   promoSudahKadaluarsa,
 } from "@/lib/db";
 import {
@@ -26,6 +30,7 @@ import {
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
 import {
+  DEFAULT_JAMINAN,
   TANPA_JAMINAN,
   toggleJaminan,
   bangunIndeks,
@@ -44,21 +49,29 @@ import PanelAksesoris from "@/components/booking/PanelAksesoris";
 
 export default function ModalEditTransaksi({
   trx,
-  inv = [],
-  trxAll = [],
-  daftarMember = [],
-  daftarPromo = [],
-  daftarJaminan = [],
-  printilanDaftar = [],
-  printilanMode = "dicentang",
-  aturanDiskon = {},
+  invAwal,
+  trxAwal,
   loading = "",
   setLoading = () => {},
   onClose = () => {},
   onSaved = () => {},
-  onBatalkan = () => {},
+  onBatalkan = null,
 }) {
   const { notify } = useNotify();
+
+  // Data pendukung: pakai kiriman halaman kalau ada, kalau tidak ambil sendiri.
+  const [inv, setInv] = useState(invAwal || []);
+  const [trxAll, setTrxAll] = useState(trxAwal || []);
+  const [daftarMember, setDaftarMember] = useState([]);
+  const [daftarPromo, setDaftarPromo] = useState([]);
+  const [aturanDiskon, setAturanDiskon] = useState({
+    stack: "terbesar",
+    maksPersen: 50,
+    minTransaksi: 0,
+  });
+  const [printilanDaftar, setPrintilanDaftar] = useState([]);
+  const [printilanMode, setPrintilanMode] = useState("dicentang");
+  const [daftarJaminan, setDaftarJaminan] = useState(DEFAULT_JAMINAN);
 
   // Nilai awal dibangun dari transaksi yang sedang dibuka.
   const [editForm, setEditForm] = useState(() => ({
@@ -88,6 +101,49 @@ export default function ModalEditTransaksi({
   const [editSnOptions, setEditSnOptions] = useState([]);
   const [editSnDipilih, setEditSnDipilih] = useState("");
   const [showEditSn, setShowEditSn] = useState(false);
+
+  useEffect(() => {
+    let aktif = true;
+    (async () => {
+      try {
+        const [iv, tx, members, promos, stack, maks, min, pl, mode, dj] =
+          await Promise.all([
+            invAwal?.length ? invAwal : getInventory(),
+            trxAwal?.length ? trxAwal : getTransactionsAktif(),
+            getPelangganSuggestions(),
+            getPromoCodes(),
+            getSettingTenant("diskon_stack", "terbesar"),
+            getSettingTenant("diskon_maks_persen", 50),
+            getSettingTenant("promo_min_transaksi", 0),
+            getSettingTenant("printilan_daftar", []),
+            getSettingTenant("printilan_invoice_mode", "dicentang"),
+            getSettingTenant("daftar_jaminan", DEFAULT_JAMINAN),
+          ]);
+        if (!aktif) return;
+        setInv(iv || []);
+        setTrxAll(tx || []);
+        setDaftarMember(members || []);
+        setDaftarPromo(promos || []);
+        setAturanDiskon({
+          stack,
+          maksPersen: Number(maks) || 0,
+          minTransaksi: Number(min) || 0,
+        });
+        setPrintilanDaftar(Array.isArray(pl) ? pl : []);
+        setPrintilanMode(mode || "dicentang");
+        const dasar = Array.isArray(dj) && dj.length ? dj : DEFAULT_JAMINAN;
+        // "Tanpa Jaminan" selalu tersedia, walau tenant menyesuaikan daftar.
+        setDaftarJaminan(
+          dasar.includes(TANPA_JAMINAN) ? dasar : [...dasar, TANPA_JAMINAN],
+        );
+      } catch {
+        /* data pendukung opsional: modal tetap bisa dibuka */
+      }
+    })();
+    return () => {
+      aktif = false;
+    };
+  }, [invAwal, trxAwal]);
 
   const indeks = useMemo(() => bangunIndeks(trxAll, inv), [trxAll, inv]);
 
@@ -834,23 +890,25 @@ export default function ModalEditTransaksi({
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-solid border-[var(--border-color)] px-6 pb-6 pt-4">
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onBatalkan(trx)}
-                  disabled={trx.status === "Disewa" || Boolean(loading)}
-                  title={
-                    trx.status === "Disewa"
-                      ? "Barang sudah diambil. Gunakan Terima Kembali di board Status Sewa."
-                      : ""
-                  }
-                  className={
-                    trx.status === "Disewa" || loading
-                      ? "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 border-2 border-solid border-[#7181E0] text-[#7181E0] bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                      : "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#F04438] text-white shadow-sm hover:bg-[#d03a2f]"
-                  }
-                >
-                  Batalkan
-                </button>
+                {onBatalkan && (
+                  <button
+                    type="button"
+                    onClick={() => onBatalkan(trx)}
+                    disabled={trx.status === "Disewa" || Boolean(loading)}
+                    title={
+                      trx.status === "Disewa"
+                        ? "Barang sudah diambil. Gunakan Terima Kembali di board Status Sewa."
+                        : ""
+                    }
+                    className={
+                      trx.status === "Disewa" || loading
+                        ? "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 border-2 border-solid border-[#7181E0] text-[#7181E0] bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                        : "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#F04438] text-white shadow-sm hover:bg-[#d03a2f]"
+                    }
+                  >
+                    Batalkan
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onClose()}

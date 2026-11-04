@@ -28,6 +28,12 @@ import { useTransactionsAktif } from "@/hooks/useTransactions";
 import { getFITUR } from "@/lib/features";
 import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import DateTimePicker from "@/components/DateTimePicker";
+import dynamic from "next/dynamic";
+import ModalEditTransaksi from "@/components/booking/ModalEditTransaksi";
+
+const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
+  ssr: false,
+});
 
 // Inisial avatar dari S/N: potongan paling kiri (max 4 char), fallback karakter pertama.
 function inisialSN(sn) {
@@ -158,6 +164,8 @@ const KartuTrx = memo(function KartuTrx({
   onKembali,
   onBayar,
   onDetail,
+  onEdit,
+  onInvoice,
   onDragStart,
   onDragEnd,
 }) {
@@ -257,6 +265,24 @@ const KartuTrx = memo(function KartuTrx({
           Detail
         </button>
       </div>
+      {(t.status === "Booking" || t.status === "Disewa") && (
+        <div className="flex items-center gap-2 mt-2">
+          <button
+            onClick={() => onEdit(t)}
+            className="flex-1 px-3 py-2 rounded-md text-sm font-medium bg-[#7181E0]/10 text-[#7181E0] hover:bg-[#7181E0]/20 transition-colors border-0"
+            style={{ fontSize: 11 }}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onInvoice(t)}
+            className="flex-1 px-3 py-2 rounded-md text-sm font-medium bg-[#7181E0]/10 text-[#7181E0] hover:bg-[#7181E0]/20 transition-colors border-0"
+            style={{ fontSize: 11 }}
+          >
+            Invoice
+          </button>
+        </div>
+      )}
     </div>
   );
 });
@@ -272,6 +298,8 @@ export default function StatusPage() {
     useTransactionsAktif();
   const [dragId, setDragId] = useState(null);
   const [detailTrx, setDetailTrx] = useState(null);
+  const [editTrx, setEditTrx] = useState(null);
+  const [cetakData, setCetakData] = useState(null);
   const [bayarTrx, setBayarTrx] = useState(null);
   const [bayarJumlah, setBayarJumlah] = useState("");
   const [bayarMetode, setBayarMetode] = useState("Tunai");
@@ -1271,6 +1299,16 @@ export default function StatusPage() {
     setEditBayarIdx(null);
   }, []);
 
+  const bukaEdit = useCallback(async (t) => {
+    const lengkap = await getTransactionById(t.id);
+    setEditTrx(lengkap || t);
+  }, []);
+
+  const bukaInvoice = useCallback(async (t) => {
+    const lengkap = await getTransactionById(t.id);
+    if (lengkap) setCetakData(lengkap);
+  }, []);
+
   const bukaEditBayar = (bi) => {
     const b = (detailTrx.pembayaran?.riwayatBayar || [])[bi];
     if (!b) return;
@@ -1715,6 +1753,8 @@ export default function StatusPage() {
                           onKembali={prosesKembali}
                           onBayar={bukaBayar}
                           onDetail={bukaDetail}
+                          onEdit={bukaEdit}
+                          onInvoice={bukaInvoice}
                           onDragStart={(e) => handleDragStart(e, t.id)}
                           onDragEnd={handleDragEnd}
                         />
@@ -2645,6 +2685,20 @@ export default function StatusPage() {
           })(),
           document.body,
         )}
+    {editTrx && (
+        <ModalEditTransaksi
+          key={editTrx.id}
+          trx={editTrx}
+          trxAwal={trx}
+          loading={loadingAktif}
+          setLoading={(v) => setLoadingAktif(Boolean(v))}
+          onClose={() => setEditTrx(null)}
+          onSaved={() => setRefresh((r) => r + 1)}
+        />
+      )}
+      {cetakData && (
+        <InvoiceView data={cetakData} onClose={() => setCetakData(null)} />
+      )}
     </>
   );
 }
