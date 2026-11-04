@@ -866,8 +866,9 @@ export default function BookingPage() {
 
   function ubahQtyKeranjang(idx, nilai) {
     const c = [...cartRef.current];
-    const qty = Math.max(0, parseInt(nilai, 10) || 0);
-    if (!qty) return hapusDariKeranjang(idx);
+    // Qty minimal 1: kolom tidak lagi bisa 0, jadi item tidak pernah terhapus
+    // otomatis dari sini (hapus hanya lewat tombol Hapus).
+    const qty = Math.max(1, parseInt(nilai, 10) || 1);
     const item = c[idx];
     const stok = pakaiPeriode
       ? bebasJumlahPerPeriode(inv, trx, item.ref, mulaiISO, selesaiISO)
@@ -1422,7 +1423,7 @@ export default function BookingPage() {
 
     if (refBarang.jenis === "satuan") {
       const qtyInput = document.getElementById("edit_qty_input");
-      const qty = parseInt(qtyInput?.value || 1, 10);
+      const qty = Math.max(1, parseInt(qtyInput?.value || 1, 10) || 1);
       const exist = editItems.find((x) => x.idBarang == editSelectedId);
       const totalQty = (exist?.qty || 0) + qty;
       if (totalQty > stok)
@@ -1464,8 +1465,8 @@ export default function BookingPage() {
   }
 
   function ubahQtyEdit(idx, nilai) {
-    const qty = Math.max(0, parseInt(nilai, 10) || 0);
-    if (!qty) return hapusEditItem(idx);
+    // Qty minimal 1 (sama seperti keranjang): tidak ada penghapusan otomatis.
+    const qty = Math.max(1, parseInt(nilai, 10) || 1);
     const items = [...editItems];
     const item = items[idx];
     const mulai = editForm.waktu_ambil_rencana?.toISOString() || "";
@@ -2221,8 +2222,14 @@ export default function BookingPage() {
                       <td className="text-xs py-3 px-2 border-r border-[var(--border-color)] text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
                         {c.ref.jenis === "satuan" ? (
                           <>
-                            {c.sn ? <div className="truncate">{c.sn}</div> : <div>S/N dipilih saat penyerahan</div>}
-                            <button type="button" onClick={() => kunciSNKeranjang(idx)} className="mt-1 text-xs text-[#7181E0]">{c.sn ? "Ganti S/N" : "Kunci S/N"}</button>
+                            <button
+                              type="button"
+                              onClick={() => kunciSNKeranjang(idx)}
+                              className="inline-block max-w-full truncate align-bottom text-xs text-[#7181E0] underline decoration-dotted"
+                              title="Klik untuk memilih S/N"
+                            >
+                              {c.sn ? c.sn : "Pilih S/N"}
+                            </button>
                             {(c.sn || "")
                               .split(", ")
                               .filter(Boolean)
@@ -2272,7 +2279,7 @@ export default function BookingPage() {
                         )}
                       </td>
                       <td className="text-center py-3 px-2 border-r border-[var(--border-color)]">
-                        <input type="number" min="0" value={c.qty} onChange={(e) => ubahQtyKeranjang(idx, e.target.value)} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${c.ref.nama}`} />
+                        <input type="text" inputMode="numeric" value={c.qty} onChange={(e) => ubahQtyKeranjang(idx, e.target.value.replace(/\D/g, ""))} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${c.ref.nama}`} />
                       </td>
                       <td className="text-right text-[var(--text-primary)] py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.hargaSatuan || 0)}
@@ -2988,19 +2995,19 @@ export default function BookingPage() {
                             {item.ref.nama}
                           </td>
                           <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
-                            <input type="number" min="0" value={item.qty} onChange={(e) => ubahQtyEdit(idx, e.target.value)} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${item.ref.nama}`} />
+                            <input type="text" inputMode="numeric" value={item.qty} onChange={(e) => ubahQtyEdit(idx, e.target.value.replace(/\D/g, ""))} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${item.ref.nama}`} />
                           </td>
                           <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
                             {item.ref.jenis === "satuan" ? (
-                              <div>
-                                <span
-                                  className="text-xs"
-                                  style={{ fontFamily: "ui-monospace, monospace" }}
-                                >
-                                  {item.sn || "S/N dipilih saat penyerahan"}
-                                </span>
-                                <button type="button" onClick={() => kunciSNEdit(idx)} className="ml-2 text-xs text-[#7181E0]">{item.sn ? "Ganti S/N" : "Kunci S/N"}</button>
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => kunciSNEdit(idx)}
+                                className="inline-block max-w-full truncate align-bottom text-xs text-[#7181E0] underline decoration-dotted"
+                                style={{ fontFamily: "ui-monospace, monospace" }}
+                                title="Klik untuk memilih S/N"
+                              >
+                                {item.sn || "Pilih S/N"}
+                              </button>
                             ) : (
                               <div className="flex flex-col gap-1">
                                 {(item.assignedSNs || []).length === 0 ? (
@@ -3073,11 +3080,14 @@ export default function BookingPage() {
                       placeholder="-- Pilih Barang --"
                     />
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       id="edit_qty_input"
                       className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light"
                       defaultValue={1}
-                      min={1}
+                      onChange={(e) => {
+                        e.target.value = e.target.value.replace(/\D/g, "");
+                      }}
                     />
                     <button
                       type="button"
