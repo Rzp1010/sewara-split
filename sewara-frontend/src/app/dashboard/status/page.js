@@ -156,6 +156,7 @@ const LABEL_AKSI = {
   edit_bayar: "Pembayaran diubah",
   hapus_bayar: "Pembayaran dihapus",
   batalkan: "Booking dibatalkan",
+  perpanjang: "Sewa diperpanjang",
 };
 
 const KartuTrx = memo(function KartuTrx({
@@ -165,6 +166,7 @@ const KartuTrx = memo(function KartuTrx({
   onAmbil,
   onKembali,
   onBayar,
+  onPerpanjang,
   onDetail,
   onEdit,
   onInvoice,
@@ -205,6 +207,7 @@ const KartuTrx = memo(function KartuTrx({
           <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
             <button type="button" onClick={(e) => tutupMenu(e, () => onDetail(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Detail</button>
             <button type="button" onClick={(e) => tutupMenu(e, () => onBayar(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Bayar</button>
+            {t.status === "Disewa" && <button type="button" onClick={(e) => tutupMenu(e, () => onPerpanjang(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Perpanjang</button>}
             {aktif && <>
               <button type="button" onClick={(e) => tutupMenu(e, () => onEdit(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Edit booking</button>
               <button type="button" onClick={(e) => tutupMenu(e, () => onInvoice(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Invoice</button>
@@ -856,6 +859,100 @@ export default function StatusPage() {
     if (hitungPembayaran(trx).status !== "Lunas") bukaBayar(trx);
   }
 
+  // Perpanjang dijalankan dari menu kartu, terpisah dari alur kembali:
+  // status tetap Disewa, hanya jatuh tempo + harga + durasi yang berubah.
+  async function prosesPerpanjang(trxId) {
+    const trx = await getTransactionById(trxId);
+    if (!trx || trx.status !== "Disewa") return;
+    const ambilAcuan = trx.waktu_ambil_aktual || trx.waktu_ambil_rencana;
+    const durasiTersimpan = hitungDurasi(ambilAcuan, trx.waktu_kembali_rencana);
+    const durasiBerjalan = hitungDurasi(ambilAcuan, new Date().toISOString());
+    // Perpanjangan mendarat di tier durasi (6/12/24/36/48 jam...), bukan jam
+    // ngasal. Acuan = jam terbesar antara durasi tersimpan dan yang berjalan.
+    const fleksibel = (trx.items || []).some(
+      (c) => (c.ref?.tipeSewa || "fleksibel") !== "harian",
+    );
+    const jamAcuan = Math.max(
+      durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam,
+      durasiBerjalan?.error ? 0 : durasiBerjalan.totalJam,
+    );
+    const tier1 = tierDurasiBerikut(jamAcuan, { fleksibel });
+    // Sewa >= 24 jam boleh tambah 1/2 hari atau langsung 1 hari.
+    const daftarTier = jamAcuan >= 24 ? [tier1, tier1 + 12] : [tier1];
+    const daftar = await getTransactions();
+    const bentrokUntuk = (kembali) =>
+      janjiBerikutnya(trx, daftar)
+        .filter((j) => new Date(j.ambil) < new Date(kembali))
+        .map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`)
+        .join(", ");
+    const jamTersimpan = durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam;
+    const muat = daftarTier
+      .map((tier) => {
+        const kembali = new Date(
+          new Date(ambilAcuan).getTime() + tier * 3600000,
+        ).toISOString();
+        return {
+          kembali,
+          ...hitungUsulanPerpanjangan(
+            trx.items,
+            ambilAcuan,
+            kembali,
+            trx.diskon?.totalDiskon || 0,
+          ),
+        };
+      })
+      .filter(
+        (u) =>
+          u &&
+          !u.dur.error &&
+          u.dur.totalJam > jamTersimpan &&
+          u.biaya > (trx.biaya || 0),
+      );
+    if (!muat.length)
+      return notify(
+        "Tidak ada tier perpanjangan yang menambah durasi dan biaya. Ubah manual lewat Edit booking.",
+        "error",
+      );
+    const durasiLama = trx.durasi_teks;
+    const pilih = await confirmChoice(
+      `Perpanjang sewa ${trx.penyewa} (${trx.no_invoice})?`,
+      muat.map((u, i) => {
+        const bentrok = bentrokUntuk(u.kembali);
+        return {
+          label: `${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)})${bentrok ? ` — BENTROK ${bentrok}` : ""}`,
+          value: `tier${i}`,
+        };
+      }),
+    );
+    if (pilih === null) return;
+    const dipilih = muat[Number(String(pilih).slice(4))];
+    if (!dipilih) return;
+    trx.items = dipilih.items;
+    trx.biaya = dipilih.biaya;
+    trx.durasi_teks = dipilih.dur.durasi_teks;
+    trx.waktu_kembali_rencana = dipilih.kembali;
+    if (trx.total_akhir != null)
+      trx.total_akhir = (trx.biaya || 0) + (trx.denda || 0);
+    const namaPelayan = (await getNamaInvoice()) || "-";
+    const bentrok = bentrokUntuk(dipilih.kembali);
+    trx.riwayatDilayani = [
+      ...(trx.riwayatDilayani || []),
+      {
+        aksi: "perpanjang",
+        nama: namaPelayan,
+        tgl: new Date().toISOString(),
+        catatan: `${durasiLama} -> ${dipilih.dur.durasi_teks}, biaya ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN: jadwal bentrok ${bentrok}` : ""}`,
+      },
+    ];
+    trx.dilayani_oleh = namaPelayan;
+    if (!(await updateTransactions([trx])))
+      return notify("Gagal menyimpan perpanjangan. Silakan coba lagi.", "error");
+    setRefresh((r) => r + 1);
+    notify(
+      `Sewa diperpanjang sampai ${formatTanggal(trx.waktu_kembali_rencana)}.\n${dipilih.dur.durasi_teks} — ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN bentrok: ${bentrok}` : ""}`,
+    );
+  }
+
   async function prosesKembali(trxId) {
     const trx = await getTransactionById(trxId);
     if (!trx) return;
@@ -866,87 +963,8 @@ export default function StatusPage() {
     const telatEfektif = Math.max(0, telatMenit - toleransi);
     const telatJam = Math.ceil(telatEfektif / 60);
     let namaPelayan = (await getNamaInvoice()) || "-";
-    let aksiPerpanjangan = null;
-    let catatanPerpanjangan = "";
     const modeTelat = kebijakanTelat();
-    if (modeTelat === "perpanjang" && telatEfektif > 0) {
-      const ambilAcuan = trx.waktu_ambil_aktual || trx.waktu_ambil_rencana;
-      const durasiTersimpan = hitungDurasi(ambilAcuan, trx.waktu_kembali_rencana);
-      const durasiBerjalan = hitungDurasi(ambilAcuan, aktual.toISOString());
-      // Perpanjangan mendarat di tier durasi (6/12/24/36/48 jam...), bukan jam
-      // ngasal. Acuan = jam terbesar antara durasi tersimpan dan yang berjalan.
-      const fleksibel = (trx.items || []).some(
-        (c) => (c.ref?.tipeSewa || "fleksibel") !== "harian",
-      );
-      const jamAcuan = Math.max(
-        durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam,
-        durasiBerjalan?.error ? 0 : durasiBerjalan.totalJam,
-      );
-      const tier1 = tierDurasiBerikut(jamAcuan, { fleksibel });
-      // Sewa >= 24 jam boleh tambah 1/2 hari atau langsung 1 hari.
-      const daftarTier =
-        jamAcuan >= 24 ? [tier1, tier1 + 12] : [tier1];
-      const usulan = daftarTier.map((tier) => {
-        const kembali = new Date(
-          new Date(ambilAcuan).getTime() + tier * 3600000,
-        ).toISOString();
-        return {
-          tier,
-          kembali,
-          ...hitungUsulanPerpanjangan(
-            trx.items,
-            ambilAcuan,
-            kembali,
-            trx.diskon?.totalDiskon || 0,
-          ),
-        };
-      });
-      const daftar = await getTransactions();
-      const bentrok = janjiBerikutnya(trx, daftar, aktual.getTime()).filter(
-        (j) => new Date(j.ambil) < aktual,
-      );
-      const peringatan = bentrok.length
-        ? `PERINGATAN: jadwal bentrok ${bentrok.map((j) => `${j.no_invoice} (${formatTanggal(j.ambil)})`).join(", ")}\n\n`
-        : "";
-      const jamTersimpan = durasiTersimpan?.error ? 0 : durasiTersimpan.totalJam;
-      const muat = usulan.filter(
-        (u) =>
-          u &&
-          !u.dur.error &&
-          u.dur.totalJam > jamTersimpan &&
-          u.biaya > (trx.biaya || 0),
-      );
-
-      if (muat.length) {
-        const durasiLama = trx.durasi_teks;
-        const pilih = await confirmChoice(
-          `${peringatan}Keterlambatan ${telatJam} jam.`,
-          [
-            ...muat.map((u, i) => ({
-              label: `Setujui Perpanjangan ${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)})`,
-              value: `tier${i}`,
-            })),
-            { label: "Tanpa Tambahan", value: "tolak" },
-          ],
-        );
-        if (pilih === null) return;
-        const dipilih =
-          pilih === "tolak" ? null : muat[Number(String(pilih).slice(4))];
-        if (dipilih) {
-          trx.items = dipilih.items;
-          trx.biaya = dipilih.biaya;
-          trx.durasi_teks = dipilih.dur.durasi_teks;
-          trx.waktu_kembali_rencana = dipilih.kembali;
-          aksiPerpanjangan = "perpanjang";
-          catatanPerpanjangan = `${durasiLama} -> ${dipilih.dur.durasi_teks}, biaya ${formatRupiah(dipilih.biaya)}${peringatan ? `\n${peringatan.trim()}` : ""}`;
-        } else {
-          aksiPerpanjangan = "perpanjang-ditolak";
-          catatanPerpanjangan = `harga tetap ${durasiLama}${peringatan ? `\n${peringatan.trim()}` : ""}`;
-        }
-      } else if (!(await konfirm(`Terima kembali dari ${trx.penyewa}?`))) {
-        return;
-      }
-    } else if (modeTelat === "perjam" && telatEfektif > 0) {
+    if (modeTelat === "perjam" && telatEfektif > 0) {
       (trx.items || []).forEach((c) => (denda += (c.ref.denda || 0) * c.qty * telatJam));
       if (denda > 0) {
         const pilih = await confirmChoice(
@@ -1063,7 +1081,6 @@ export default function StatusPage() {
     trx.status = statusBaru;
     trx.riwayatDilayani = [
       ...(trx.riwayatDilayani || []),
-      ...(aksiPerpanjangan ? [{ aksi: aksiPerpanjangan, nama: namaPelayan, tgl: new Date().toISOString(), catatan: catatanPerpanjangan }] : []),
       { aksi: "terima", nama: namaPelayan, tgl: new Date().toISOString() },
     ];
     trx.dilayani_oleh = namaPelayan;
@@ -1695,6 +1712,7 @@ export default function StatusPage() {
                           onAmbil={prosesAmbil}
                           onKembali={prosesKembali}
                           onBayar={bukaBayar}
+                          onPerpanjang={prosesPerpanjang}
                           onDetail={bukaDetail}
                           onEdit={bukaEdit}
                           onInvoice={bukaInvoice}
