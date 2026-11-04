@@ -108,6 +108,18 @@ export function snsRujukLainIdx(indeks, kecualiId, idBarang) {
   return set;
 }
 
+/**
+ * Batas paling mundur untuk waktu ambil: slot 30 menit yang sedang berjalan
+ * dikurangi satu slot (floor30 − 30 menit). Memberi kelonggaran satu slot
+ * supaya booking yang baru dibuat masih boleh mulai di slot sebelumnya
+ * (mis. sekarang 15.10 → 14.30 masih boleh).
+ */
+export function batasAmbilMundur(sekarang = Date.now()) {
+  const t = new Date(sekarang);
+  t.setMinutes(t.getMinutes() < 30 ? 0 : 30, 0, 0);
+  return new Date(t.getTime() - 30 * 60000);
+}
+
 export const getStatusClass = (status) =>
   ({
     Booking: "bg-amber-500 text-white",

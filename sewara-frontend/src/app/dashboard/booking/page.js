@@ -51,6 +51,7 @@ import {
   snsRujukLainIdx,
   getStatusClass,
   persentaseMemberEfektif,
+  batasAmbilMundur,
 } from "@/lib/booking/helpers";
 
 export default function BookingPage() {
@@ -1342,9 +1343,12 @@ export default function BookingPage() {
         printilan: buildPrintilanSnapshot(),
       };
 
-      if (ambilWaktu && new Date(ambilWaktu).getTime() < Date.now()) {
+      if (
+        ambilWaktu &&
+        new Date(ambilWaktu).getTime() < batasAmbilMundur().getTime()
+      ) {
         return notify(
-          "Waktu ambil sudah lewat. Pilih waktu sekarang atau setelahnya.",
+          "Waktu ambil terlalu mundur (maksimal 1/2 jam ke belakang).",
           "error",
         );
       }
@@ -1388,7 +1392,7 @@ export default function BookingPage() {
   }
 
   const filterTime = (time) => {
-    if (time.getTime() < Date.now()) return false;
+    if (time.getTime() < batasAmbilMundur().getTime()) return false;
     const h = time.getHours();
     const mode = getSetting("jam_mode", "buka_tutup");
     if (mode !== "buka_tutup") return true;
