@@ -160,6 +160,8 @@ const LABEL_AKSI = {
 
 const KartuTrx = memo(function KartuTrx({
   t,
+  aksen,
+  kolom,
   onAmbil,
   onKembali,
   onBayar,
@@ -169,120 +171,47 @@ const KartuTrx = memo(function KartuTrx({
   onDragStart,
   onDragEnd,
 }) {
+  const pay = hitungPembayaran(t);
+  const aktif = t.status === "Booking" || t.status === "Disewa";
+  const tutupMenu = (e, aksi) => {
+    e.currentTarget.closest("details")?.removeAttribute("open");
+    aksi();
+  };
+  const tagWarna = pay.status === "Lunas"
+    ? "bg-[var(--color-success-soft)] text-[var(--color-success-text)]"
+    : pay.status === "DP"
+      ? "bg-[var(--color-info-soft)] text-[var(--color-info-text)]"
+      : "bg-[var(--color-danger-soft)] text-[var(--color-danger-text)]";
   return (
     <div
       draggable={t.status !== "Selesai" && t.status !== "Belum Selesai"}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="bg-[var(--bg-surface)] border-2 border-solid border-[var(--border-color)] rounded-xl shadow-sm p-4 mb-2 hover:border-[var(--border-color)] transition-colors"
-      style={{ cursor: "grab" }}
+      className="relative mb-2 flex flex-col gap-1 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-2.5 shadow-sm"
+      style={{ cursor: "grab", borderLeft: `3px solid ${aksen}` }}
     >
-      <div
-        className="flex items-center justify-between mb-2 gap-2"
-        style={{ alignItems: "flex-start" }}
-      >
-        <div>
-          <p className="font-mono text-[10px] text-[var(--text-secondary)] mb-0">
-            {t.no_invoice}
-          </p>
-          <p className="font-bold mb-0">{t.penyewa}</p>
-          <p className="text-xs text-[var(--text-secondary)] mb-0">{t.hp_penyewa || "-"}</p>
-        </div>
-        <span
-          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${statusBadge(t.status)}`}
-        >
-          {t.status}
-        </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[10px] text-[var(--text-secondary)]">{t.no_invoice}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tagWarna}`}>{pay.status}</span>
       </div>
-      <div className="flex flex-col gap-1 text-xs text-[var(--text-secondary)] mb-2">
-        {(t.items || []).map((i, idx) => (
-          <div key={idx} className="truncate">
-            • {i.qty}x {i.ref.nama}{" "}
-            {i.ref.jenis === "satuan" ? `[${i.sn}]` : ""}
+      <p className="mb-0 truncate text-[13px] font-bold text-[var(--text-primary)]">{t.penyewa}</p>
+      <p className="mb-0 text-[11px] text-[var(--text-secondary)]">Ambil <b className="font-semibold text-[var(--text-primary)]">{formatJam(t.waktu_ambil_rencana)}</b></p>
+      <p className={`mb-0 text-[11px] ${kolom === "Telat" ? "text-[var(--color-danger-text)]" : "text-[var(--text-secondary)]"}`}>Kembali {formatJam(t.waktu_kembali_rencana)} · {t.durasi_teks}</p>
+      <div className="mt-1 flex items-center justify-end gap-1.5">
+        {t.status === "Booking" && <button type="button" onClick={() => onAmbil(t.id)} className="h-7 rounded-md border-0 bg-[#7181E0] hover:bg-[#5d6fcc] px-2.5 text-[11px] font-semibold text-white">Serahkan</button>}
+        {t.status === "Disewa" && <button type="button" onClick={() => onKembali(t.id)} className="h-7 rounded-md border-0 bg-[#579171] hover:bg-[#447057] px-2.5 text-[11px] font-semibold text-white">Terima</button>}
+        <details className="relative">
+          <summary aria-label="Buka menu transaksi" className="flex h-[26px] w-[26px] cursor-pointer list-none items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]">⋯</summary>
+          <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
+            <button type="button" onClick={(e) => tutupMenu(e, () => onDetail(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Detail</button>
+            <button type="button" onClick={(e) => tutupMenu(e, () => onBayar(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Bayar</button>
+            {aktif && <>
+              <button type="button" onClick={(e) => tutupMenu(e, () => onEdit(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Edit booking</button>
+              <button type="button" onClick={(e) => tutupMenu(e, () => onInvoice(t))} className="block w-full rounded px-2 py-1.5 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Invoice</button>
+            </>}
           </div>
-        ))}
+        </details>
       </div>
-      <div className="text-xs text-[var(--text-secondary)] mb-3">
-        <div className="flex flex-col gap-0.5 mb-1">
-          <span style={{ color: "var(--color-primary)" }}>
-            Ambil: {formatJam(t.waktu_ambil_rencana)}
-          </span>
-          <span className="text-[#F04438]">
-            Kembali: {formatJam(t.waktu_kembali_rencana)}
-          </span>
-        </div>
-        <span className="inline-block rounded-md bg-[var(--bg-subtle)] px-1">
-          {t.durasi_teks}
-        </span>
-      </div>
-      {(() => {
-        const pay = hitungPembayaran(t);
-        return (
-          <span
-            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium mb-2 ${pay.status === "Lunas" ? "bg-[#579171] text-white" : pay.status === "DP" ? "bg-blue-500 text-white" : "bg-[#F04438] text-white"}`}
-          >
-            {pay.status}
-            {pay.status === "Belum Bayar" && t.status === "Booking"
-              ? " / Belum DP"
-              : ""}
-          </span>
-        );
-      })()}
-      {t.dilayani_oleh && (
-        <div className="text-xs text-[var(--text-secondary)] mb-2">
-          Dilayani oleh: {t.dilayani_oleh}
-        </div>
-      )}
-      <div className="flex items-center gap-2 mt-3">
-        {t.status === "Booking" && (
-          <button
-            onClick={() => onAmbil(t.id)}
-            className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#7181E0] text-white shadow-sm hover:bg-[#5d6fcc] flex-1 min-w-0 text-xs border-0"
-          >
-            Serahkan
-          </button>
-        )}
-        {t.status === "Disewa" && (
-          <button
-            onClick={() => onKembali(t.id)}
-            className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] flex-1 min-w-0 text-xs border-0"
-          >
-            Terima
-          </button>
-        )}
-        <button
-          onClick={() => onBayar(t)}
-          className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] text-xs border-0"
-          style={{ fontSize: 11 }}
-        >
-          Bayar
-        </button>
-        <button
-          onClick={() => onDetail(t)}
-          className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs border-0"
-          style={{ fontSize: 11 }}
-        >
-          Detail
-        </button>
-      </div>
-      {(t.status === "Booking" || t.status === "Disewa") && (
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={() => onEdit(t)}
-            className="flex-1 px-3 py-2 rounded-md text-sm font-medium bg-[#7181E0]/10 text-[#7181E0] hover:bg-[#7181E0]/20 transition-colors border-0"
-            style={{ fontSize: 11 }}
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => onInvoice(t)}
-            className="flex-1 px-3 py-2 rounded-md text-sm font-medium bg-[#7181E0]/10 text-[#7181E0] hover:bg-[#7181E0]/20 transition-colors border-0"
-            style={{ fontSize: 11 }}
-          >
-            Invoice
-          </button>
-        </div>
-      )}
     </div>
   );
 });
@@ -1749,6 +1678,8 @@ export default function StatusPage() {
                         <KartuTrx
                           key={t.id}
                           t={t}
+                          aksen={col.headerBg}
+                          kolom={col.status}
                           onAmbil={prosesAmbil}
                           onKembali={prosesKembali}
                           onBayar={bukaBayar}
