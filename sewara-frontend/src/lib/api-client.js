@@ -200,6 +200,16 @@ export const api = {
     getAll: (params) => apiRequest(`/api/logs/login${qs(params)}`),
   },
 
+  chat: {
+    getAll: (params) => apiRequest(`/api/chat${qs(params)}`),
+    kirim: (data) =>
+      apiRequest('/api/chat', { method: 'POST', body: JSON.stringify(data) }),
+    hapus: (id) => apiRequest(`/api/chat/${id}`, { method: 'DELETE' }),
+    unread: () => apiRequest('/api/chat/unread'),
+    baca: (data) =>
+      apiRequest('/api/chat/read', { method: 'POST', body: JSON.stringify(data || {}) }),
+  },
+
   dashboard: {
     getStats: (params) => apiRequest(`/api/dashboard${qs(params)}`),
     getManajemen: () => apiRequest('/api/dashboard/manajemen'),

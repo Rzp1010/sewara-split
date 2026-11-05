@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { initSettings } from "@/lib/db";
+import { initSettings, getChatUnread } from "@/lib/db";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -219,6 +219,19 @@ const I = {
       <line x1="9" y1="17" x2="13" y2="17" />
     </svg>
   ),
+  chat: () => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
   shield: () => (
     <svg
       viewBox="0 0 24 24"
@@ -246,6 +259,7 @@ const MENU_GRUP = [
       { href: "/dashboard", label: "Dashboard", icon: I.grid },
       { href: "/dashboard/booking", label: "Booking Baru", icon: I.pen },
       { href: "/dashboard/status", label: "Status Sewa", icon: I.check },
+      { href: "/dashboard/chat", label: "Chat", icon: I.chat },
       {
         href: "/dashboard/kalender",
         label: "Kalender Jadwal",
@@ -360,6 +374,24 @@ function SidebarContent({ children }) {
   const [hoverGrup, setHoverGrup] = useState(null);
   const [navOpen, setNavOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [chatBelumDibaca, setChatBelumDibaca] = useState(0);
+
+  // Badge menu Chat: jumlah pesan belum dibaca (fail-soft kalau endpoint belum ada).
+  useEffect(() => {
+    let hidup = true;
+    const muat = async () => {
+      const data = await getChatUnread();
+      if (hidup) setChatBelumDibaca(data.total || 0);
+    };
+    muat();
+    const timer = setInterval(muat, 60000);
+    window.addEventListener("focus", muat);
+    return () => {
+      hidup = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", muat);
+    };
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -719,6 +751,11 @@ function SidebarContent({ children }) {
                     <it.icon />
                   </span>
                   <span style={{ textDecoration: "none" }}>{it.label}</span>
+                  {it.href === "/dashboard/chat" && chatBelumDibaca > 0 && (
+                    <span className="ml-auto rounded-full bg-[#7181E0] px-1.5 text-[11px] font-semibold text-white">
+                      {chatBelumDibaca}
+                    </span>
+                  )}
                 </Link>
               ))}
           </div>

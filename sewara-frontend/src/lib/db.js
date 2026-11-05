@@ -911,6 +911,47 @@ export async function getLoginLogs() {
 }
 
 // ============================================================================
+// CHAT INTERNAL
+// ============================================================================
+
+export async function getChatMessages({ trxId, limit } = {}) {
+  const { messages } = await api.chat.getAll({ trxId, limit });
+  return messages || [];
+}
+
+export async function kirimChat({ trxId, pesan }) {
+  const { message } = await api.chat.kirim({ trxId: trxId || null, pesan });
+  kirimEventData();
+  return message;
+}
+
+export async function hapusChat(id) {
+  await api.chat.hapus(id);
+  kirimEventData();
+  return true;
+}
+
+// Fail-soft: badge saja, jangan sampai halaman gagal render kalau chat belum
+// tersedia di backend (mis. produksi Next sebelum cutover).
+export async function getChatUnread() {
+  try {
+    const data = await api.chat.unread();
+    return { room: 0, perTrx: {}, total: 0, ...(data || {}) };
+  } catch (e) {
+    return { room: 0, perTrx: {}, total: 0, error: e.message };
+  }
+}
+
+export async function tandaiChatDibaca({ trxId } = {}) {
+  try {
+    await api.chat.baca(trxId ? { trxId } : {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
 // DASHBOARD
 // ============================================================================
 

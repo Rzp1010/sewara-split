@@ -30,6 +30,10 @@ Kategori:
 | /api/blacklist/check | GET | LOGIKA |
 | /api/blacklist/header | GET | FILE |
 | /api/blacklist/upload | POST | FILE |
+| /api/chat | GET, POST | CRUD |
+| /api/chat/read | POST | CRUD |
+| /api/chat/unread | GET | CRUD |
+| /api/chat/:id | DELETE | CRUD |
 | /api/dashboard | GET | AGREGAT |
 | /api/dashboard/manajemen | GET | AGREGAT |
 | /api/inventory | GET, POST | CRUD |
@@ -136,6 +140,11 @@ skenario: `sewara-api/scripts/smoke-*.ps1`.
 | PATCH /api/transactions/{id} | `handlers_transactions.go` | (cakupan smoke-transactions) |
 | GET /api/transaction-items | `handlers_transaction_items.go` | 20 |
 | POST /api/transaction-items | `handlers_transaction_items.go` | 20 |
+| GET /api/chat | `handlers_chat.go` | smoke-chat |
+| POST /api/chat | `handlers_chat.go` | smoke-chat |
+| GET /api/chat/unread | `handlers_chat.go` | smoke-chat |
+| POST /api/chat/read | `handlers_chat.go` | smoke-chat |
+| DELETE /api/chat/{id} | `handlers_chat.go` | smoke-chat |
 | GET /api/logs | `handlers_logs.go` | 26 |
 | POST /api/logs | `handlers_logs.go` | 26 |
 | DELETE /api/logs | `handlers_logs.go` | 26 |

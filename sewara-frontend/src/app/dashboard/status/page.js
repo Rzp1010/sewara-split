@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react";
-import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar } from "@/lib/db";
+import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar, getChatMessages, kirimChat, getChatUnread, tandaiChatDibaca } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import {
@@ -164,6 +164,7 @@ const KartuTrx = memo(function KartuTrx({
   t,
   aksen,
   kolom,
+  chatBelumDibaca = 0,
   onAmbil,
   onKembali,
   onBayar,
@@ -171,6 +172,7 @@ const KartuTrx = memo(function KartuTrx({
   onDetail,
   onEdit,
   onInvoice,
+  onChat,
   onDragStart,
   onDragEnd,
 }) {
@@ -203,6 +205,40 @@ const KartuTrx = memo(function KartuTrx({
       <div className="mt-1 flex items-center justify-end gap-1.5">
         {t.status === "Booking" && <button type="button" onClick={() => onAmbil(t.id)} className="h-7 rounded-md border-0 bg-[#7181E0] hover:bg-[#5d6fcc] px-2.5 text-[11px] font-semibold text-white">Serahkan</button>}
         {t.status === "Disewa" && <button type="button" onClick={() => onKembali(t.id)} className="h-7 rounded-md border-0 bg-[#579171] hover:bg-[#447057] px-2.5 text-[11px] font-semibold text-white">Terima</button>}
+        <button
+          type="button"
+          draggable={false}
+          title="Chat internal"
+          aria-label={`Chat internal, ${chatBelumDibaca} pesan belum dibaca`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChat(t);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-7 items-center gap-1 rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)]"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span
+            className={
+              chatBelumDibaca > 0
+                ? "rounded-full bg-[var(--color-primary-soft,#e0e7ff)] px-1.5 text-[var(--color-primary-soft-text,#4338ca)]"
+                : ""
+            }
+          >
+            {chatBelumDibaca}
+          </span>
+        </button>
         <details className="relative" data-menu>
           <summary aria-label="Buka menu transaksi" className="flex h-[26px] w-[26px] cursor-pointer list-none items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]">⋯</summary>
           <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
@@ -330,6 +366,16 @@ export default function StatusPage() {
     window.localStorage.removeItem(filterSettingsKey);
   }
   const [userRole, setUserRole] = useState("");
+  const [userId, setUserId] = useState("");
+  // Chat internal: thread kartu + angka belum dibaca per transaksi.
+  const [chatTrx, setChatTrx] = useState(null);
+  const [chatPesan, setChatPesan] = useState([]);
+  const [chatIsi, setChatIsi] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [chatBadge, setChatBadge] = useState({ perTrx: {}, total: 0 });
+  const chatBoxRef = useRef(null);
   const [kondisiModal, setKondisiModal] = useState(null);
   const [snModal, setSnModal] = useState(null);
   const [editBayarIdx, setEditBayarIdx] = useState(null);
@@ -501,6 +547,7 @@ export default function StatusPage() {
       try {
         const me = await api.auth.me();
         role = me?.user?.role || "";
+        if (aktif) setUserId(me?.user?.id || "");
       } catch {}
       if (aktif) setUserRole(role);
     })();
@@ -508,6 +555,94 @@ export default function StatusPage() {
       aktif = false;
     };
   }, []);
+
+  // Chat: angka belum dibaca per transaksi (badge kartu). Fail-soft kalau
+  // endpoint belum ada di backend yang sedang dipakai.
+  useEffect(() => {
+    let hidup = true;
+    const muat = async () => {
+      const data = await getChatUnread();
+      if (hidup) setChatBadge(data);
+    };
+    muat();
+    const timer = setInterval(muat, 60000);
+    const saatFokus = () => muat();
+    window.addEventListener("focus", saatFokus);
+    return () => {
+      hidup = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", saatFokus);
+    };
+  }, []);
+
+  // Chat: muat thread transaksi yang dibuka, poll 10 detik, tandai dibaca.
+  useEffect(() => {
+    if (!chatTrx) return;
+    let hidup = true;
+    const muat = async () => {
+      try {
+        const data = await getChatMessages({ trxId: chatTrx.id, limit: 200 });
+        if (!hidup) return;
+        setChatPesan(data);
+        setChatError("");
+      } catch (e) {
+        if (hidup) setChatError(e.message || "Gagal memuat chat");
+      } finally {
+        if (hidup) setChatLoading(false);
+      }
+      await tandaiChatDibaca({ trxId: chatTrx.id });
+      if (!hidup) return;
+      setChatBadge((b) => {
+        const perTrx = { ...(b.perTrx || {}) };
+        const sisa = perTrx[chatTrx.id] || 0;
+        delete perTrx[chatTrx.id];
+        return { ...b, perTrx, total: Math.max(0, (b.total || 0) - sisa) };
+      });
+    };
+    muat();
+    const timer = setInterval(muat, 10000);
+    return () => {
+      hidup = false;
+      clearInterval(timer);
+    };
+  }, [chatTrx]);
+
+  useEffect(() => {
+    if (!chatTrx) return;
+    const saatTombol = (e) => {
+      if (e.key === "Escape") setChatTrx(null);
+    };
+    document.addEventListener("keydown", saatTombol);
+    return () => document.removeEventListener("keydown", saatTombol);
+  }, [chatTrx]);
+
+  // Pesan tampil terbaru dulu, jadi gulir selalu ke atas setiap thread berubah.
+  useEffect(() => {
+    if (chatTrx && chatBoxRef.current) chatBoxRef.current.scrollTop = 0;
+  }, [chatTrx, chatPesan]);
+
+  const bukaChat = (t) => {
+    setChatPesan([]);
+    setChatError("");
+    setChatLoading(true);
+    setChatTrx(t);
+  };
+
+  const kirimPesanChat = async (e) => {    e.preventDefault();
+    const teks = chatIsi.trim();
+    if (!teks || chatBusy || !chatTrx) return;
+    setChatBusy(true);
+    try {
+      const baru = await kirimChat({ trxId: chatTrx.id, pesan: teks });
+      setChatIsi("");
+      setChatError("");
+      if (baru) setChatPesan((p) => [...p, baru]);
+    } catch (err) {
+      setChatError(err.message || "Gagal mengirim pesan");
+    } finally {
+      setChatBusy(false);
+    }
+  };
 
   const batasJam = parseInt(getSetting("notif_jam", "2"));
   const boardMode = getSetting("board_mode", "scroll");
@@ -1726,6 +1861,7 @@ export default function StatusPage() {
                           t={t}
                           aksen={col.headerBg}
                           kolom={col.status}
+                          chatBelumDibaca={chatBadge.perTrx?.[t.id] || 0}
                           onAmbil={prosesAmbil}
                           onKembali={prosesKembali}
                           onBayar={bukaBayar}
@@ -1733,6 +1869,7 @@ export default function StatusPage() {
                           onDetail={bukaDetail}
                           onEdit={bukaEdit}
                           onInvoice={bukaInvoice}
+                          onChat={bukaChat}
                           onDragStart={(e) => handleDragStart(e, t.id)}
                           onDragEnd={handleDragEnd}
                         />
@@ -2537,6 +2674,110 @@ export default function StatusPage() {
               </div>
             </div>
           </div>,
+          document.body,
+        )}
+
+      {typeof document !== "undefined" &&
+        chatTrx &&
+        createPortal(
+          <>
+            <div
+              onClick={() => setChatTrx(null)}
+              className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm"
+            />
+            <aside
+              role="dialog"
+              aria-label={`Chat ${chatTrx.no_invoice}`}
+              className="fixed left-0 top-0 z-[9999] flex h-full w-full max-w-[380px] flex-col border-r border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
+            >
+              <div className="flex items-start justify-between gap-2 border-b border-solid border-[var(--border-color)] px-4 py-3">
+                <div className="min-w-0">
+                  <p className="mb-0 font-mono text-[11px] text-[var(--text-secondary)]">
+                    {chatTrx.no_invoice}
+                  </p>
+                  <p className="mb-0 truncate text-sm font-bold text-[var(--text-primary)]">
+                    {chatTrx.penyewa}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setChatTrx(null)}
+                  aria-label="Tutup chat"
+                  className="h-7 w-7 shrink-0 rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                >
+                  &times;
+                </button>
+              </div>
+              <div ref={chatBoxRef} className="flex-1 overflow-y-auto px-4 py-3">
+                {chatLoading && chatPesan.length === 0 ? (
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Memuat chat…
+                  </p>
+                ) : chatPesan.length === 0 ? (
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Belum ada pesan untuk invoice ini.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {chatPesan.map((m) => {
+                      const sendiri = Boolean(userId) && m.authorId === userId;
+                      return (
+                        <div
+                          key={m.id}
+                          className={`flex flex-col ${sendiri ? "items-end" : "items-start"}`}
+                        >
+                          <div
+                            className={`max-w-[85%] rounded-lg px-3 py-2 text-[13px] text-[var(--text-primary)] ${
+                              sendiri
+                                ? "bg-[var(--color-primary-soft,#e0e7ff)]"
+                                : "bg-[var(--bg-subtle)]"
+                            }`}
+                          >
+                            <p className="mb-0 whitespace-pre-wrap break-words">
+                              {m.pesan}
+                            </p>
+                          </div>
+                          <span className="mt-0.5 text-[10px] text-[var(--text-secondary)]">
+                            {m.authorNama || "-"} · {formatJam(m.createdAt)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {chatError && (
+                <p className="mb-0 px-4 pb-2 text-xs text-[var(--color-danger-text,#dc2626)]">
+                  {chatError}
+                </p>
+              )}
+              <form
+                onSubmit={kirimPesanChat}
+                className="flex items-end gap-2 border-t border-solid border-[var(--border-color)] px-4 py-3"
+              >
+                <textarea
+                  value={chatIsi}
+                  onChange={(e) => setChatIsi(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      kirimPesanChat(e);
+                    }
+                  }}
+                  rows={2}
+                  placeholder="Tulis catatan untuk CS lain…"
+                  className="flex-1 resize-none rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-body)] px-3 py-2 text-[13px] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#7181E0]/40"
+                />
+                <button
+                  type="submit"
+                  disabled={chatBusy || !chatIsi.trim()}
+                  className="h-9 shrink-0 rounded-lg border-0 bg-[#7181E0] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#5d6fcc] disabled:opacity-50"
+                >
+                  {chatBusy ? "…" : "Kirim"}
+                </button>
+              </form>
+            </aside>
+          </>,
           document.body,
         )}
 

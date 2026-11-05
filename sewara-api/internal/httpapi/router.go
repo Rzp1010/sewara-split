@@ -99,6 +99,13 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/transaction-items", s.requireAuth(s.handleTransactionItemsGet))
 	mux.HandleFunc("POST /api/transaction-items", s.requireAuth(s.handleTransactionItemsPost))
 
+	// Chat tenant. Setiap route baru wajib terdaftar di docs/endpoint-matrix.md.
+	mux.HandleFunc("GET /api/chat", s.requireAuth(s.handleChatGet))
+	mux.HandleFunc("POST /api/chat", s.requireAuth(s.handleChatPost))
+	mux.HandleFunc("GET /api/chat/unread", s.requireAuth(s.handleChatUnread))
+	mux.HandleFunc("POST /api/chat/read", s.requireAuth(s.handleChatRead))
+	mux.HandleFunc("DELETE /api/chat/{id}", s.requireAuth(s.handleChatDelete))
+
 	// Logs. `GET /api/logs/login` tidak bentrok dengan `GET /api/logs`:
 	// ServeMux mencocokkan pola tanpa trailing slash secara eksak.
 	mux.HandleFunc("GET /api/logs", s.requireAuth(s.handleLogsGet))
