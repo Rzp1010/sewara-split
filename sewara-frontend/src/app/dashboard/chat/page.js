@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getChatMessages,
   kirimChat,
   hapusChat,
   tandaiChatDibaca,
+  getChatUnread,
   getTransactionsRingkas,
 } from "@/lib/db";
 import { api } from "@/lib/api-client";
@@ -34,6 +35,8 @@ export default function ChatPage() {
   const [memuat, setMemuat] = useState(true);
   const [error, setError] = useState("");
   const [me, setMe] = useState(null);
+  const [belumAwal, setBelumAwal] = useState(0);
+  const unreadSudahDiambil = useRef(false);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -50,8 +53,21 @@ export default function ChatPage() {
         if (hidup) setMemuat(false);
       }
     };
-    muat();
-    tandaiChatDibaca({});
+    const inisialisasi = async () => {
+      try {
+        if (!unreadSudahDiambil.current) {
+          const unread = await getChatUnread();
+          if (!hidup) return;
+          setBelumAwal(Number(unread?.room) || 0);
+          unreadSudahDiambil.current = true;
+        }
+        await tandaiChatDibaca({});
+      } catch (e) {
+        if (hidup) setError(e.message || "Gagal memuat chat");
+      }
+      if (hidup) await muat();
+    };
+    inisialisasi();
     api.auth
       .me()
       .then((me_) => {
@@ -66,7 +82,9 @@ export default function ChatPage() {
         setInvMap(map);
       })
       .catch(() => null);
-    const timer = setInterval(muat, 15000);
+    const timer = setInterval(() => {
+      if (unreadSudahDiambil.current) muat();
+    }, 15000);
     return () => {
       hidup = false;
       clearInterval(timer);
@@ -109,6 +127,16 @@ export default function ChatPage() {
   const tampil = filterTrx ? pesan.filter((m) => m.trxId === filterTrx) : pesan;
   const jumlahBelumDibaca = (trxId) =>
     pesan.filter((m) => m.trxId === trxId && m.authorId !== me?.id).length;
+  let sekatBelumIndex = -1;
+  if (me?.id && belumAwal > 0) {
+    let hitung = 0;
+    for (let i = pesan.length - 1; i >= 0; i--) {
+      if (pesan[i].authorId !== me.id && ++hitung === belumAwal) {
+        sekatBelumIndex = i;
+        break;
+      }
+    }
+  }
 
   return (
     <div>
@@ -217,9 +245,17 @@ export default function ChatPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-2 rounded-xl border-2 border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg">
-          {tampil.map((m) => {
+          {tampil.map((m, index) => {
             const sendiri = Boolean(me?.id) && m.authorId === me.id;
             return (
+              <div key={m.id}>
+              {filterTrx === "" && pesan[index]?.id === pesan[sekatBelumIndex]?.id && sekatBelumIndex >= 0 && (
+                <div className="flex items-center gap-2 py-1 text-[10px] font-semibold text-[var(--color-danger-text)]">
+                  <span className="h-px flex-1 bg-[var(--color-danger-soft)]" />
+                  Belum dibaca
+                  <span className="h-px flex-1 bg-[var(--color-danger-soft)]" />
+                </div>
+              )}
               <div
                 key={m.id}
                 className={`flex flex-col rounded-lg border border-solid border-[var(--border-color)] p-3 ${
@@ -260,6 +296,7 @@ export default function ChatPage() {
                 <p className="mb-0 mt-1 whitespace-pre-wrap break-words text-sm text-[var(--text-primary)]">
                   {m.pesan}
                 </p>
+              </div>
               </div>
             );
           })}

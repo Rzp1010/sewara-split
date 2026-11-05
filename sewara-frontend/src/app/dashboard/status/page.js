@@ -202,9 +202,7 @@ const KartuTrx = memo(function KartuTrx({
       <p className="mb-0 truncate text-[13px] font-bold text-[var(--text-primary)]">{t.penyewa}</p>
       <p className="mb-0 text-[11px] text-[var(--text-secondary)]">Ambil <b className="font-semibold text-[var(--text-primary)]">{formatJam(t.waktu_ambil_rencana)}</b></p>
       <p className={`mb-0 text-[11px] ${kolom === "Telat" ? "text-[var(--color-danger-text)]" : "text-[var(--text-secondary)]"}`}>Kembali {formatJam(t.waktu_kembali_rencana)} · {t.durasi_teks}</p>
-      <div className="mt-1 flex items-center justify-end gap-1.5">
-        {t.status === "Booking" && <button type="button" onClick={() => onAmbil(t.id)} className="h-7 rounded-md border-0 bg-[#7181E0] hover:bg-[#5d6fcc] px-2.5 text-[11px] font-semibold text-white">Serahkan</button>}
-        {t.status === "Disewa" && <button type="button" onClick={() => onKembali(t.id)} className="h-7 rounded-md border-0 bg-[#579171] hover:bg-[#447057] px-2.5 text-[11px] font-semibold text-white">Terima</button>}
+      <div className="mt-1 flex items-center justify-between gap-1.5">
         <button
           type="button"
           draggable={false}
@@ -229,16 +227,15 @@ const KartuTrx = memo(function KartuTrx({
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <span
-            className={
-              chatBelumDibaca > 0
-                ? "rounded-full bg-[var(--color-primary-soft,#e0e7ff)] px-1.5 text-[var(--color-primary-soft-text,#4338ca)]"
-                : ""
-            }
-          >
-            {chatBelumDibaca}
-          </span>
+          {chatBelumDibaca > 0 && (
+            <span className="rounded-full bg-[var(--color-danger-soft)] px-1.5 text-[var(--color-danger-text)]">
+              {chatBelumDibaca}
+            </span>
+          )}
         </button>
+        <div className="flex items-center gap-1.5">
+          {t.status === "Booking" && <button type="button" onClick={() => onAmbil(t.id)} className="h-7 rounded-md border-0 bg-[#7181E0] hover:bg-[#5d6fcc] px-2.5 text-[11px] font-semibold text-white">Serahkan</button>}
+          {t.status === "Disewa" && <button type="button" onClick={() => onKembali(t.id)} className="h-7 rounded-md border-0 bg-[#579171] hover:bg-[#447057] px-2.5 text-[11px] font-semibold text-white">Terima</button>}
         <details className="relative" data-menu>
           <summary aria-label="Buka menu transaksi" className="flex h-[26px] w-[26px] cursor-pointer list-none items-center justify-center rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]">⋯</summary>
           <div className="absolute right-0 top-8 z-30 min-w-36 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-xl">
@@ -251,6 +248,7 @@ const KartuTrx = memo(function KartuTrx({
             </>}
           </div>
         </details>
+        </div>
       </div>
     </div>
   );
@@ -375,6 +373,7 @@ export default function StatusPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
   const [chatBadge, setChatBadge] = useState({ perTrx: {}, total: 0 });
+  const [chatBelumAwal, setChatBelumAwal] = useState(0);
   const chatBoxRef = useRef(null);
   const [kondisiModal, setKondisiModal] = useState(null);
   const [snModal, setSnModal] = useState(null);
@@ -623,6 +622,7 @@ export default function StatusPage() {
   }, [chatTrx, chatPesan]);
 
   const bukaChat = (t) => {
+    setChatBelumAwal(chatBadge.perTrx?.[t.id] || 0);
     setChatPesan([]);
     setChatError("");
     setChatLoading(true);
@@ -2689,7 +2689,7 @@ export default function StatusPage() {
             <aside
               role="dialog"
               aria-label={`Chat ${chatTrx.no_invoice}`}
-              className="fixed left-0 top-0 z-[9999] flex h-full w-full max-w-[380px] flex-col border-r border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
+              className="fixed right-0 top-0 z-[9999] flex h-full w-full max-w-[380px] flex-col overflow-hidden border-l border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl"
             >
               <div className="flex items-start justify-between gap-2 border-b border-solid border-[var(--border-color)] px-4 py-3">
                 <div className="min-w-0">
@@ -2709,7 +2709,7 @@ export default function StatusPage() {
                   &times;
                 </button>
               </div>
-              <div ref={chatBoxRef} className="flex-1 overflow-y-auto px-4 py-3">
+              <div ref={chatBoxRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 {chatLoading && chatPesan.length === 0 ? (
                   <p className="text-xs text-[var(--text-secondary)]">
                     Memuat chat…
@@ -2720,9 +2720,18 @@ export default function StatusPage() {
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {chatPesan.map((m) => {
+                    {chatPesan.map((m, index) => {
                       const sendiri = Boolean(userId) && m.authorId === userId;
+                      const sekatIndex = chatPesan.length - chatBelumAwal;
                       return (
+                        <div key={m.id}>
+                          {chatBelumAwal > 0 && chatBelumAwal < chatPesan.length && index === sekatIndex && (
+                            <div className="flex items-center gap-2 py-1 text-[10px] font-semibold text-[var(--color-danger-text)]">
+                              <span className="h-px flex-1 bg-[var(--color-danger-soft)]" />
+                              Belum dibaca
+                              <span className="h-px flex-1 bg-[var(--color-danger-soft)]" />
+                            </div>
+                          )}
                         <div
                           key={m.id}
                           className={`flex flex-col ${sendiri ? "items-end" : "items-start"}`}
@@ -2741,6 +2750,7 @@ export default function StatusPage() {
                           <span className="mt-0.5 text-[10px] text-[var(--text-secondary)]">
                             {m.authorNama || "-"} · {formatJam(m.createdAt)}
                           </span>
+                        </div>
                         </div>
                       );
                     })}
