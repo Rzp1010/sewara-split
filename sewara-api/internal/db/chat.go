@@ -3,13 +3,14 @@ package db
 import (
 	"context"
 	"errors"
+	"slices"
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
 )
 
 const chatMessageColumns = `id::text AS id, trx_id::text AS trx_id, user_id::text AS user_id,
-	author_id::text AS author_id, author_nama, author_role, pesan, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS created_at`
+	author_id::text AS author_id, author_nama, author_role, pesan, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at`
 
 func (d *DB) ListChatMessages(ctx context.Context, userID string, trxID *int64, limit int) ([]map[string]any, error) {
 	var out []map[string]any
@@ -21,10 +22,13 @@ func (d *DB) ListChatMessages(ctx context.Context, userID string, trxID *int64, 
 	err = d.InTenant(ctx, userID, func(q Querier) error {
 		rows, err := queryRowsAsMaps(ctx, q, `SELECT `+chatMessageColumns+` FROM chat_messages
 			WHERE user_id=$3::uuid AND ($1::bigint IS NULL OR trx_id = $1::bigint)
-			ORDER BY created_at DESC LIMIT $2`, trxID, limit, tenantID)
+			ORDER BY created_at DESC, id DESC LIMIT $2`, trxID, limit, tenantID)
 		out = rows
 		return err
 	})
+	// LIMIT mengambil yang terbaru; balasannya dibalik jadi urut lama -> baru
+	// supaya semua pemakai menampilkan pesan terbaru di paling bawah.
+	slices.Reverse(out)
 	return out, err
 }
 

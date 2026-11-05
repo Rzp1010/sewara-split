@@ -87,7 +87,7 @@ export default function ChatPage() {
       const baru = await kirimChat({ trxId: trxKirim || null, pesan: teks });
       setIsi("");
       setError("");
-      if (baru) setPesan((p) => [baru, ...p]);
+      if (baru) setPesan((p) => [...p, baru]);
     } catch (err) {
       setError(err.message || "Gagal mengirim pesan");
     } finally {

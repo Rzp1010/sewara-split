@@ -137,6 +137,8 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $r = Invoke-Api 'GET' "/api/chat?trxId=$trxA" $cookieA $null
     $thread = PesanOf $r
     Add-Hasil 'thread invoice hanya pesannya' ([int]($thread.Count -eq 2 -and @($thread | Where-Object { $_.id -eq $msgTrx.id }).Count -eq 1)) 1 "count=$($thread.Count)"
+    Add-Hasil 'thread urut lama -> baru' ([int]($thread[0].id -eq $msgTrx.id -and $thread[1].id -eq $msgNum.id)) 1 "pertama=$($thread[0].pesan) terakhir=$($thread[1].pesan)"
+    Add-Hasil 'createdAt ISO bersih' ([int]($thread[0].createdAt -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$')) 1 "createdAt=$($thread[0].createdAt)"
     Add-Hasil 'thread invoice tidak memuat pesan bebas' ([int](@($thread | Where-Object { $null -eq $_.trxId }).Count -eq 0)) 1 ''
 
     $r = Invoke-Api 'GET' "/api/chat?trxId=$trxHantu" $cookieA $null

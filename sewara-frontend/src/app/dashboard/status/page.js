@@ -616,9 +616,10 @@ export default function StatusPage() {
     return () => document.removeEventListener("keydown", saatTombol);
   }, [chatTrx]);
 
-  // Pesan tampil terbaru dulu, jadi gulir selalu ke atas setiap thread berubah.
+  // Pesan urut lama -> baru, jadi gulir selalu ke bawah setiap thread berubah.
   useEffect(() => {
-    if (chatTrx && chatBoxRef.current) chatBoxRef.current.scrollTop = 0;
+    if (chatTrx && chatBoxRef.current)
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
   }, [chatTrx, chatPesan]);
 
   const bukaChat = (t) => {
