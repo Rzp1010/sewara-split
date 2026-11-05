@@ -919,8 +919,12 @@ export async function getChatMessages({ trxId, limit } = {}) {
   return messages || [];
 }
 
+// trxId = id transaksi (angka); dikirim sebagai string agar cocok kontrak API.
 export async function kirimChat({ trxId, pesan }) {
-  const { message } = await api.chat.kirim({ trxId: trxId || null, pesan });
+  const { message } = await api.chat.kirim({
+    trxId: trxId ? String(trxId) : null,
+    pesan,
+  });
   kirimEventData();
   return message;
 }
@@ -944,7 +948,7 @@ export async function getChatUnread() {
 
 export async function tandaiChatDibaca({ trxId } = {}) {
   try {
-    await api.chat.baca(trxId ? { trxId } : {});
+    await api.chat.baca(trxId ? { trxId: String(trxId) } : {});
     return true;
   } catch {
     return false;

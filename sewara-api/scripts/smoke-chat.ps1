@@ -5,7 +5,7 @@
 # tandai dibaca, dan hak hapus (penulis / owner / staf lain).
 #
 # Prasyarat: Docker staging jalan + seed termuat (lifecycle diurus skrip ini:
-# reset lalu start, dan migration 0007_chat.sql dimuat runner docker-staging.ps1).
+# reset lalu start, dan migration chat dimuat runner docker-staging.ps1).
 
 $ErrorActionPreference = 'Stop'
 
@@ -61,8 +61,8 @@ function Add-Hasil([string]$nama, [int]$dapat, [int]$harap, [string]$info) {
 function PesanOf($r) { return ,@(($r.Body | ConvertFrom-Json).data.messages) }
 
 $api = $null
-$trxA = 'c0000000-0000-0000-0000-000000000001'
-$trxHantu = 'c0000000-0000-0000-0000-000000000099'
+$trxA = '1793799472301'
+$trxHantu = '1793799472999'
 try {
     Write-Host 'Menyiapkan binari...'
     Push-Location $root
@@ -124,21 +124,26 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $msgTrx = ($r.Body | ConvertFrom-Json).data.message
     Add-Hasil 'kirim pesan menempel invoice' ([int]($r.Status -eq 200 -and $msgTrx.trxId -eq $trxA)) 1 "status=$($r.Status) trxId=$($msgTrx.trxId)"
 
+    # Klien boleh mengirim trxId sebagai angka JSON (bukan string).
+    $r = Invoke-Api 'POST' '/api/chat' $cookieA ('{"trxId":' + $trxA + ',"pesan":"angka mentah"}')
+    $msgNum = ($r.Body | ConvertFrom-Json).data.message
+    Add-Hasil 'kirim pesan dengan trxId angka JSON' ([int]($r.Status -eq 200 -and $msgNum.trxId -eq $trxA)) 1 "status=$($r.Status) trxId=$($msgNum.trxId)"
+
     # ---------- Daftar ----------
     $r = Invoke-Api 'GET' '/api/chat' $cookieA $null
     $semua = PesanOf $r
-    Add-Hasil 'ruang gabungan memuat pesan bebas + invoice' $semua.Count 2 "count=$($semua.Count)"
+    Add-Hasil 'ruang gabungan memuat pesan bebas + invoice' $semua.Count 3 "count=$($semua.Count)"
 
     $r = Invoke-Api 'GET' "/api/chat?trxId=$trxA" $cookieA $null
     $thread = PesanOf $r
-    Add-Hasil 'thread invoice hanya pesannya' ([int]($thread.Count -eq 1 -and $thread[0].id -eq $msgTrx.id)) 1 "count=$($thread.Count)"
+    Add-Hasil 'thread invoice hanya pesannya' ([int]($thread.Count -eq 2 -and @($thread | Where-Object { $_.id -eq $msgTrx.id }).Count -eq 1)) 1 "count=$($thread.Count)"
     Add-Hasil 'thread invoice tidak memuat pesan bebas' ([int](@($thread | Where-Object { $null -eq $_.trxId }).Count -eq 0)) 1 ''
 
     $r = Invoke-Api 'GET' "/api/chat?trxId=$trxHantu" $cookieA $null
     Add-Hasil 'thread invoice lain kosong' (PesanOf $r).Count 0 ''
 
-    $r = Invoke-Api 'GET' '/api/chat?trxId=bukan-uuid' $cookieA $null
-    Add-Hasil 'trxId bukan uuid -> 400' $r.Status 400 ''
+    $r = Invoke-Api 'GET' '/api/chat?trxId=bukan-angka' $cookieA $null
+    Add-Hasil 'trxId bukan angka -> 400' $r.Status 400 ''
 
     # ---------- Validasi ----------
     $r = Invoke-Api 'POST' '/api/chat' $cookieA '{"pesan":"   "}'
@@ -148,8 +153,8 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $r = Invoke-Api 'POST' '/api/chat' $cookieA ('{"pesan":"' + $panjang + '"}')
     Add-Hasil 'pesan 2001 karakter -> 400' $r.Status 400 ''
 
-    $r = Invoke-Api 'POST' '/api/chat' $cookieA '{"pesan":"ok","trxId":"bukan-uuid"}'
-    Add-Hasil 'trxId bukan uuid saat kirim -> 400' $r.Status 400 ''
+    $r = Invoke-Api 'POST' '/api/chat' $cookieA '{"pesan":"ok","trxId":"bukan-angka"}'
+    Add-Hasil 'trxId bukan angka saat kirim -> 400' $r.Status 400 ''
 
     # ---------- Isolasi tenant ----------
     $r = Invoke-Api 'GET' '/api/chat' $cookieB $null
@@ -162,7 +167,7 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $r = Invoke-Api 'POST' '/api/chat' $cookieCS '{"pesan":"handover: 2 unit keluar"}'
     Add-Hasil 'staf se-tenant boleh kirim pesan' $r.Status 200 ''
     $r = Invoke-Api 'GET' '/api/chat' $cookieCS $null
-    Add-Hasil 'staf lihat pesan ruang tenant yang sama' (PesanOf $r).Count 3 ''
+    Add-Hasil 'staf lihat pesan ruang tenant yang sama' (PesanOf $r).Count 4 ''
 
     # ---------- Unread ----------
     $r = Invoke-Api 'GET' '/api/chat/unread' $cookieA $null
@@ -172,8 +177,8 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
 
     $r = Invoke-Api 'GET' '/api/chat/unread' $cookieCS $null
     $uCS = ($r.Body | ConvertFrom-Json).data
-    Add-Hasil 'unread staf: 2 pesan owner A (ruang + invoice)' ([int]($uCS.total -eq 2 -and $uCS.room -eq 1)) 1 "total=$($uCS.total) room=$($uCS.room)"
-    Add-Hasil 'unread staf per invoice terisi' ([int]($uCS.perTrx.$trxA -eq 1)) 1 "perTrx=$($uCS.perTrx.$trxA)"
+    Add-Hasil 'unread staf: 3 pesan owner A (ruang + invoice)' ([int]($uCS.total -eq 3 -and $uCS.room -eq 1)) 1 "total=$($uCS.total) room=$($uCS.room)"
+    Add-Hasil 'unread staf per invoice terisi' ([int]($uCS.perTrx.$trxA -eq 2)) 1 "perTrx=$($uCS.perTrx.$trxA)"
 
     # ---------- Tandai dibaca ----------
     $r = Invoke-Api 'POST' '/api/chat/read' $cookieA '{}'
@@ -191,8 +196,8 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $uA = ($r.Body | ConvertFrom-Json).data
     Add-Hasil 'read invoice -> unread nol' ([int]($uA.total -eq 0)) 1 "total=$($uA.total)"
 
-    $r = Invoke-Api 'POST' '/api/chat/read' $cookieA '{"trxId":"bukan-uuid"}'
-    Add-Hasil 'read trxId bukan uuid -> 400' $r.Status 400 ''
+    $r = Invoke-Api 'POST' '/api/chat/read' $cookieA '{"trxId":"bukan-angka"}'
+    Add-Hasil 'read trxId bukan angka -> 400' $r.Status 400 ''
 
     # ---------- Hapus ----------
     $r = Invoke-Api 'POST' '/api/chat' $cookieCS '{"pesan":"pesan staf untuk diuji hapus"}'
@@ -219,7 +224,7 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     Add-Hasil 'hapus id bukan uuid -> 404' $r.Status 404 ''
 
     $r = Invoke-Api 'GET' "/api/chat?trxId=$trxA" $cookieA $null
-    Add-Hasil 'thread invoice berkurang setelah hapus' (PesanOf $r).Count 2 "count=$((PesanOf $r).Count)"
+    Add-Hasil 'thread invoice berkurang setelah hapus' (PesanOf $r).Count 3 "count=$((PesanOf $r).Count)"
 
     Write-Host "`n"
     $hasil | Format-Table -AutoSize | Out-String | Write-Host

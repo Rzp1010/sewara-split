@@ -4,18 +4,40 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
 )
+
+// trxId = id transaksi bigint (numerik). Menerima angka JSON mentah maupun
+// string, karena klien lama bisa mengirim number.
+func trxIDFromRaw(raw json.RawMessage) string {
+	s := strings.Trim(strings.TrimSpace(string(raw)), `"`)
+	if s == "null" {
+		return ""
+	}
+	return s
+}
+
+func parseTrxID(s string) (*int64, bool) {
+	if s == "" {
+		return nil, true
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil || n <= 0 {
+		return nil, false
+	}
+	return &n, true
+}
 
 func chatMessageJSON(row map[string]any) map[string]any {
 	return map[string]any{"id": row["id"], "trxId": row["trx_id"], "userId": row["user_id"], "authorId": row["author_id"], "authorNama": row["author_nama"], "authorRole": row["author_role"], "pesan": row["pesan"], "createdAt": row["created_at"]}
 }
 
 func (s *Server) handleChatGet(w http.ResponseWriter, r *http.Request, user db.Identity) {
-	trx := r.URL.Query().Get("trxId")
-	if trx != "" && !validUUID(trx) {
+	trx, ok := parseTrxID(strings.TrimSpace(r.URL.Query().Get("trxId")))
+	if !ok {
 		writeError(w, http.StatusBadRequest, CodeValidationError, "trxId tidak valid.")
 		return
 	}
@@ -32,19 +54,20 @@ func (s *Server) handleChatGet(w http.ResponseWriter, r *http.Request, user db.I
 }
 func (s *Server) handleChatPost(w http.ResponseWriter, r *http.Request, user db.Identity) {
 	var b struct {
-		TrxID string `json:"trxId"`
-		Pesan string `json:"pesan"`
+		TrxID json.RawMessage `json:"trxId"`
+		Pesan string          `json:"pesan"`
 	}
 	if json.NewDecoder(r.Body).Decode(&b) != nil {
 		writeError(w, 400, CodeValidationError, "Body JSON tidak valid.")
 		return
 	}
 	b.Pesan = strings.TrimSpace(b.Pesan)
-	if b.Pesan == "" || len([]rune(b.Pesan)) > 2000 || (b.TrxID != "" && !validUUID(b.TrxID)) {
+	trx, ok := parseTrxID(trxIDFromRaw(b.TrxID))
+	if b.Pesan == "" || len([]rune(b.Pesan)) > 2000 || !ok {
 		writeError(w, 400, CodeValidationError, "Pesan atau trxId tidak valid.")
 		return
 	}
-	rows, err := s.db.InsertChatMessage(r.Context(), user.UserID, b.TrxID, user.NamaLengkap, user.Role, b.Pesan)
+	rows, err := s.db.InsertChatMessage(r.Context(), user.UserID, trx, user.NamaLengkap, user.Role, b.Pesan)
 	if err != nil {
 		writeError(w, 500, CodeDatabaseError, "Gagal menyimpan pesan.")
 		return
@@ -82,17 +105,18 @@ func (s *Server) handleChatUnread(w http.ResponseWriter, r *http.Request, user d
 }
 func (s *Server) handleChatRead(w http.ResponseWriter, r *http.Request, user db.Identity) {
 	var b struct {
-		TrxID string `json:"trxId"`
+		TrxID json.RawMessage `json:"trxId"`
 	}
 	if json.NewDecoder(r.Body).Decode(&b) != nil {
 		writeError(w, 400, CodeValidationError, "Body JSON tidak valid.")
 		return
 	}
-	if b.TrxID != "" && !validUUID(b.TrxID) {
+	trx, ok := parseTrxID(trxIDFromRaw(b.TrxID))
+	if !ok {
 		writeError(w, 400, CodeValidationError, "trxId tidak valid.")
 		return
 	}
-	if e := s.db.MarkChatRead(r.Context(), user.UserID, b.TrxID); e != nil {
+	if e := s.db.MarkChatRead(r.Context(), user.UserID, trx); e != nil {
 		writeError(w, 500, CodeDatabaseError, "Gagal menandai chat dibaca.")
 		return
 	}
