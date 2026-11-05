@@ -1659,38 +1659,40 @@ export default function StatusPage() {
         <Modal isOpen={bookingBaruOpen} onClose={() => setBookingBaruOpen(false)} title="Booking baru" size="3xl" closeOnOverlay={false}>
           <FormBookingBaru mode="modal" daftarAktif={trx} notify={notify} confirmChoice={confirmChoice} onSukses={() => { setBookingBaruOpen(false); setRefresh((r) => r + 1); }} onTutup={() => setBookingBaruOpen(false)} />
         </Modal>
-        <h2 className="mb-6 text-2xl font-bold">Status Sewa</h2>
-
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg mb-4">
-          <div ref={toolbarRef} className="relative">
-            <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold">Status Sewa</h2>
+            <div ref={toolbarRef} className="relative ml-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <div className="flex items-center gap-1">
                 {[
-                  { id: "filter", label: "Filter", aktif: rentangKunci !== "7_hari" || filterWaktuAmbil !== "semua" || sembunyikanRiwayat, path: <><path d="M4 5h16M7 12h10m-7 7h4"/><circle cx="8" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></> },
-                  { id: "sort", label: "Urutkan", aktif: urutkan !== "ambil_terdekat", path: <><path d="M8 6h12M8 12h9M8 18h6"/><path d="m4 7 2-2 2 2M6 5v14m-2-2 2 2 2-2"/></> },
-                  { id: "search", label: "Cari", aktif: Boolean(cariQ.trim()), path: <><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></> },
+                  { id: "filter", label: "Filter", aktif: rentangKunci !== "7_hari" || filterWaktuAmbil !== "semua" || sembunyikanRiwayat, path: <path d="M4 6h16M7 12h10M10 18h4"/> },
+                  { id: "sort", label: "Urutkan", aktif: urutkan !== "ambil_terdekat", path: <path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/> },
+                  { id: "search", label: "Cari", aktif: Boolean(cariQ.trim()), path: <><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></> },
                 ].map((item) => (
-                  <button key={item.id} type="button" aria-label={item.label} aria-expanded={toolbarPopover === item.id} onClick={() => setToolbarPopover(toolbarPopover === item.id ? null : item.id)} className={`flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] transition-colors hover:bg-[var(--bg-subtle)] ${item.aktif || toolbarPopover === item.id ? "text-[var(--color-primary-soft-text,#7181E0)]" : "text-[var(--text-secondary)]"}`}>
+                  <button key={item.id} type="button" aria-label={item.label} aria-expanded={toolbarPopover === item.id} onClick={() => setToolbarPopover(toolbarPopover === item.id ? null : item.id)} className={`relative flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-color)] transition-colors hover:bg-[var(--bg-subtle)] ${item.aktif || toolbarPopover === item.id ? "text-[var(--color-primary-soft-text,#7181E0)]" : "text-[var(--text-secondary)]"}`}>
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{item.path}</svg>
+                    {item.id === "filter" && item.aktif && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--color-primary-soft-text,#7181E0)]" aria-hidden="true"/>}
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setBookingBaruOpen(true)} className={`${BTN_PRIMARY} ml-auto max-sm:w-full`}>+ Booking baru</button>
+              <button type="button" onClick={() => setBookingBaruOpen(true)} className={`${BTN_PRIMARY} max-sm:w-full`}>+ Booking baru</button>
             </div>
-            {toolbarPopover && <div className="absolute left-0 top-10 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-xl">
+            {toolbarPopover && <div className="absolute right-0 top-10 z-[60] w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-xl">
               {toolbarPopover === "filter" && <div className="space-y-4">
                 <div><p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">Periode</p><div className="flex flex-wrap gap-2">{[{k:"hari_ini",label:"Hari Ini"},{k:"7_hari",label:"7 Hari"},{k:"30_hari",label:"30 Hari"},{k:"semua",label:"Semua"},{k:"kustom",label:"Kustom"}].map((o)=><button key={o.k} type="button" onClick={()=>setRentangKunci(o.k)} className={`rounded-md border px-3 py-1.5 text-xs font-medium ${rentangKunci===o.k?"border-[var(--color-primary-soft-text)] bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]"}`}>{o.label}</button>)}</div>
                   {rentangKunci === "kustom" && <div className="mt-3 flex flex-wrap items-center gap-2"><div className="w-[150px] max-w-full"><DateTimePicker value={kustomMulai ? new Date(`${kustomMulai}T00:00:00`) : null} onChange={(d)=>setKustomMulai(fmtYMD(d))} showTime={false} placeholder="dd/mm/yyyy"/></div><span className="text-xs text-[var(--text-secondary)]">s.d.</span><div className="w-[150px] max-w-full"><DateTimePicker value={kustomAkhir ? new Date(`${kustomAkhir}T00:00:00`) : null} onChange={(d)=>setKustomAkhir(fmtYMD(d))} showTime={false} placeholder="dd/mm/yyyy"/></div></div>}
                 </div>
                 <div className="flex flex-col gap-2 border-t border-[var(--border-color)] pt-3"><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="semua"} onChange={()=>setFilterWaktuAmbil("semua")}/>Semua waktu ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="belum"} onChange={()=>setFilterWaktuAmbil("belum")}/>Belum waktunya ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="sudah"} onChange={()=>setFilterWaktuAmbil("sudah")}/>Sudah lewat waktu ambil</label></div>
                 <label className="flex items-center gap-2 border-t border-[var(--border-color)] pt-3 text-sm text-[var(--text-secondary)]"><input type="checkbox" checked={sembunyikanRiwayat} onChange={toggleSembunyikanRiwayat} style={{accentColor:"#7181E0"}}/>Sembunyikan Selesai &amp; Dibatalkan</label>
+                {ringkasanFilter.length > 0 && <div className="border-t border-[var(--border-color)] pt-3"><button type="button" onClick={resetFilter} className="text-xs text-[var(--color-primary-soft-text,#7181E0)] underline">Reset filter</button></div>}
               </div>}
               {toolbarPopover === "sort" && <div className="flex flex-col gap-1">{[{v:"ambil_terdekat",l:"Ambil terdekat"},{v:"ambil_terjauh",l:"Ambil terjauh"},{v:"nama_az",l:"Nama A-Z"},{v:"nama_za",l:"Nama Z-A"}].map(o=><button key={o.v} type="button" onClick={()=>setUrutkan(o.v)} className={`rounded-md px-3 py-2 text-left text-sm ${urutkan===o.v?"bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}>{o.l}</button>)}</div>}
               {toolbarPopover === "search" && <label className="block text-xs font-semibold text-[var(--text-secondary)]">Cari penyewa, invoice, atau alat<input autoFocus aria-label="Cari penyewa, invoice, atau alat" value={cariQ} onChange={(e)=>setCariQ(e.target.value)} placeholder="Ketik untuk mencari..." className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm font-normal text-[var(--text-primary)] outline-none focus:border-[var(--color-primary-soft-text,#7181E0)]"/></label>}
-            </div>}
+              </div>}
+            </div>
           </div>
-          {ringkasanFilter.length > 0 && <p className="mt-3 text-xs text-[var(--text-secondary)]" aria-live="polite">{ringkasanFilter.join(" · ")}</p>}
-          {(ringkasanFilter.length > 0) && <button type="button" onClick={resetFilter} className="mt-2 text-xs text-[var(--color-primary-soft-text,#7181E0)] underline">Reset filter</button>}
+          {ringkasanFilter.length > 0 && <p className="mt-2 text-xs text-[var(--text-secondary)]" aria-live="polite">{ringkasanFilter.join(" · ")}</p>}
         </div>
 
         <div className="status-kanban-shell">
