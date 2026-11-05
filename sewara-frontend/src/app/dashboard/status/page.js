@@ -447,46 +447,38 @@ export default function StatusPage() {
     return () => observer.disconnect();
   }, []);
 
+  // Rentang periode simetris: ±N hari kalender mengelilingi hari ini.
+  // Dipakai konsisten oleh board aktif (cocokDenganRentang) dan kolom
+  // Selesai/Belum Selesai (keduanya menyaring waktu_ambil_rencana).
   const rentangTanggal = (kunci) => {
-    const kini = new Date();
-    const mulai = new Date(
-      kini.getFullYear(),
-      kini.getMonth(),
-      kini.getDate(),
-      0,
-      0,
-      0,
-      0,
-    );
-    if (kunci === "hari_ini")
+    const hariGeser = (hari) => {
+      const kini = new Date();
+      return new Date(
+        kini.getFullYear(),
+        kini.getMonth(),
+        kini.getDate() + hari,
+        0,
+        0,
+        0,
+        0,
+      );
+    };
+    const akhirHari = (d) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    if (kunci === "hari_ini") {
+      const hariIni = hariGeser(0);
+      return { mulai: hariIni, akhir: akhirHari(hariIni) };
+    }
+    const jangkauan = { "3_hari": 3, "7_hari": 7, "30_hari": 30 }[kunci];
+    if (jangkauan)
       return {
-        mulai: mulai,
-        akhir: new Date(
-          kini.getFullYear(),
-          kini.getMonth(),
-          kini.getDate(),
-          23,
-          59,
-          59,
-          999,
-        ),
+        mulai: hariGeser(-jangkauan),
+        akhir: akhirHari(hariGeser(jangkauan)),
       };
-    if (kunci === "7_hari") {
-      const akhir7 = new Date(mulai);
-      akhir7.setDate(akhir7.getDate() + 6);
-      akhir7.setHours(23, 59, 59, 999);
-      return { mulai, akhir: akhir7 };
-    }
-    if (kunci === "30_hari") {
-      const akhir30 = new Date(mulai);
-      akhir30.setDate(akhir30.getDate() + 29);
-      akhir30.setHours(23, 59, 59, 999);
-      return { mulai, akhir: akhir30 };
-    }
     if (kunci === "kustom") {
       return {
         mulai: kustomMulai ? new Date(`${kustomMulai}T00:00:00`) : null,
-        akhir: kustomAkhir ? new Date(`${kustomAkhir}T23:59:59`) : null,
+        akhir: kustomAkhir ? new Date(`${kustomAkhir}T23:59:59.999`) : null,
       };
     }
     return null;
@@ -749,6 +741,14 @@ export default function StatusPage() {
     if (!rentangKanban) return true;
     if (!t.waktu_ambil_rencana) return false;
     const waktuAmbil = new Date(t.waktu_ambil_rencana).getTime();
+    // Kartu aktif yang waktu ambilnya sudah terlewat (masih berjalan/terlambat)
+    // selalu tampil, tidak boleh disembunyikan filter periode.
+    if (
+      (t.status === "Booking" || t.status === "Disewa") &&
+      !Number.isNaN(waktuAmbil) &&
+      waktuAmbil <= now.getTime()
+    )
+      return true;
     const mulai = rentangKanban.mulai?.getTime();
     const akhir = rentangKanban.akhir?.getTime();
     return (!mulai || waktuAmbil >= mulai) && (!akhir || waktuAmbil <= akhir);
@@ -1676,14 +1676,14 @@ export default function StatusPage() {
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setBookingBaruOpen(true)} className={`${BTN_PRIMARY} max-sm:w-full`}>+ Booking baru</button>
+              <button type="button" onClick={() => setBookingBaruOpen(true)} className={`${BTN_PRIMARY} max-sm:w-full`}>Booking</button>
             </div>
             {toolbarPopover && <div className="absolute right-0 top-10 z-[60] w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-xl">
               {toolbarPopover === "filter" && <div className="space-y-4">
-                <div><p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">Periode</p><div className="flex flex-wrap gap-2">{[{k:"hari_ini",label:"Hari Ini"},{k:"7_hari",label:"7 Hari"},{k:"30_hari",label:"30 Hari"},{k:"semua",label:"Semua"},{k:"kustom",label:"Kustom"}].map((o)=><button key={o.k} type="button" onClick={()=>setRentangKunci(o.k)} className={`rounded-md border px-3 py-1.5 text-xs font-medium ${rentangKunci===o.k?"border-[var(--color-primary-soft-text)] bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]"}`}>{o.label}</button>)}</div>
+                <div><p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">Periode</p><div className="flex flex-wrap gap-2">{[{k:"hari_ini",label:"Hari ini"},{k:"3_hari",label:"3 Hari"},{k:"7_hari",label:"7 Hari"},{k:"30_hari",label:"30 Hari"},{k:"kustom",label:"Kustom"},{k:"semua",label:"Semua"}].map((o)=><button key={o.k} type="button" onClick={()=>setRentangKunci(o.k)} className={`rounded-md border px-3 py-1.5 text-xs font-medium ${rentangKunci===o.k?"border-[var(--color-primary-soft-text)] bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]"}`}>{o.label}</button>)}</div>
                   {rentangKunci === "kustom" && <div className="mt-3 flex flex-wrap items-center gap-2"><div className="w-[150px] max-w-full"><DateTimePicker value={kustomMulai ? new Date(`${kustomMulai}T00:00:00`) : null} onChange={(d)=>setKustomMulai(fmtYMD(d))} showTime={false} placeholder="dd/mm/yyyy"/></div><span className="text-xs text-[var(--text-secondary)]">s.d.</span><div className="w-[150px] max-w-full"><DateTimePicker value={kustomAkhir ? new Date(`${kustomAkhir}T00:00:00`) : null} onChange={(d)=>setKustomAkhir(fmtYMD(d))} showTime={false} placeholder="dd/mm/yyyy"/></div></div>}
                 </div>
-                <div className="flex flex-col gap-2 border-t border-[var(--border-color)] pt-3"><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="semua"} onChange={()=>setFilterWaktuAmbil("semua")}/>Semua waktu ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="belum"} onChange={()=>setFilterWaktuAmbil("belum")}/>Belum waktunya ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="sudah"} onChange={()=>setFilterWaktuAmbil("sudah")}/>Sudah lewat waktu ambil</label></div>
+                <div className="flex flex-col gap-2 border-t border-[var(--border-color)] pt-3"><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="semua"} onChange={()=>setFilterWaktuAmbil("semua")}/>Semua waktu ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="belum"} onChange={()=>setFilterWaktuAmbil("belum")}/>Belum waktunya ambil</label><label className="flex items-center gap-2 text-sm text-[var(--text-primary)]"><input type="radio" name="waktu-ambil" checked={filterWaktuAmbil==="sudah"} onChange={()=>setFilterWaktuAmbil("sudah")}/>Sudah lewat waktu ambil</label><p className="text-[11px] leading-snug text-[var(--text-secondary)]">Dihitung terhadap jam sekarang, jadi praktis hanya berpengaruh pada kartu yang waktu ambilnya hari ini. Kartu tanpa waktu ambil dianggap belum waktunya.</p></div>
                 <label className="flex items-center gap-2 border-t border-[var(--border-color)] pt-3 text-sm text-[var(--text-secondary)]"><input type="checkbox" checked={sembunyikanRiwayat} onChange={toggleSembunyikanRiwayat} style={{accentColor:"#7181E0"}}/>Sembunyikan Selesai &amp; Dibatalkan</label>
                 {ringkasanFilter.length > 0 && <div className="border-t border-[var(--border-color)] pt-3"><button type="button" onClick={resetFilter} className="text-xs text-[var(--color-primary-soft-text,#7181E0)] underline">Reset filter</button></div>}
               </div>}
@@ -1692,7 +1692,6 @@ export default function StatusPage() {
               </div>}
             </div>
           </div>
-          {ringkasanFilter.length > 0 && <p className="mt-2 text-xs text-[var(--text-secondary)]" aria-live="polite">{ringkasanFilter.join(" · ")}</p>}
         </div>
 
         <div className="status-kanban-shell">
