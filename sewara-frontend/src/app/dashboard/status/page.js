@@ -469,35 +469,32 @@ export default function StatusPage() {
     return null;
   };
 
+  const lengkapiItems = async (list) => {
+    const transactions = (list || []).map((tx) => ({ ...tx }));
+    if (!transactions.length) return transactions;
+    const itemsMap = await getTransactionItemsBulk(transactions.map((tx) => tx.id));
+    transactions.forEach((tx) => {
+      const items = itemsMap[tx.id] || [];
+      if (items.length > 0) {
+        tx.items = items.map((item) => ({
+          qty: item.qty,
+          nama: item.item_name,
+          harga: item.unit_price,
+          subtotal: item.subtotal,
+          inventory_id: item.inventory_id,
+          sn: item.serial_number || "",
+          ref: { nama: item.item_name, jenis: item.item_type || "satuan", id: item.inventory_id },
+        }));
+      }
+    });
+    return transactions;
+  };
+
   const muatAktif = useCallback(async () => {
     setLoadingAktif(true);
     try {
       const t = cachedTransactions || (await refetchTransactions());
-      const transactions = t ? t.map((tx) => ({ ...tx })) : [];
-      if (transactions.length > 0) {
-        const itemsMap = await getTransactionItemsBulk(
-          transactions.map((tx) => tx.id),
-        );
-        transactions.forEach((tx) => {
-          const items = itemsMap[tx.id] || [];
-          if (items.length > 0) {
-            // Normalized rows need legacy shape expected by KartuTrx and detail views.
-            tx.items = items.map((item) => ({
-              qty: item.qty,
-              nama: item.item_name,
-              harga: item.unit_price,
-              subtotal: item.subtotal,
-              inventory_id: item.inventory_id,
-              sn: item.serial_number || "",
-              ref: {
-                nama: item.item_name,
-                jenis: item.item_type || "satuan",
-                id: item.inventory_id,
-              },
-            }));
-          }
-        });
-      }
+      const transactions = await lengkapiItems(t);
       setTrx(transactions);
     } catch (err) {
       console.error("[Status] muatAktif error:", err);
@@ -518,8 +515,18 @@ export default function StatusPage() {
         ? getTransactionsBelumSelesai(mulaiISO, akhirISO)
         : getTransactionsBelumSelesai(null, null),
     ]);
-    setSelesai(t);
-    setBelumSelesai(b);
+    try {
+      const [selesaiLengkap, belumSelesaiLengkap] = await Promise.all([
+        lengkapiItems(t),
+        lengkapiItems(b),
+      ]);
+      setSelesai(selesaiLengkap);
+      setBelumSelesai(belumSelesaiLengkap);
+    } catch (err) {
+      console.error("[Status] muatSelesai items error:", err);
+      setSelesai(t);
+      setBelumSelesai(b);
+    }
   }, [rentangKunci, kustomMulai, kustomAkhir]);
 
   useEffect(() => {
@@ -725,11 +732,10 @@ export default function StatusPage() {
   };
   const cocokDenganCari = (t) => {
     if (!queryKanban) return true;
-    return [t.penyewa, t.no_invoice, t.hp_penyewa, t.alamat_penyewa].some(
-      (nilai) =>
-        String(nilai || "")
-          .toLowerCase()
-          .includes(queryKanban),
+    const fields = [t.penyewa, t.no_invoice, t.hp_penyewa, t.alamat_penyewa];
+    const namaItems = (t.items || []).flatMap((item) => [item?.nama, item?.ref?.nama]);
+    return [...fields, ...namaItems].some((nilai) =>
+      String(nilai || "").toLowerCase().includes(queryKanban),
     );
   };
 
@@ -1686,7 +1692,7 @@ export default function StatusPage() {
                 <input
                   value={cariQ}
                   onChange={(e) => setCariQ(e.target.value)}
-                  placeholder="Cari penyewa..."
+                  placeholder="Cari penyewa, invoice, atau alat..."
                   className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                 />
               </div>
