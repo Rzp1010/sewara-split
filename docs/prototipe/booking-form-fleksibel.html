@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form Booking — Halaman & Modal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKEN (sama dengan Status Sewa clean) ── */
+  :root {
+    --accent:#4F46E5; --accent-soft:#EEF2FF; --border:#E5E7EB; --bg:#F3F4F6;
+    --surface:#FFFFFF; --text:#111827; --text-2:#6B7280; --text-3:#9CA3AF;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; }
+
+  /* ── SWITCHER DEMO ── */
+  .demo-bar { display:flex; gap:8px; padding:14px 20px; background:var(--surface); border-bottom:1px solid var(--border); align-items:center; }
+  .demo-bar button { padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); font:inherit; font-size:13px; font-weight:600; color:var(--text-2); cursor:pointer; }
+  .demo-bar button.on { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+  .demo-bar .hint { margin-left:auto; font-size:12px; color:var(--text-3); }
+
+  /* ════════════════════════════════════
+     KOMPONEN: .bf (booking form)
+     Lebar mengikuti wadahnya. Dipakai di halaman maupun modal.
+     ════════════════════════════════════ */
+  .bf { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:100%; display:flex; flex-direction:column; }
+  .bf-head { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .bf-title { font-size:16px; font-weight:700; letter-spacing:-0.2px; }
+  .bf-close { width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text-2); cursor:pointer; font-size:14px; display:none; }
+  .bf-body { padding:20px; display:flex; flex-direction:column; gap:22px; }
+  .bf-foot { padding:14px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+
+  .bf-sec-title { font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.6px; margin-bottom:12px; }
+
+  .bf-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .bf-full { grid-column:1 / -1; }
+  .bf-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .bf-label { font-size:13px; font-weight:600; color:var(--text); }
+  .bf-label .opt { font-weight:400; color:var(--text-3); }
+
+  .bf-input, .bf-select, .bf-area {
+    width:100%; height:40px; padding:0 12px; border:1px solid var(--border); border-radius:8px;
+    background:var(--surface); font:inherit; font-size:14px; color:var(--text);
+  }
+  .bf-area { height:auto; min-height:72px; padding:10px 12px; resize:vertical; }
+  .bf-input:focus, .bf-select:focus, .bf-area:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .bf-input::placeholder, .bf-area::placeholder { color:var(--text-3); }
+
+  .bf-inline { display:flex; gap:8px; }
+  .bf-inline .bf-input { flex:1; }
+
+  /* pilihan jaminan/durasi/metode: pill, tinggi seragam */
+  .bf-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .bf-chip { height:36px; padding:0 14px; border:1px solid var(--border); border-radius:8px; background:var(--surface); font:inherit; font-size:13px; font-weight:500; color:var(--text-2); cursor:pointer; }
+  .bf-chip:hover { border-color:#C7D2FE; color:var(--text); }
+  .bf-chip.on { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  .bf-chip.multi.on::before { content:'\2713'; margin-right:6px; font-size:12px; }
+
+  .bf-btn { height:40px; padding:0 16px; border:1px solid var(--border); border-radius:8px; background:var(--surface); font:inherit; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; white-space:nowrap; }
+  .bf-btn:hover { background:var(--bg); }
+  .bf-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; height:42px; padding:0 22px; }
+  .bf-btn.primary:hover { background:#3730A3; }
+  .bf-btn.ghost { border-color:transparent; background:none; color:var(--text-2); }
+
+  /* keranjang */
+  .bf-cart { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .bf-cart-row { display:grid; grid-template-columns:1.6fr 1fr 60px 100px; gap:10px; padding:12px 14px; font-size:13px; align-items:center; border-top:1px solid var(--border); }
+  .bf-cart-row.head { border-top:none; background:var(--bg); font-size:12px; font-weight:600; color:var(--text-2); }
+  .bf-cart-row .r { text-align:right; }
+  .bf-cart-empty { padding:22px; text-align:center; font-size:13px; color:var(--text-3); font-style:italic; }
+
+  .bf-sum { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:var(--accent-soft); border-radius:10px; }
+  .bf-sum .k { font-size:12px; color:var(--text-2); }
+  .bf-sum .v { font-size:14px; font-weight:600; margin-top:2px; }
+  .bf-sum .total { font-size:20px; font-weight:700; color:var(--accent); text-align:right; }
+  .bf-link { margin-top:10px; background:none; border:none; font:inherit; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer; padding:0; }
+
+  .bf-note { font-size:12px; color:var(--text-2); }
+
+  /* ════════════════════════════════════
+     WADAH 1: HALAMAN
+     ════════════════════════════════════ */
+  .stage-page { display:none; padding:28px 20px 60px; }
+  .stage-page.on { display:block; }
+  .stage-page .bf { max-width:720px; margin:0 auto; }
+  .stage-page .bf-head h1 { font-size:20px; }
+
+  /* ════════════════════════════════════
+     WADAH 2: MODAL
+     ════════════════════════════════════ */
+  .stage-modal { display:none; padding:40px 20px; min-height:calc(100vh - 62px); background:rgba(17,24,39,.45); align-items:center; justify-content:center; }
+  .stage-modal.on { display:flex; }
+  .stage-modal .bf { max-width:640px; box-shadow:0 20px 50px rgba(0,0,0,.2); max-height:calc(100vh - 80px); }
+  .stage-modal .bf-close { display:block; }
+  .stage-modal .bf-body { overflow-y:auto; }
+
+  .open-btn { display:inline-block; margin:28px 20px; height:40px; padding:0 16px; border:none; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 16px; border-radius:8px; font-size:13px; display:none; z-index:200; }
+  .toast.on { display:block; }
+
+  @media (max-width:560px) {
+    .bf-grid { grid-template-columns:1fr; }
+    .bf-cart-row { grid-template-columns:1fr 80px; }
+    .bf-cart-row .hide-s { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <button class="on" id="tab-page" onclick="show('page')">Tampil di halaman</button>
+  <button id="tab-modal" onclick="show('modal')">Tampil di modal</button>
+  <span class="hint">Komponen yang sama, hanya wadahnya yang berubah</span>
+</div>
+
+<!-- ═══ WADAH HALAMAN ═══ -->
+<div class="stage-page on" id="stage-page">
+  <!-- BOOKING FORM -->
+  <div class="bf">
+    <div class="bf-head"><div class="bf-title">Buat booking baru</div></div>
+    <div class="bf-body">
+      <div>
+        <div class="bf-sec-title">Penyewa</div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Nama</label><input class="bf-input" placeholder="Nama lengkap"></div>
+          <div class="bf-field"><label class="bf-label">No. HP</label><input class="bf-input" placeholder="08xxxxxxxxxx"></div>
+          <div class="bf-field bf-full"><label class="bf-label">Jaminan</label><div class="bf-chips" data-cfg="jaminan" data-mode="single"></div></div>
+          <div class="bf-field bf-full"><label class="bf-label">Alamat</label><textarea class="bf-area" placeholder="Alamat lengkap"></textarea></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="bf-sec-title">Waktu sewa</div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Waktu ambil</label>
+            <div class="bf-inline"><input class="bf-input" placeholder="Pilih tanggal dan jam"><button class="bf-btn">Sekarang</button></div>
+          </div>
+          <div class="bf-field"><label class="bf-label">Durasi</label><div class="bf-chips" data-cfg="durasi" data-mode="single"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="bf-sec-title">Barang</div>
+        <div class="bf-inline" style="margin-bottom:12px;">
+          <select class="bf-select bf-input"><option>Pilih produk dari katalog</option><option>Sony A7C</option><option>Sony A6000</option><option>Sony 50mm F/1.8 OSS</option></select>
+          <button class="bf-btn">Tambah</button>
+        </div>
+        <div class="bf-cart">
+          <div class="bf-cart-row head"><span>Produk</span><span>S/N</span><span class="hide-s">Qty</span><span class="r">Harga</span></div>
+          <div class="bf-cart-empty">Belum ada barang dipilih</div>
+        </div>
+        <div class="bf-sum" style="margin-top:12px;">
+          <div><div class="k">Durasi</div><div class="v">-</div></div>
+          <div><div class="k" style="text-align:right;">Total biaya</div><div class="total">Rp0</div></div>
+        </div>
+        <button class="bf-link">+ Promo dan diskon</button>
+      </div>
+
+      <div>
+        <div class="bf-sec-title">Aksesoris</div>
+        <div class="bf-chips" data-cfg="aksesoris" data-mode="multi" style="margin-bottom:12px;"></div>
+        <input class="bf-input" placeholder="Aksesoris lain, pisahkan dengan koma">
+      </div>
+
+      <div>
+        <div class="bf-sec-title">Uang muka <span style="font-weight:400;text-transform:none;color:var(--text-3);letter-spacing:0;">(opsional)</span></div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Jumlah DP</label><input class="bf-input" type="number" placeholder="0"></div>
+          <div class="bf-field"><label class="bf-label">Metode bayar</label><div class="bf-chips" data-cfg="metode" data-mode="single"></div></div>
+        </div>
+        <p class="bf-note" style="margin-top:10px;">Booking tanpa DP tidak dikunci. Penyewa lain yang DP-nya lebih cepat bisa mengambil barang ini.</p>
+      </div>
+    </div>
+    <div class="bf-foot">
+      <button class="bf-btn ghost">Batal</button>
+      <button class="bf-btn primary" onclick="toast('Booking dibuat (prototype)')">Buat booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WADAH MODAL ═══ -->
+<div class="stage-modal" id="stage-modal">
+  <!-- BOOKING FORM (salinan komponen yang sama) -->
+  <div class="bf">
+    <div class="bf-head">
+      <div class="bf-title">Buat booking baru</div>
+      <button class="bf-close" onclick="show('page')">&#x2715;</button>
+    </div>
+    <div class="bf-body">
+      <div>
+        <div class="bf-sec-title">Penyewa</div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Nama</label><input class="bf-input" placeholder="Nama lengkap"></div>
+          <div class="bf-field"><label class="bf-label">No. HP</label><input class="bf-input" placeholder="08xxxxxxxxxx"></div>
+          <div class="bf-field bf-full"><label class="bf-label">Jaminan</label><div class="bf-chips" data-cfg="jaminan" data-mode="single"></div></div>
+          <div class="bf-field bf-full"><label class="bf-label">Alamat</label><textarea class="bf-area" placeholder="Alamat lengkap"></textarea></div>
+        </div>
+      </div>
+      <div>
+        <div class="bf-sec-title">Waktu sewa</div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Waktu ambil</label>
+            <div class="bf-inline"><input class="bf-input" placeholder="Pilih tanggal dan jam"><button class="bf-btn">Sekarang</button></div>
+          </div>
+          <div class="bf-field"><label class="bf-label">Durasi</label><div class="bf-chips" data-cfg="durasi" data-mode="single"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="bf-sec-title">Barang</div>
+        <div class="bf-inline" style="margin-bottom:12px;">
+          <select class="bf-select bf-input"><option>Pilih produk dari katalog</option><option>Sony A7C</option><option>Sony A6000</option><option>Sony 50mm F/1.8 OSS</option></select>
+          <button class="bf-btn">Tambah</button>
+        </div>
+        <div class="bf-cart">
+          <div class="bf-cart-row head"><span>Produk</span><span>S/N</span><span class="hide-s">Qty</span><span class="r">Harga</span></div>
+          <div class="bf-cart-empty">Belum ada barang dipilih</div>
+        </div>
+        <div class="bf-sum" style="margin-top:12px;">
+          <div><div class="k">Durasi</div><div class="v">-</div></div>
+          <div><div class="k" style="text-align:right;">Total biaya</div><div class="total">Rp0</div></div>
+        </div>
+        <button class="bf-link">+ Promo dan diskon</button>
+      </div>
+      <div>
+        <div class="bf-sec-title">Aksesoris</div>
+        <div class="bf-chips" data-cfg="aksesoris" data-mode="multi" style="margin-bottom:12px;"></div>
+        <input class="bf-input" placeholder="Aksesoris lain, pisahkan dengan koma">
+      </div>
+      <div>
+        <div class="bf-sec-title">Uang muka <span style="font-weight:400;text-transform:none;color:var(--text-3);letter-spacing:0;">(opsional)</span></div>
+        <div class="bf-grid">
+          <div class="bf-field"><label class="bf-label">Jumlah DP</label><input class="bf-input" type="number" placeholder="0"></div>
+          <div class="bf-field"><label class="bf-label">Metode bayar</label><div class="bf-chips" data-cfg="metode" data-mode="single"></div></div>
+        </div>
+        <p class="bf-note" style="margin-top:10px;">Booking tanpa DP tidak dikunci. Penyewa lain yang DP-nya lebih cepat bisa mengambil barang ini.</p>
+      </div>
+    </div>
+    <div class="bf-foot">
+      <button class="bf-btn ghost" onclick="show('page')">Batal</button>
+      <button class="bf-btn primary" onclick="toast('Booking dibuat (prototype)')">Buat booking</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // Konfigurasi per tenant (dummy). Jumlah dan isi pilihan mengikuti pengaturan tenant.
+  const CONFIG = {
+    jaminan: ['KTP', 'SIM', 'STNK', 'Kartu Keluarga', 'Tanpa Jaminan'],
+    aksesoris: ['Tas', 'Pouch', 'Memory 16GB', 'Sarung'],
+    durasi: ['6 Jam', '12 Jam', '24 Jam', '3 Hari', '7 Hari', 'Custom'],
+    metode: ['Tunai', 'Transfer', 'QRIS']
+  };
+  const DEFAULT = { jaminan:0, durasi:-1, metode:0 };
+
+  // Isi semua chip dari konfigurasi. Setiap wadah dapat chip sendiri.
+  document.querySelectorAll('[data-cfg]').forEach(el=>{
+    const key = el.dataset.cfg, multi = el.dataset.mode==='multi';
+    const preset = DEFAULT[key] ?? -1;
+    el.innerHTML = CONFIG[key].map((t,i)=>
+      `<button type="button" class="bf-chip ${multi?'multi':''} ${i===preset?'on':''}" onclick="pick(this,${multi})">${t}</button>`).join('');
+  });
+  function pick(b, multi){
+    if(multi){ b.classList.toggle('on'); return; }
+    b.parentElement.querySelectorAll('.bf-chip').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  }
+
+  function show(where){
+    document.getElementById('stage-page').classList.toggle('on', where==='page');
+    document.getElementById('stage-modal').classList.toggle('on', where==='modal');
+    document.getElementById('tab-page').classList.toggle('on', where==='page');
+    document.getElementById('tab-modal').classList.toggle('on', where==='modal');
+  }
+
+  let tt; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),1600); }
+</script>
+</body>
+</html>

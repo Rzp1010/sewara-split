@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Status Sewa — Toolbar Notion</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --accent:#4F46E5; --accent-soft:#EEF2FF; --border:#E5E7EB; --bg:#F3F4F6; --surface:#FFFFFF; --text:#111827; --text-2:#6B7280; --text-3:#9CA3AF; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; }
+
+  .head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .title { font-size:20px; font-weight:700; letter-spacing:-0.3px; }
+  .tools { display:flex; align-items:center; gap:2px; position:relative; }
+
+  .ic { width:32px; height:32px; border:none; border-radius:6px; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-2); position:relative; }
+  .ic:hover, .ic.active { background:var(--bg); color:var(--text); }
+  .ic svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .ic .dot { position:absolute; top:5px; right:5px; width:6px; height:6px; border-radius:50%; background:var(--accent); display:none; }
+  .ic.has .dot { display:block; }
+
+  .btn-new { margin-left:10px; height:34px; padding:0 14px; border:none; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn-new:hover { background:#3730A3; }
+
+  /* POPOVER */
+  .wrap { position:relative; }
+  .pop { display:none; position:absolute; right:0; top:calc(100% + 6px); width:300px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.12); padding:8px; z-index:50; }
+  .pop.open { display:block; }
+  .pop.wide { width:320px; }
+  .pop-input { width:100%; height:34px; padding:0 10px; border:1px solid var(--accent); border-radius:7px; font:inherit; font-size:13px; box-shadow:0 0 0 3px var(--accent-soft); margin-bottom:6px; }
+  .pop-input:focus { outline:none; }
+  .pop-label { font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.4px; padding:8px 8px 4px; }
+  .pop-item { display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:6px; font-size:13px; cursor:pointer; color:var(--text); }
+  .pop-item:hover { background:var(--bg); }
+  .pop-item .tick { width:16px; text-align:center; color:var(--accent); font-weight:700; }
+  .pop-item input { accent-color:var(--accent); width:15px; height:15px; }
+  .pop-item.on { font-weight:600; }
+  .pop-sep { height:1px; background:var(--border); margin:6px 0; }
+  .range { display:none; gap:6px; align-items:center; padding:4px 8px 8px; }
+  .range.on { display:flex; }
+  .range input[type=date] { flex:1; height:32px; padding:0 8px; border:1px solid var(--border); border-radius:6px; font:inherit; font-size:12px; min-width:0; }
+  .range span { font-size:12px; color:var(--text-2); }
+  .pop-foot { display:flex; justify-content:space-between; align-items:center; padding:8px 8px 4px; }
+  .pop-foot button { background:none; border:none; font:inherit; font-size:13px; color:var(--text-2); cursor:pointer; padding:4px 6px; border-radius:6px; }
+  .pop-foot button:hover { color:var(--text); background:var(--bg); }
+  .pop-foot .apply { color:var(--accent); font-weight:600; }
+
+  /* ringkasan filter aktif */
+  .summary { padding:10px 20px; font-size:13px; color:var(--text-2); background:var(--surface); border-bottom:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
+  .tag { background:var(--accent-soft); color:var(--accent); padding:3px 9px; border-radius:6px; font-size:12px; font-weight:600; }
+  .tag.plain { background:var(--bg); color:var(--text-2); }
+
+  .content { padding:24px 20px; font-size:13px; color:var(--text-3); }
+
+  @media (max-width:560px) { .pop { width:calc(100vw - 32px); right:-40px; } }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="title">Status Sewa</div>
+  <div class="tools">
+
+    <!-- FILTER -->
+    <div class="wrap">
+      <button class="ic has" id="b-filter" title="Filter" onclick="toggle('p-filter', this, event)">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span class="dot"></span>
+      </button>
+      <div class="pop wide" id="p-filter">
+        <input class="pop-input" placeholder="Filter berdasarkan...">
+        <div class="pop-label">Periode</div>
+        <div id="periode">
+          <div class="pop-item on" data-v="hari"><span class="tick">✓</span>Hari ini</div>
+          <div class="pop-item" data-v="7"><span class="tick"></span>7 hari</div>
+          <div class="pop-item" data-v="30"><span class="tick"></span>30 hari</div>
+          <div class="pop-item" data-v="semua"><span class="tick"></span>Semua</div>
+          <div class="pop-item" data-v="kustom"><span class="tick"></span>Kustom</div>
+        </div>
+        <div class="range" id="range">
+          <input type="date" value="2026-11-05"><span>sampai</span><input type="date" value="2026-11-07">
+        </div>
+        <div class="pop-sep"></div>
+        <div class="pop-label">Waktu ambil</div>
+        <div id="waktu">
+          <div class="pop-item on" data-v="semua"><span class="tick">✓</span>Semua</div>
+          <div class="pop-item" data-v="sudah"><span class="tick"></span>Sudah waktunya</div>
+          <div class="pop-item" data-v="belum"><span class="tick"></span>Belum waktunya</div>
+        </div>
+        <div class="pop-sep"></div>
+        <label class="pop-item"><input type="checkbox"> Sembunyikan selesai &amp; dibatalkan</label>
+        <div class="pop-foot">
+          <button onclick="resetFilter()">Reset</button>
+          <button class="apply" onclick="closeAll()">Terapkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SORT -->
+    <div class="wrap">
+      <button class="ic" id="b-sort" title="Urutkan" onclick="toggle('p-sort', this, event)">
+        <svg viewBox="0 0 24 24"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
+      </button>
+      <div class="pop" id="p-sort">
+        <div class="pop-label">Urutkan</div>
+        <div id="sort">
+          <div class="pop-item on" data-v="terdekat"><span class="tick">✓</span>Ambil terdekat</div>
+          <div class="pop-item" data-v="terjauh"><span class="tick"></span>Ambil terjauh</div>
+          <div class="pop-item" data-v="az"><span class="tick"></span>Nama A-Z</div>
+          <div class="pop-item" data-v="za"><span class="tick"></span>Nama Z-A</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="wrap">
+      <button class="ic" title="Cari" onclick="toggle('p-search', this, event)">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </button>
+      <div class="pop" id="p-search">
+        <input class="pop-input" style="margin-bottom:0;" placeholder="Cari penyewa atau invoice">
+      </div>
+    </div>
+
+    <button class="btn-new" onclick="toast('Booking baru (prototype)')">Booking baru</button>
+  </div>
+</div>
+
+<div class="summary" id="summary"><span class="tag">Hari ini</span><span class="tag plain">Semua waktu ambil</span><span class="tag plain">Ambil terdekat</span></div>
+
+<div class="content">Area kanban Status Sewa ada di sini (tidak diubah).</div>
+
+<div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:none;"></div>
+
+<script>
+  let state = { periode:'hari', waktu:'semua', sort:'terdekat' };
+  const PL = {hari:'Hari ini', '7':'7 hari', '30':'30 hari', semua:'Semua', kustom:'Kustom'};
+  const WL = {semua:'Semua waktu ambil', sudah:'Sudah waktunya', belum:'Belum waktunya'};
+  const SL = {terdekat:'Ambil terdekat', terjauh:'Ambil terjauh', az:'Nama A-Z', za:'Nama Z-A'};
+
+  function toggle(id, btn, ev){
+    ev.stopPropagation();
+    const p = document.getElementById(id);
+    const open = p.classList.contains('open');
+    closeAll();
+    if(!open){ p.classList.add('open'); btn.classList.add('active'); }
+  }
+  function closeAll(){
+    document.querySelectorAll('.pop').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.ic').forEach(b=>b.classList.remove('active'));
+    renderSummary();
+  }
+  document.addEventListener('click', e=>{ if(!e.target.closest('.pop')) closeAll(); });
+
+  function pickGroup(containerId, key, labels){
+    document.querySelectorAll(`#${containerId} .pop-item`).forEach(it=>{
+      it.addEventListener('click', ()=>{
+        document.querySelectorAll(`#${containerId} .pop-item`).forEach(x=>{ x.classList.remove('on'); x.querySelector('.tick').textContent=''; });
+        it.classList.add('on'); it.querySelector('.tick').textContent='✓';
+        state[key] = it.dataset.v;
+        if(containerId==='periode') document.getElementById('range').classList.toggle('on', it.dataset.v==='kustom');
+      });
+    });
+  }
+  pickGroup('periode','periode');
+  pickGroup('waktu','waktu');
+  pickGroup('sort','sort');
+
+  function renderSummary(){
+    const s = document.getElementById('summary');
+    const periodeLabel = state.periode==='kustom' ? 'Kustom' : PL[state.periode];
+    s.innerHTML = `<span class="tag">${periodeLabel}</span><span class="tag plain">${WL[state.waktu]}</span><span class="tag plain">${SL[state.sort]}</span>`;
+    document.getElementById('b-filter').classList.toggle('has', !(state.periode==='hari' && state.waktu==='semua'));
+  }
+  function resetFilter(){
+    state = { periode:'hari', waktu:'semua', sort:state.sort };
+    ['periode','waktu'].forEach(c=>{
+      document.querySelectorAll(`#${c} .pop-item`).forEach((x,i)=>{ x.classList.toggle('on', i===0); x.querySelector('.tick').textContent = i===0?'✓':''; });
+    });
+    document.getElementById('range').classList.remove('on');
+    renderSummary();
+  }
+
+  let tt; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(tt); tt=setTimeout(()=>t.style.display='none',1600); }
+</script>
+</body>
+</html>
