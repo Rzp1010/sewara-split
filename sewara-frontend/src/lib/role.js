@@ -12,7 +12,6 @@ export const HAK_MENU = {
   "/dashboard/inventaris": [ROLE_OWNER, ROLE_GUDANG],
   "/dashboard/booking": [ROLE_OWNER, ROLE_CS],
   "/dashboard/status": [ROLE_OWNER, ROLE_CS],
-  "/dashboard/chat": [ROLE_SUPERADMIN, ROLE_OWNER, ROLE_CS, ROLE_GUDANG],
   "/dashboard/riwayat": [ROLE_OWNER, ROLE_CS],
   "/dashboard/tracking": [ROLE_OWNER, ROLE_CS, ROLE_GUDANG],
   "/dashboard/log": [ROLE_OWNER, ROLE_GUDANG],

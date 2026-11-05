@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo, useRef, useMemo } from "react";
-import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar, getChatMessages, kirimChat, getChatUnread, tandaiChatDibaca } from "@/lib/db";
+import { getSetting, getInventory, updateInventory, getTransactions, getTransactionsSelesai, getTransactionsBelumSelesai, getTransactionById, getTransactionItemsBulk, updateTransactions, tambahLogs, getNamaInvoice, uploadBuktiBayar, urlBuktiBayar, getChatMessages, kirimChat, getChatUnread, tandaiChatDibaca, getTransactionsRingkas } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
 import {
@@ -372,8 +372,27 @@ export default function StatusPage() {
   const [chatBusy, setChatBusy] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
-  const [chatBadge, setChatBadge] = useState({ perTrx: {}, total: 0 });
+  const [chatBadge, setChatBadge] = useState({ room: 0, perTrx: {}, total: 0 });
+  const chatBadgeRef = useRef(chatBadge);
+  useEffect(() => {
+    chatBadgeRef.current = chatBadge;
+  }, [chatBadge]);
   const [chatBelumAwal, setChatBelumAwal] = useState(0);
+  const [chatFilter, setChatFilter] = useState("");
+  const [chatTrxKirim, setChatTrxKirim] = useState("");
+  const [chatInvMap, setChatInvMap] = useState({});
+  const chatTampil = chatFilter ? chatPesan.filter((m) => m.trxId === chatFilter) : chatPesan;
+  const chatInvoices = [...new Set(chatPesan.map((m) => m.trxId).filter(Boolean))];
+  let chatSekatIndex = -1;
+  if (chatBelumAwal > 0 && userId) {
+    let jumlah = 0;
+    for (let i = chatTampil.length - 1; i >= 0; i--) {
+      if (chatTampil[i].authorId !== userId && ++jumlah === chatBelumAwal) {
+        chatSekatIndex = i;
+        break;
+      }
+    }
+  }
   const chatBoxRef = useRef(null);
   const [kondisiModal, setKondisiModal] = useState(null);
   const [snModal, setSnModal] = useState(null);
@@ -574,13 +593,21 @@ export default function StatusPage() {
     };
   }, []);
 
-  // Chat: muat thread transaksi yang dibuka, poll 10 detik, tandai dibaca.
+  useEffect(() => {
+    getTransactionsRingkas().then((list) => {
+      const map = {};
+      for (const t of list || []) map[t.id] = t.no_invoice || "";
+      setChatInvMap(map);
+    }).catch(() => {});
+  }, []);
+
+  // Chat ruang gabungan, poll 10 detik.
   useEffect(() => {
     if (!chatTrx) return;
     let hidup = true;
     const muat = async () => {
       try {
-        const data = await getChatMessages({ trxId: chatTrx.id, limit: 200 });
+        const data = await getChatMessages({ limit: 200 });
         if (!hidup) return;
         setChatPesan(data);
         setChatError("");
@@ -589,14 +616,6 @@ export default function StatusPage() {
       } finally {
         if (hidup) setChatLoading(false);
       }
-      await tandaiChatDibaca({ trxId: chatTrx.id });
-      if (!hidup) return;
-      setChatBadge((b) => {
-        const perTrx = { ...(b.perTrx || {}) };
-        const sisa = perTrx[chatTrx.id] || 0;
-        delete perTrx[chatTrx.id];
-        return { ...b, perTrx, total: Math.max(0, (b.total || 0) - sisa) };
-      });
     };
     muat();
     const timer = setInterval(muat, 10000);
@@ -605,6 +624,23 @@ export default function StatusPage() {
       clearInterval(timer);
     };
   }, [chatTrx]);
+
+  useEffect(() => {
+    if (!chatTrx) return;
+    const unread = chatFilter ? chatBadgeRef.current.perTrx?.[chatFilter] || 0 : chatBadgeRef.current.room || 0;
+    setChatBelumAwal(unread);
+    tandaiChatDibaca(chatFilter ? { trxId: chatFilter } : {}).then(() => {
+      setChatBadge((b) => {
+        if (chatFilter) {
+          const perTrx = { ...(b.perTrx || {}) };
+          const sisa = perTrx[chatFilter] || 0;
+          delete perTrx[chatFilter];
+          return { ...b, perTrx, total: Math.max(0, (b.total || 0) - sisa) };
+        }
+        return { ...b, room: 0 };
+      });
+    }).catch(() => {});
+  }, [chatTrx, chatFilter]);
 
   useEffect(() => {
     if (!chatTrx) return;
@@ -622,7 +658,8 @@ export default function StatusPage() {
   }, [chatTrx, chatPesan]);
 
   const bukaChat = (t) => {
-    setChatBelumAwal(chatBadge.perTrx?.[t.id] || 0);
+    setChatFilter(String(t.id));
+    setChatTrxKirim(String(t.id));
     setChatPesan([]);
     setChatError("");
     setChatLoading(true);
@@ -634,7 +671,7 @@ export default function StatusPage() {
     if (!teks || chatBusy || !chatTrx) return;
     setChatBusy(true);
     try {
-      const baru = await kirimChat({ trxId: chatTrx.id, pesan: teks });
+      const baru = await kirimChat({ trxId: chatTrxKirim || null, pesan: teks });
       setChatIsi("");
       setChatError("");
       if (baru) setChatPesan((p) => [...p, baru]);
@@ -2709,23 +2746,25 @@ export default function StatusPage() {
                   &times;
                 </button>
               </div>
+              <div className="flex flex-wrap gap-1 border-b border-solid border-[var(--border-color)] px-3 py-2">
+                <button type="button" onClick={() => setChatFilter("")} className={`rounded-full px-2 py-1 text-[10px] ${chatFilter === "" ? "bg-[var(--color-primary-soft,#e0e7ff)] text-[var(--color-primary-soft-text,#4338ca)]" : "bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}>Semua</button>
+                {chatInvoices.map((id) => <button key={id} type="button" onClick={() => setChatFilter(id)} className={`rounded-full px-2 py-1 text-[10px] ${chatFilter === id ? "bg-[var(--color-primary-soft,#e0e7ff)] text-[var(--color-primary-soft-text,#4338ca)]" : "bg-[var(--bg-subtle)] text-[var(--text-secondary)]"}`}>{chatInvMap[id] || `Invoice ${id.slice(0, 8)}`}</button>)}
+              </div>
               <div ref={chatBoxRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 {chatLoading && chatPesan.length === 0 ? (
                   <p className="text-xs text-[var(--text-secondary)]">
                     Memuat chat…
                   </p>
-                ) : chatPesan.length === 0 ? (
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Belum ada pesan untuk invoice ini.
-                  </p>
+                ) : chatTampil.length === 0 ? (
+                  <p className="text-xs text-[var(--text-secondary)]">{chatFilter ? "Belum ada pesan untuk invoice ini." : "Belum ada pesan."}</p>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {chatPesan.map((m, index) => {
+                    {chatTampil.map((m, index) => {
                       const sendiri = Boolean(userId) && m.authorId === userId;
-                      const sekatIndex = chatPesan.length - chatBelumAwal;
+                      const sekatIndex = chatSekatIndex;
                       return (
                         <div key={m.id}>
-                          {chatBelumAwal > 0 && chatBelumAwal < chatPesan.length && index === sekatIndex && (
+                          {sekatIndex >= 0 && index === sekatIndex && (
                             <div className="flex items-center gap-2 py-1 text-[10px] font-semibold text-[var(--color-danger-text)]">
                               <span className="h-px flex-1 bg-[var(--color-danger-soft)]" />
                               Belum dibaca
@@ -2764,8 +2803,13 @@ export default function StatusPage() {
               )}
               <form
                 onSubmit={kirimPesanChat}
-                className="flex items-end gap-2 border-t border-solid border-[var(--border-color)] px-4 py-3"
+                className="flex flex-col gap-2 border-t border-solid border-[var(--border-color)] px-4 py-3"
               >
+                <select value={chatTrxKirim} onChange={(e) => setChatTrxKirim(e.target.value)} className="w-full rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-body)] px-2 py-1.5 text-xs text-[var(--text-primary)]">
+                  <option value="">Tanpa invoice</option>
+                  {chatInvoices.map((id) => <option key={id} value={id}>{chatInvMap[id] || `Invoice ${id.slice(0, 8)}`}</option>)}
+                </select>
+                <div className="flex items-end gap-2">
                 <textarea
                   value={chatIsi}
                   onChange={(e) => setChatIsi(e.target.value)}
@@ -2786,6 +2830,7 @@ export default function StatusPage() {
                 >
                   {chatBusy ? "…" : "Kirim"}
                 </button>
+                </div>
               </form>
             </aside>
           </>,
