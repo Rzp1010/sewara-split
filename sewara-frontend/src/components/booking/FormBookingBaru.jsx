@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useDebounce } from "use-debounce";
 import { getSetting, getSettingTenant, getStok, promoSudahKadaluarsa, getInventory, getInventoryByIds, updateInventory, getTransactionsAktif, updateTransactions, tambahTransactions, getLastDbError, getPromoCodes, validasiPromo, pakaiPromo, tambahLogs, getNamaInvoice, buatIDUnik, getPelangganSuggestions, uploadBuktiBayar, cekBlacklist, getBlacklist } from "@/lib/db";
 
-import { api } from "@/lib/api-client";
 import {
   formatAngkaInput,
   formatRupiah,
-  formatTanggal,
   hitungDurasi,
   hitungSubtotal,
-  hitungPembayaran,
   kondisiUnit,
   catatanUnit,
   parseJaminan,
@@ -34,9 +32,6 @@ import {
   snsTerpakaiIdx,
   snsBebasIdx,
   hitungStokIdx,
-  snsRujukLainIdx,
-  getStatusClass,
-  persentaseMemberEfektif,
   batasAmbilMundur,
 } from "@/lib/booking/helpers";
 import { hitungDiskonMurni } from "@/lib/booking/diskon";
@@ -138,6 +133,43 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
+
+  // Handoff gantt → booking: item dari Tracking Alat dititipkan lewat sessionStorage.
+  // Ref item sudah membawa objek inventory utuh, jadi tidak perlu tunggu katalog.
+  useEffect(() => {
+    if (typeof window === "undefined" || prefillTerpakai.current) return;
+    prefillTerpakai.current = true;
+    (async () => {
+      try {
+        const raw = sessionStorage.getItem("rentalpro_booking_prefill");
+        if (!raw) return;
+        sessionStorage.removeItem("rentalpro_booking_prefill");
+        const data = JSON.parse(raw);
+        const ambilISO = typeof data?.ambilISO === "string" ? data.ambilISO : "";
+        const kembaliISO =
+          typeof data?.kembaliISO === "string" ? data.kembaliISO : "";
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const a = new Date(ambilISO);
+        const k = new Date(kembaliISO);
+        if (
+          !ambilISO ||
+          !kembaliISO ||
+          items.length === 0 ||
+          Number.isNaN(a.getTime()) ||
+          Number.isNaN(k.getTime())
+        )
+          return;
+        setAmbilWaktu(a);
+        setKembaliWaktu(k);
+        setShowCustom(true);
+        cartRef.current = items;
+        setCart(items);
+      } catch (e) {
+        notify("Prefill booking gagal dibaca: " + e.message, "error");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!getFITUR().memberPromo) return;

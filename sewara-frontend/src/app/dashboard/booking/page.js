@@ -67,11 +67,7 @@ export default function BookingPage() {
   // jadi satu indikator loading menutup simpan + muat ulang data.
   const sedangSimpan = useRef(false);
   const [isIndexing, setIsIndexing] = useState(false);
-
-
-
-
-
+  const [refresh, setRefresh] = useState(0);
 
   const muat = useCallback(async () => {
     // Saat booking/faktur sedang disimpan, indikator milik pemanggil yang dipakai
@@ -93,6 +89,22 @@ export default function BookingPage() {
       if (!sedangSimpan.current) setLoading("");
     }
   }, [notify]);
+
+  useEffect(() => {
+    (async () => {
+      await muat();
+    })();
+  }, [muat, refresh]);
+
+  // Muat ulang saat data berubah dari halaman lain (booking disimpan/diubah/dibatalkan).
+  useEffect(() => {
+    const handler = () => {
+      if (!sedangSimpan.current) setRefresh((r) => r + 1);
+    };
+    window.addEventListener("dataChanged", handler);
+    return () => window.removeEventListener("dataChanged", handler);
+  }, []);
+
 
   const refKolomKiri = useRef(null);
   const [tinggiJadwal, setTinggiJadwal] = useState(null);
