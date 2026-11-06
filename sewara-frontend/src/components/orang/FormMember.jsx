@@ -25,10 +25,11 @@ const EMPTY = {
  * Form tambah/edit member. Dipasang hanya saat terbuka (host memberi `key`),
  * jadi state awal cukup diambil dari props — tanpa setState di dalam effect.
  */
-export default function FormMember({ member, onClose, onDone }) {
+export default function FormMember({ member, prefill, onClose, onDone }) {
   const { notify, confirm: konfirm } = useNotify();
   const [form, setForm] = useState(() => ({
     ...EMPTY,
+    ...(prefill || {}),
     ...(member || {}),
     tipe_id: member?.tipe_id ?? "",
     foto_jaminan: Array.isArray(member?.foto_jaminan) ? member.foto_jaminan : [],
@@ -104,44 +105,44 @@ export default function FormMember({ member, onClose, onDone }) {
     <Modal
       isOpen
       onClose={onClose}
-      title={`${member?.id ? "Edit" : "Tambah"} member`}
+      title={member?.id ? "Edit member" : (prefill?.nama ? "Jadikan member" : "Tambah member")}
+      description="Lengkapi data kontak, tipe, dan dokumen jaminan."
       size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Batal</Button>
+          <Button loading={saving} onClick={simpan}>Simpan</Button>
+        </>
+      }
     >
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="space-y-5">
+        <section className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Data kontak</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[
             { key: "nama", label: "Nama", wajib: true },
-            { key: "hp", label: "No HP" },
+            { key: "hp", label: "No. HP" },
             { key: "email", label: "Email" },
             { key: "alamat", label: "Alamat" },
           ].map((f) => (
-            <label
-              key={f.key}
-              className="text-xs font-semibold text-[var(--text-secondary)]"
-            >
-              {f.label}
-              {f.wajib ? " *" : ""}
+            <label key={f.key} className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">
+              {f.label}{f.wajib ? " *" : ""}
               <input
                 value={form[f.key] || ""}
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                className={`mt-1 ${input}`}
+                className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </label>
           ))}
-          <label className="text-xs font-semibold text-[var(--text-secondary)] sm:col-span-2">
-            Catatan
-            <input
-              value={form.catatan || ""}
-              onChange={(e) => setForm({ ...form, catatan: e.target.value })}
-              className={`mt-1 ${input}`}
-            />
-          </label>
-        </div>
-
-        <div>
-          <div className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">
-            Tipe member
           </div>
+        </section>
+        <section className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Catatan</h2>
+          <textarea rows={2} placeholder="Catatan tambahan (opsional)" value={form.catatan || ""} onChange={(e) => setForm({ ...form, catatan: e.target.value })} className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]" />
+        </section>
+        <section className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Tipe member</h2>
+          {templates.length === 0 ? <p className="mb-2 text-sm text-[var(--text-muted)]">Belum ada tipe member.</p> : null}
           <div className="flex flex-wrap gap-2">
             {templates.map((t) => (
               <button
@@ -169,12 +170,15 @@ export default function FormMember({ member, onClose, onDone }) {
               Tanpa tipe
             </button>
           </div>
-        </div>
+        </section>
 
-        <div>
-          <div className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">
-            Dokumen jaminan
-          </div>
+        <section className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Dokumen jaminan</h2>
+          {member?.id ? null : (
+            <p className="mb-2 text-sm text-[var(--text-muted)]">
+              Simpan member dulu untuk mengunggah dokumen.
+            </p>
+          )}
           <DokumenJaminan
             judul=""
             dokumen={form.foto_jaminan}
@@ -182,21 +186,7 @@ export default function FormMember({ member, onClose, onDone }) {
             onHapus={hapusDokumen}
             urlDokumen={urlDokumenMember}
           />
-          {member?.id ? null : (
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-              Simpan member dulu untuk mengunggah dokumen.
-            </p>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-[var(--border-color)] pt-3">
-          <Button variant="ghost" onClick={onClose}>
-            Batal
-          </Button>
-          <Button loading={saving} onClick={simpan}>
-            Simpan
-          </Button>
-        </div>
+        </section>
       </div>
     </Modal>
   );

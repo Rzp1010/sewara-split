@@ -37,12 +37,15 @@ function DurasiTierEditor({ value, onChange }) {
       <table className="w-full text-sm">
         <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-secondary)]">
           <tr>
-            <th className="px-3 py-2 text-left">Durasi (≥ hari)</th>
-            <th className="px-3 py-2 text-left">Diskon %</th>
+            <th className="px-3 py-2 text-left">Mulai dari (hari)</th>
+            <th className="px-3 py-2 text-left">Diskon (%)</th>
             <th className="w-12 px-3 py-2 text-center">—</th>
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={3} className="px-3 py-2 text-sm text-[var(--text-muted)]">Belum ada aturan durasi.</td></tr>
+          ) : null}
           {rows.map((r, i) => (
             <tr key={i} className="border-t border-[var(--border-color)]">
               <td className="px-3 py-2">
@@ -59,7 +62,7 @@ function DurasiTierEditor({ value, onChange }) {
                       ),
                     )
                   }
-                  className="w-20 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-sm"
+                  className="w-24 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
               </td>
               <td className="px-3 py-2">
@@ -77,7 +80,7 @@ function DurasiTierEditor({ value, onChange }) {
                       ),
                     )
                   }
-                  className="w-20 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-sm"
+                  className="w-24 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
               </td>
               <td className="px-3 py-2 text-center">
@@ -108,7 +111,7 @@ function DurasiTierEditor({ value, onChange }) {
           }
           className="text-xs font-medium text-[var(--color-primary)] hover:underline"
         >
-          + Tambah tier
+          + Tambah aturan diskon
         </button>
       </div>
     </div>
@@ -125,13 +128,17 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
   const [form, setForm] = useState(EMPTY_TIER);
   const [editId, setEditId] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [memuat, setMemuat] = useState(true);
 
   async function muat() {
+    setMemuat(true);
     try {
       const rows = await getMemberTemplates();
       setTipe(Array.isArray(rows) ? rows : []);
     } catch {
       notify("Gagal memuat tipe member.", "error");
+    } finally {
+      setMemuat(false);
     }
   }
 
@@ -141,14 +148,19 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
       .then((rows) => {
         if (!batal) setTipe(Array.isArray(rows) ? rows : []);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!batal) notify("Gagal memuat tipe member.", "error");
+      })
+      .finally(() => {
+        if (!batal) setMemuat(false);
+      });
     return () => {
       batal = true;
     };
   }, []);
 
   const input =
-    "mt-1 w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
+    "mt-1 w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]";
 
   function mulaiEdit(t) {
     setEditId(t.id);
@@ -196,9 +208,11 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
   }
 
   return (
-    <Modal isOpen onClose={onClose} title="Tipe member" size="lg">
-      <div className="flex flex-col gap-4">
-        <div className="overflow-hidden rounded-lg border border-[var(--border-color)]">
+    <Modal isOpen onClose={onClose} title="Kelola tipe member" description="Atur status dan diskon yang berlaku untuk tiap tipe." size="xl">
+      <div className="space-y-5">
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Daftar tipe</h2>
+          <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
           <table className="w-full text-sm">
             <thead className="bg-[var(--bg-subtle)] text-xs uppercase text-[var(--text-secondary)]">
               <tr>
@@ -209,13 +223,12 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
               </tr>
             </thead>
             <tbody>
-              {tipe.length === 0 ? (
+              {memuat ? (
+                <tr><td colSpan={4} className="py-4 text-center text-sm text-[var(--text-muted)]">Memuat tipe member...</td></tr>
+              ) : tipe.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="px-3 py-4 text-center text-[var(--text-muted)]"
-                  >
-                    Belum ada tipe.
+                  <td colSpan={4} className="py-4 text-center text-sm text-[var(--text-muted)]">
+                    Belum ada tipe member. Tambahkan tipe melalui formulir di bawah.
                   </td>
                 </tr>
               ) : (
@@ -249,23 +262,24 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="rounded-lg border border-[var(--border-color)] p-3">
-          <div className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">
-            {editId ? "Edit tipe" : "Tambah tipe"}
           </div>
+        </section>
+
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">
+            {editId ? "Edit tipe" : "Tambah tipe"}
+          </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <label className="text-xs font-semibold text-[var(--text-secondary)]">
-              Nama
+            <label className="text-sm font-medium text-[var(--text-secondary)]">
+              Nama tipe *
               <input
                 value={form.nama}
                 onChange={(e) => setForm({ ...form, nama: e.target.value })}
                 className={input}
               />
             </label>
-            <label className="text-xs font-semibold text-[var(--text-secondary)]">
-              Diskon %
+            <label className="text-sm font-medium text-[var(--text-secondary)]">
+              Diskon umum (%)
               <input
                 type="number"
                 min="0"
@@ -277,7 +291,7 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
                 className={input}
               />
             </label>
-            <label className="text-xs font-semibold text-[var(--text-secondary)]">
+            <label className="text-sm font-medium text-[var(--text-secondary)]">
               Status
               <select
                 value={form.status}
@@ -290,7 +304,7 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
             </label>
           </div>
           <div className="mt-3">
-            <div className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">
+            <div className="mb-1 text-sm font-medium text-[var(--text-secondary)]">
               Diskon berdasarkan durasi sewa (opsional)
             </div>
             <p className="mb-2 text-[11px] text-[var(--text-muted)]">
@@ -318,7 +332,7 @@ export default function ModalTipeMember({ onClose, onBerubah }) {
               Simpan tipe
             </Button>
           </div>
-        </div>
+        </section>
       </div>
     </Modal>
   );

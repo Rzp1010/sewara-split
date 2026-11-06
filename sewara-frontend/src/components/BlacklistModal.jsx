@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import {
   tambahBlacklist,
   ubahBlacklist,
@@ -9,9 +8,46 @@ import {
 } from "@/lib/db";
 import { useNotify } from "@/components/NotificationProvider";
 import { FOTO_SLOTS, SlotJaminan } from "@/components/DokumenJaminan";
+import { Button, Modal } from "@/components/ui";
 
 const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
 const SLOT_KOSONG = Array(5).fill(null);
+
+// Nilai awal dihitung saat mount: host selalu me-mount ulang modal ini per entri
+// (`{blackEdit ? <BlacklistModal entry=... /> : null}`), jadi tidak perlu efek
+// penyelarasan state.
+function formAwal(prefill, entry) {
+  return {
+    ...EMPTY,
+    nama: entry?.nama || prefill?.nama || "",
+    hp: entry?.hp || prefill?.hp || "",
+    alamat: entry?.alamat || prefill?.alamat || "",
+    alasan: entry?.alasan || "",
+  };
+}
+
+function slotsAwal(prefill, entry) {
+  // Snapshot foto member -> readonly, ikut terkirim saat POST create.
+  const awal = Array(5).fill(null);
+  const sumber = entry
+    ? Array.isArray(entry.fotoJaminan)
+      ? entry.fotoJaminan
+      : []
+    : Array.isArray(prefill?.fotoJaminan)
+      ? prefill.fotoJaminan
+      : [];
+  sumber
+    .filter((f) => f?.path)
+    .slice(0, 5)
+    .forEach((f, i) => {
+      awal[i] = {
+        label: f.label || FOTO_SLOTS[i],
+        path: f.path,
+        ...(entry ? {} : { snapshot: true }),
+      };
+    });
+  return awal;
+}
 
 /**
  * Modal Blacklist penyewa (dibuat dari riwayat / pelanggan / detail member).
@@ -21,40 +57,9 @@ const SLOT_KOSONG = Array(5).fill(null);
  */
 export default function BlacklistModal({ open, onClose, prefill, entry, onDone }) {
   const { notify } = useNotify();
-  const [form, setForm] = useState(EMPTY);
-  const [slots, setSlots] = useState(SLOT_KOSONG);
+  const [form, setForm] = useState(() => formAwal(prefill, entry));
+  const [slots, setSlots] = useState(() => slotsAwal(prefill, entry));
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setForm({
-      ...EMPTY,
-      nama: entry?.nama || prefill?.nama || "",
-      hp: entry?.hp || prefill?.hp || "",
-      alamat: entry?.alamat || prefill?.alamat || "",
-      alasan: entry?.alasan || "",
-    });
-    // Snapshot foto member -> readonly, ikut terkirim saat POST create.
-    const awal = Array(5).fill(null);
-    const sumber = entry
-      ? Array.isArray(entry.fotoJaminan)
-        ? entry.fotoJaminan
-        : []
-      : Array.isArray(prefill?.fotoJaminan)
-        ? prefill.fotoJaminan
-        : [];
-    sumber
-      .filter((f) => f?.path)
-      .slice(0, 5)
-      .forEach((f, i) => {
-        awal[i] = {
-          label: f.label || FOTO_SLOTS[i],
-          path: f.path,
-          ...(entry ? {} : { snapshot: true }),
-        };
-      });
-    setSlots(awal);
-  }, [open, entry]);
 
   async function simpan() {
     if (!form.nama.trim()) return notify("Nama wajib diisi.", "error");
@@ -120,113 +125,80 @@ export default function BlacklistModal({ open, onClose, prefill, entry, onDone }
 
   if (typeof document === "undefined" || !open) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-[var(--bg-surface)] shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
-          <h3 className="m-0 text-lg font-bold">
-            {entry ? "Ubah entri blacklist" : "Blacklist Penyewa"}
-          </h3>
-          <button
-            type="button"
-            aria-label="Tutup"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-[var(--bg-subtle)] text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
+  const snapshotAda = slots.some((slot) => slot?.snapshot);
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title={entry ? "Ubah entri blacklist" : "Tambah ke blacklist"}
+      description="Data ini dipakai untuk memberi peringatan saat penyewa dikenali."
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Batal</Button>
+          <Button
+            variant="danger"
+            loading={saving}
+            disabled={!form.nama.trim() || !form.hp.trim() || !form.alasan.trim()}
+            onClick={simpan}
           >
-            ×
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {entry ? "Simpan perubahan" : "Tambahkan ke blacklist"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Data penyewa</h4>
+          <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
-                Nama
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Nama <span className="text-[var(--color-danger)]">*</span></label>
               <input
                 value={form.nama}
                 onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                placeholder="Nama penyewa"
+                className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
-                No. HP <span className="text-red-500">*</span>
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">No. HP <span className="text-[var(--color-danger)]">*</span></label>
               <input
                 value={form.hp}
                 onChange={(e) => setForm({ ...form, hp: e.target.value })}
                 placeholder="08xxxxxxxxxx"
-                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
-              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-                Blacklist memakai pasangan nama + nomor HP.
-              </p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">Pencocokan memakai pasangan nama dan nomor HP.</p>
             </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
-                Alamat
-              </label>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Alamat</label>
               <input
                 value={form.alamat}
                 onChange={(e) => setForm({ ...form, alamat: e.target.value })}
-                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                placeholder="Alamat penyewa (opsional)"
+                className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-primary)]">
-                Alasan <span className="text-red-500">*</span>
-              </label>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--text-secondary)]">Alasan <span className="text-[var(--color-danger)]">*</span></label>
               <textarea
                 rows={3}
                 value={form.alasan}
                 onChange={(e) => setForm({ ...form, alasan: e.target.value })}
-                placeholder="Cth: barang tidak dikembalikan, telat berulang, dll."
-                className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20"
+                placeholder="Jelaskan alasan penyewa masuk blacklist."
+                className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </div>
           </div>
+        </section>
 
-          <div className="mt-5">
-            <SlotJaminan items={slots} onChange={setSlots} />
-            <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
-              JPG/PNG/PDF maks 5MB per file.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-color)] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border-0 bg-[var(--bg-subtle)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
-          >
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={simpan}
-            disabled={
-              saving ||
-              !form.nama.trim() ||
-              !form.hp.trim() ||
-              !form.alasan.trim()
-            }
-            className="rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f] disabled:opacity-60"
-          >
-            {saving ? "Menyimpan..." : entry ? "Simpan" : "Blacklist"}
-          </button>
-        </div>
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Dokumen jaminan</h4>
+          <SlotJaminan items={slots} onChange={setSlots} />
+          <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">JPG/PNG/PDF maks 5MB per file.</p>
+          {snapshotAda ? <p className="mt-2 text-xs text-[var(--text-muted)]">Dokumen tersalin dari data member; tidak dapat diubah di sini.</p> : null}
+        </section>
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

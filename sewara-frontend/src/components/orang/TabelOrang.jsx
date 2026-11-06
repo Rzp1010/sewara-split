@@ -23,15 +23,25 @@ function Badge({ children, tone }) {
 }
 
 export function StatusBadges({ orang }) {
-  const punyaBarisPelanggan =
-    orang.sumber === "pelanggan" || orang.sumber === "riwayat";
+  // Satu badge saja: pembaca harus langsung tahu orang ini "tipe" apa.
+  // Urutan kekuatan: Blacklist > Member (nama tipe) > Pelanggan.
+  const tone = orang.black
+    ? "blacklist"
+    : orang.member
+      ? "member"
+      : orang.sumber === "pelanggan" || orang.sumber === "riwayat"
+        ? "pelanggan"
+        : null;
+  if (!tone) return null;
+  const label =
+    tone === "blacklist"
+      ? "Blacklist"
+      : tone === "member"
+        ? orang.member.tipeNama || "Member"
+        : "Pelanggan";
   return (
     <div className="flex flex-wrap gap-1">
-      {orang.member ? (
-        <Badge tone="member">{orang.member.tipeNama || "Member"}</Badge>
-      ) : null}
-      {punyaBarisPelanggan ? <Badge tone="pelanggan">Pelanggan</Badge> : null}
-      {orang.black ? <Badge tone="blacklist">Blacklist</Badge> : null}
+      <Badge tone={tone}>{label}</Badge>
     </div>
   );
 }

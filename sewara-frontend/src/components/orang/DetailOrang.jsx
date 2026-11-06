@@ -129,73 +129,72 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={`Detail ${orang.nama}`} size="lg">
-      <div className="flex flex-col gap-3">
-        {FIELDS.map((f) => {
-          const nilai = orang[f.key] || "";
-          const aktif = edit?.key === f.key;
-          return (
-            <div
-              key={f.key}
-              className="flex items-start gap-3 rounded-lg border border-[var(--border-color)] px-3 py-2"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
-                  {f.label}
-                </div>
-                {aktif ? (
-                  <input
-                    autoFocus
-                    value={edit.nilai}
-                    onChange={(e) => setEdit({ ...edit, nilai: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]"
-                  />
-                ) : (
-                  <div className="truncate text-sm text-[var(--text-primary)]">
-                    {nilai || "—"}
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Detail ${orang.nama}`}
+      description="Ubah data per kolom atau kelola dokumen jaminan."
+      size="lg"
+      footer={<Button variant="outline" onClick={onClose}>Tutup</Button>}
+    >
+      <div className="space-y-4">
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Informasi pelanggan</h4>
+          <div className="space-y-3">
+            {FIELDS.map((f) => {
+              const nilai = orang[f.key] || "";
+              const aktif = edit?.key === f.key;
+              return (
+                <div key={f.key} className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-[var(--text-muted)]">{f.label}</div>
+                    {aktif ? (
+                      <input
+                        autoFocus
+                        value={edit.nilai}
+                        onChange={(e) => setEdit({ ...edit, nilai: e.target.value })}
+                        className="mt-1 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]"
+                      />
+                    ) : (
+                      <div className={`text-sm ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
+                        {nilai || "Belum diisi"}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {aktif ? (
-                <div className="flex shrink-0 gap-2">
-                  <Button size="sm" loading={saving} onClick={simpanField}>
-                    Simpan
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEdit(null)}>
-                    Batal
-                  </Button>
+                  {aktif ? (
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Ubah ${f.label}`}
+                      className="shrink-0 rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                      onClick={() => setEdit({ key: f.key, nilai })}
+                    >
+                      ✎
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  aria-label={`Ubah ${f.label}`}
-                  className="shrink-0 rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
-                  onClick={() => setEdit({ key: f.key, nilai })}
-                >
-                  ✎
-                </button>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </section>
 
         {orang.black ? (
-          <div className="rounded-lg border border-[var(--color-danger)] bg-[var(--bg-subtle)] px-3 py-2 text-xs text-[var(--text-primary)]">
-            <strong>Blacklist</strong> · alasan: {orang.black.alasan}
-            {orang.black.createdAt
-              ? ` · sejak ${String(orang.black.createdAt).slice(0, 10)}`
-              : ""}
-            <div className="mt-1 text-[var(--text-muted)]">
-              Tanggal masuk bersifat read-only.
-            </div>
-          </div>
+          <section className="rounded-lg border border-[var(--color-danger)] bg-[var(--bg-subtle)] p-4">
+            <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Status blacklist</h4>
+            <p className="text-sm text-[var(--text-primary)]"><span className="font-semibold">Alasan:</span> {orang.black.alasan}</p>
+            {orang.black.createdAt ? <p className="mt-1 text-sm text-[var(--text-primary)]"><span className="font-semibold">Tanggal masuk:</span> {String(orang.black.createdAt).slice(0, 10)}</p> : null}
+            <p className="mt-2 text-xs text-[var(--text-muted)]">Tanggal masuk bersifat read-only.</p>
+          </section>
         ) : null}
 
-        <div className="rounded-lg border border-[var(--border-color)] px-3 py-2">
-          <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
-            Dokumen jaminan · {foto.filter((d) => d?.path).length}/5
-            {idMember ? " (tersimpan di data member)" : ""}
-          </div>
+        <section className="rounded-lg border border-[var(--border-color)] p-4">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">
+            Dokumen jaminan · {foto.filter((d) => d?.path).length}/5{ idMember ? " (tersimpan di data member)" : "" }
+          </h4>
           <DokumenJaminan
             judul=""
             dokumen={foto}
@@ -203,10 +202,8 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
             onHapus={hapusJaminan}
             urlDokumen={idMember ? urlDokumenMember : urlDokumenPelanggan}
           />
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            JPG/PNG/PDF maks 5MB per file.
-          </p>
-        </div>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">JPG/PNG/PDF maks 5MB per file.</p>
+        </section>
       </div>
     </Modal>
   );

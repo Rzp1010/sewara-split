@@ -8,7 +8,6 @@ import {
   getBlacklist,
   hapusMember,
   hapusBlacklist,
-  simpanMember,
 } from "@/lib/db";
 import { hpNormal, samaOrangnya, terBlacklist, unduhCSV } from "@/lib/utils";
 import { ErrorState, LoadingSpinner } from "@/components/ui";
@@ -171,17 +170,16 @@ function IsiHalaman() {
         },
       });
     if (kode === "ubah-blacklist") return setBlackEdit(o.black);
-    if (kode === "jadikan-member") {
-      const r = await simpanMember({
-        nama: o.nama,
-        hp: o.hp,
-        alamat: o.alamat,
-        email: o.email || null,
+    if (kode === "jadikan-member")
+      return setFormMember({
+        member: null,
+        prefill: {
+          nama: o.nama,
+          hp: o.hp,
+          email: o.email || "",
+          alamat: o.alamat || "",
+        },
       });
-      if (!r.ok) return notify(r.error || "Gagal menjadikan member.", "error");
-      notify("Member ditambahkan.");
-      return muatUlang();
-    }
     if (kode === "blacklist") {
       if (!o.hp) return notify("HP wajib diisi untuk blacklist.", "error");
       return setPrefillBlacklist({
@@ -388,8 +386,12 @@ function IsiHalaman() {
 
       {formMember ? (
         <FormMember
-          key={formMember.member?.id || "baru"}
+          key={
+            formMember.member?.id ||
+            `baru-${formMember.prefill?.nama || ""}-${formMember.prefill?.hp || ""}`
+          }
           member={formMember.member}
+          prefill={formMember.prefill}
           onClose={() => setFormMember(null)}
           onDone={muatUlang}
         />
