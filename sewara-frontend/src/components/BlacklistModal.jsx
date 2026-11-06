@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { tambahBlacklist, uploadBlacklistFoto } from "@/lib/db";
+import {
+  tambahBlacklist,
+  ubahBlacklist,
+  uploadBlacklistFoto,
+} from "@/lib/db";
 import { useNotify } from "@/components/NotificationProvider";
 import { FOTO_SLOTS, SlotJaminan } from "@/components/DokumenJaminan";
 
@@ -12,9 +16,10 @@ const SLOT_KOSONG = Array(5).fill(null);
 /**
  * Modal Blacklist penyewa (dibuat dari riwayat / pelanggan / detail member).
  * prefill: {nama, hp, alamat, transaksiId?, memberId?, fotoJaminan?}
+ * entry:   entri blacklist yang diedit (mode ubah data + tambah foto).
  * onDone(): dipanggil setelah sukses (caller refresh).
  */
-export default function BlacklistModal({ open, onClose, prefill, onDone }) {
+export default function BlacklistModal({ open, onClose, prefill, entry, onDone }) {
   const { notify } = useNotify();
   const [form, setForm] = useState(EMPTY);
   const [slots, setSlots] = useState(SLOT_KOSONG);
@@ -24,20 +29,32 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
     if (!open) return;
     setForm({
       ...EMPTY,
-      nama: prefill?.nama || "",
-      hp: prefill?.hp || "",
-      alamat: prefill?.alamat || "",
+      nama: entry?.nama || prefill?.nama || "",
+      hp: entry?.hp || prefill?.hp || "",
+      alamat: entry?.alamat || prefill?.alamat || "",
+      alasan: entry?.alasan || "",
     });
     // Snapshot foto member -> readonly, ikut terkirim saat POST create.
     const awal = Array(5).fill(null);
-    (Array.isArray(prefill?.fotoJaminan) ? prefill.fotoJaminan : [])
+    const sumber = entry
+      ? Array.isArray(entry.fotoJaminan)
+        ? entry.fotoJaminan
+        : []
+      : Array.isArray(prefill?.fotoJaminan)
+        ? prefill.fotoJaminan
+        : [];
+    sumber
       .filter((f) => f?.path)
       .slice(0, 5)
       .forEach((f, i) => {
-        awal[i] = { label: f.label || FOTO_SLOTS[i], path: f.path, snapshot: true };
+        awal[i] = {
+          label: f.label || FOTO_SLOTS[i],
+          path: f.path,
+          ...(entry ? {} : { snapshot: true }),
+        };
       });
     setSlots(awal);
-  }, [open]);
+  }, [open, entry]);
 
   async function simpan() {
     if (!form.nama.trim()) return notify("Nama wajib diisi.", "error");
@@ -48,6 +65,24 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
       const snapshot = slots
         .filter((s) => s?.path)
         .map((s) => ({ label: s.label, path: s.path }));
+      if (entry?.id) {
+        const r = await ubahBlacklist(entry.id, {
+          nama: form.nama.trim(),
+          hp: form.hp.trim(),
+          alamat: form.alamat || "",
+          alasan: form.alasan.trim(),
+        });
+        if (!r.ok) return notify(r.error || "Gagal menyimpan blacklist.", "error");
+        for (const s of slots.filter((x) => x?.file)) {
+          const up = await uploadBlacklistFoto(entry.id, s.file, s.label);
+          if (!up.ok)
+            notify(`Gagal upload ${s.label}: ${up.error || "coba lagi"}.`, "warning");
+        }
+        notify("Entri blacklist diperbarui.");
+        onDone?.();
+        onClose?.();
+        return;
+      }
       const r = await tambahBlacklist({
         nama: form.nama.trim(),
         hp: form.hp.trim(),
@@ -97,7 +132,9 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 py-4">
-          <h3 className="m-0 text-lg font-bold">Blacklist Penyewa</h3>
+          <h3 className="m-0 text-lg font-bold">
+            {entry ? "Ubah entri blacklist" : "Blacklist Penyewa"}
+          </h3>
           <button
             type="button"
             aria-label="Tutup"
@@ -185,7 +222,7 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
             }
             className="rounded-lg border-0 bg-[#F04438] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d03a2f] disabled:opacity-60"
           >
-            {saving ? "Menyimpan..." : "Blacklist"}
+            {saving ? "Menyimpan..." : entry ? "Simpan" : "Blacklist"}
           </button>
         </div>
       </div>

@@ -10,14 +10,13 @@ import {
   hapusBlacklist,
   simpanMember,
 } from "@/lib/db";
-import { samaOrangnya, terBlacklist } from "@/lib/utils";
+import { samaOrangnya, terBlacklist, unduhCSV } from "@/lib/utils";
 import { ErrorState, LoadingSpinner } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import TabelOrang from "@/components/orang/TabelOrang";
 import DetailOrang from "@/components/orang/DetailOrang";
-import TabMember from "@/components/orang/TabMember";
-import TabPelanggan from "@/components/orang/TabPelanggan";
-import TabBlacklist from "@/components/orang/TabBlacklist";
+import FormMember from "@/components/orang/FormMember";
+import ModalTipeMember from "@/components/orang/ModalTipeMember";
 import BlacklistModal from "@/components/BlacklistModal";
 
 const TABS = [
@@ -90,8 +89,9 @@ function IsiHalaman() {
   const [urut, setUrut] = useState("nama-az");
   const [detail, setDetail] = useState(null);
   const [prefillBlacklist, setPrefillBlacklist] = useState(null);
-  // Tampilan "Kelola" = komponen lama dipakai apa adanya (tanpa duplikasi logika).
-  const [kelolaTab, setKelolaTab] = useState(null);
+  const [formMember, setFormMember] = useState(null);
+  const [modalTipe, setModalTipe] = useState(false);
+  const [blackEdit, setBlackEdit] = useState(null);
 
   useEffect(() => {
     let batal = false;
@@ -115,7 +115,6 @@ function IsiHalaman() {
   const muatUlang = () => setPutarUlang((n) => n + 1);
   const gantiTab = (kode) =>
     router.replace(`/dashboard/pelanggan?tab=${kode}`, { scroll: false });
-  const kelola = tab !== "semua" && kelolaTab === tab;
 
   const jumlah = useMemo(
     () =>
@@ -151,14 +150,17 @@ function IsiHalaman() {
 
   async function aksi(kode, o) {
     if (kode === "detail") return setDetail(o);
-    if (kode === "kelola-member") {
-      setKelolaTab("member");
-      return gantiTab("member");
-    }
-    if (kode === "kelola-blacklist") {
-      setKelolaTab("blacklist");
-      return gantiTab("blacklist");
-    }
+    if (kode === "edit-member")
+      return setFormMember({
+        member: o.member || {
+          id: o.member_id,
+          nama: o.nama,
+          hp: o.hp,
+          email: o.email,
+          alamat: o.alamat,
+        },
+      });
+    if (kode === "ubah-blacklist") return setBlackEdit(o.black);
     if (kode === "jadikan-member") {
       const r = await simpanMember({
         nama: o.nama,
@@ -197,18 +199,40 @@ function IsiHalaman() {
     }
   }
 
+  /** Ekspor daftar yang sedang tampil (tab aktif, sudah difilter/diurutkan). */
+  function eksporCSV() {
+    if (!daftar.length) return notify("Tidak ada data untuk diekspor.", "error");
+    const baris = daftar.map((o) => {
+      const status = [o.member_id ? "Member" : "Pelanggan", o.black ? "Blacklist" : ""]
+        .filter(Boolean)
+        .join(" / ");
+      const alamat = String(o.alamat || "").replace(/\r?\n/g, " ");
+      return `"${o.nama || ""}","${o.hp || ""}","${o.email || ""}","${alamat}","${status}"`;
+    });
+    unduhCSV(
+      ["Nama,No HP,Email,Alamat,Status", ...baris].join("\n") + "\n",
+      `Pelanggan_${tab}.csv`,
+    );
+    notify("Ekspor selesai.");
+  }
+
   function menuUntuk(o) {
     return [
       { kode: "detail", label: "Detail" },
-      { kode: "jadikan-member", label: "Jadikan member", tampil: !o.member_id },
       {
-        kode: "kelola-member",
-        label: "Kelola member",
+        kode: "edit-member",
+        label: "Edit member",
         tampil: Boolean(o.member_id),
       },
-      { kode: "blacklist", label: "Blacklist", danger: true, tampil: !o.black },
+      { kode: "jadikan-member", label: "Jadikan member", tampil: !o.member_id },
       {
-        kode: "kelola-blacklist",
+        kode: "blacklist",
+        label: "Tambahkan ke blacklist",
+        danger: true,
+        tampil: !o.black,
+      },
+      {
+        kode: "ubah-blacklist",
         label: "Ubah entri blacklist",
         tampil: Boolean(o.black),
       },
@@ -256,75 +280,82 @@ function IsiHalaman() {
           ))}
         </nav>
 
-        {tab !== "semua" ? (
-          <div className="flex items-center justify-between gap-3 px-4 pt-4">
-            <span className="text-xs text-[var(--text-muted)]">
-              {kelola
-                ? "Tampilan lengkap: kelola data, tipe, dan ekspor."
-                : `${daftar.length} orang ditampilkan`}
-            </span>
-            <button
-              type="button"
-              onClick={() => setKelolaTab(kelola ? null : tab)}
-              className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-            >
-              {kelola ? "Tampilan tabel" : "Kelola lengkap"}
-            </button>
-          </div>
-        ) : null}
-
-        {kelola ? (
-          tab === "member" ? (
-            <TabMember />
-          ) : tab === "pelanggan" ? (
-            <TabPelanggan />
-          ) : (
-            <TabBlacklist />
-          )
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-3 p-4">
-              <input
-                value={cari}
-                onChange={(e) => setCari(e.target.value)}
-                placeholder="Cari nama, HP, email, atau alamat"
-                aria-label="Cari"
-                className="h-9 min-w-[12rem] max-w-[26rem] flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]"
-              />
-              <select
-                value={urut}
-                onChange={(e) => setUrut(e.target.value)}
-                aria-label="Urutkan"
-                className="h-9 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 text-sm text-[var(--text-primary)]"
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <input
+            value={cari}
+            onChange={(e) => setCari(e.target.value)}
+            placeholder="Cari nama, HP, email, atau alamat"
+            aria-label="Cari"
+            className="h-9 min-w-[12rem] max-w-[26rem] flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]"
+          />
+          <select
+            value={urut}
+            onChange={(e) => setUrut(e.target.value)}
+            aria-label="Urutkan"
+            className="h-9 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 text-sm text-[var(--text-primary)]"
+          >
+            <option value="nama-az">Nama A–Z</option>
+            <option value="nama-za">Nama Z–A</option>
+            <option value="alamat-az">Alamat A–Z</option>
+            <option value="alamat-za">Alamat Z–A</option>
+          </select>
+          <span className="text-xs text-[var(--text-muted)]">
+            {daftar.length} orang ditampilkan
+          </span>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {tab === "member" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setFormMember({ member: null })}
+                  className="rounded-lg border-0 bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  + Member
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTipe(true)}
+                  className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                >
+                  Tipe member
+                </button>
+              </>
+            ) : null}
+            {tab === "blacklist" ? (
+              <button
+                type="button"
+                onClick={() => setPrefillBlacklist({ nama: "", hp: "", alamat: "" })}
+                className="rounded-lg border-0 bg-[var(--color-danger)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
               >
-                <option value="nama-az">Nama A–Z</option>
-                <option value="nama-za">Nama Z–A</option>
-                <option value="alamat-az">Alamat A–Z</option>
-                <option value="alamat-za">Alamat Z–A</option>
-              </select>
-              {tab === "semua" ? (
-                <span className="text-xs text-[var(--text-muted)]">
-                  {daftar.length} orang ditampilkan
-                </span>
-              ) : null}
-            </div>
-            {muat ? (
-              <div className="p-8">
-                <LoadingSpinner message="Memuat direktori..." />
-              </div>
-            ) : gagal ? (
-              <div className="p-6">
-                <ErrorState message="Gagal memuat data." onRetry={muatUlang} />
-              </div>
-            ) : (
-              <TabelOrang
-                people={daftar}
-                menuUntuk={menuUntuk}
-                onPilih={setDetail}
-                onAksi={aksi}
-              />
-            )}
-          </>
+                + Blacklist
+              </button>
+            ) : null}
+            {tab !== "blacklist" ? (
+              <button
+                type="button"
+                onClick={eksporCSV}
+                className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+              >
+                Ekspor CSV
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {muat ? (
+          <div className="p-8">
+            <LoadingSpinner message="Memuat direktori..." />
+          </div>
+        ) : gagal ? (
+          <div className="p-6">
+            <ErrorState message="Gagal memuat data." onRetry={muatUlang} />
+          </div>
+        ) : (
+          <TabelOrang
+            people={daftar}
+            menuUntuk={menuUntuk}
+            onPilih={setDetail}
+            onAksi={aksi}
+          />
         )}
       </section>
 
@@ -341,6 +372,31 @@ function IsiHalaman() {
           open
           prefill={prefillBlacklist}
           onClose={() => setPrefillBlacklist(null)}
+          onDone={muatUlang}
+        />
+      ) : null}
+
+      {formMember ? (
+        <FormMember
+          key={formMember.member?.id || "baru"}
+          member={formMember.member}
+          onClose={() => setFormMember(null)}
+          onDone={muatUlang}
+        />
+      ) : null}
+
+      {modalTipe ? (
+        <ModalTipeMember
+          onClose={() => setModalTipe(false)}
+          onBerubah={muatUlang}
+        />
+      ) : null}
+
+      {blackEdit ? (
+        <BlacklistModal
+          open
+          entry={blackEdit}
+          onClose={() => setBlackEdit(null)}
           onDone={muatUlang}
         />
       ) : null}
