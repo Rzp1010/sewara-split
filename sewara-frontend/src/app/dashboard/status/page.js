@@ -1675,7 +1675,6 @@ export default function StatusPage() {
                 <section className="flex flex-col gap-1 border-t border-[var(--border-color)] pt-3">
                   <p className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">Waktu ambil</p>
                   {[{v:"semua",label:"Semua waktu ambil"},{v:"belum",label:"Belum waktunya ambil"},{v:"sudah",label:"Sudah lewat waktu ambil"}].map((o)=><label key={o.v} className={`flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm focus-within:ring-1 focus-within:ring-[var(--color-primary-soft-text,#7181E0)] ${filterWaktuAmbil===o.v?"bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}><span className="flex min-w-0 items-center gap-2"><input className="sr-only" type="radio" name="waktu-ambil" checked={filterWaktuAmbil===o.v} onChange={()=>setFilterWaktuAmbil(o.v)}/>{o.label}</span>{filterWaktuAmbil===o.v&&<span aria-hidden="true">✓</span>}</label>)}
-                  <p className="mt-1 text-[11px] leading-snug text-[var(--text-secondary)]">Dihitung terhadap jam sekarang, jadi praktis hanya berpengaruh pada kartu yang waktu ambilnya hari ini. Kartu tanpa waktu ambil dianggap belum waktunya.</p>
                 </section>
                 <section className="flex flex-col gap-1 border-t border-[var(--border-color)] pt-3">
                   <p className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">Status selesai</p>
