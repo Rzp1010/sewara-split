@@ -54,6 +54,7 @@ export default function InventarisPage() {
   const [userRole, setUserRole] = useState("");
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({
+    nama: "",
     tipeSewa: "fleksibel",
     h6: 0,
     h12: 0,
@@ -441,6 +442,7 @@ export default function InventarisPage() {
     setEditId(id);
     setEditItem(item);
     setEditForm({
+      nama: item.nama || "",
       tipeSewa: item.tipeSewa || "fleksibel",
       h6: item.h6 || 0,
       h12: item.h12 || 0,
@@ -492,6 +494,10 @@ export default function InventarisPage() {
     const inv = await getInventory();
     const item = inv.find((i) => i.id === editId);
     if (!item) return;
+    const namaBaru = (editForm.nama || "").trim();
+    if (!namaBaru) return notify("Nama produk wajib diisi!", "error");
+    const namaBerubah = namaBaru !== item.nama;
+    item.nama = namaBaru;
     if (editForm.tipeSewa !== "harian") {
       item.h6 = parseInt(editForm.h6);
       item.h12 = parseInt(editForm.h12);
@@ -535,9 +541,35 @@ export default function InventarisPage() {
       if (pesanServer) return notify(pesanServer, "error");
       return;
     }
+    // Nama barang disimpan sebagai salinan di komponen paket; samakan supaya
+    // label paket tidak tertinggal typo lama. Isi paket (idBarang+qty) tidak
+    // berubah, jadi guard PAKET_IN_USE tidak aktif.
+    let paketIkut = 0;
+    if (namaBerubah) {
+      const semua = await getInventory();
+      const paketTerkait = semua.filter(
+        (i) =>
+          i.jenis === "bundling" &&
+          (i.komponen || []).some(
+            (k) => String(k.idBarang) === String(editId),
+          ),
+      );
+      if (paketTerkait.length) {
+        paketTerkait.forEach((p) => {
+          p.komponen = (p.komponen || []).map((k) =>
+            String(k.idBarang) === String(editId) ? { ...k, nama: namaBaru } : k,
+          );
+        });
+        if (await updateInventory(paketTerkait)) paketIkut = paketTerkait.length;
+      }
+    }
     tutupEdit();
     muat();
-    notify("Perubahan disimpan!");
+    notify(
+      paketIkut
+        ? `Perubahan disimpan. Nama komponen di ${paketIkut} paket ikut disamakan.`
+        : "Perubahan disimpan!",
+    );
   }
 
   // Parser CSV sadar-kutip: field di dalam "..." boleh berisi pemisah; "" = kutip lolos.
@@ -2013,10 +2045,23 @@ export default function InventarisPage() {
                     Nama Produk
                   </label>
                   <input
-                    value={editItem.nama}
-                    readOnly
+                    value={editForm.nama || ""}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, nama: e.target.value }))
+                    }
+                    required
+                    maxLength={120}
+                    aria-describedby="edit-nama-catatan"
                     className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 font-bold mt-2"
                   />
+                  <p
+                    id="edit-nama-catatan"
+                    className="mt-1 text-[11px] leading-snug text-[var(--text-secondary)]"
+                  >
+                    Nama di riwayat transaksi & invoice yang sudah ada tidak ikut
+                    berubah. Nama komponen di paket yang memakai barang ini
+                    disamakan otomatis.
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-4 sm:grid-cols-2">
                   <div
