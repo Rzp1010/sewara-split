@@ -48,6 +48,8 @@ export default function InventarisPage() {
   const [editId, setEditId] = useState(null);
   const [namaTerbuka, setNamaTerbuka] = useState(false);
   const namaInputRef = useRef(null);
+  const [tagTerbuka, setTagTerbuka] = useState(false);
+  const tagInputRef = useRef(null);
   const tempKomponenRef = useRef([]);
   const [refresh, setRefresh] = useState(0);
   const [dupModal, setDupModal] = useState(null);
@@ -443,6 +445,7 @@ export default function InventarisPage() {
     if (!item) return;
     setEditId(id);
     setNamaTerbuka(false);
+    setTagTerbuka(false);
     setEditItem(item);
     setEditForm({
       nama: item.nama || "",
@@ -465,6 +468,7 @@ export default function InventarisPage() {
 
   function tutupEdit() {
     setNamaTerbuka(false);
+    setTagTerbuka(false);
     setEditId(null);
     setEditItem(null);
     setEditKomponen([]);
@@ -2054,7 +2058,7 @@ export default function InventarisPage() {
                   {namaTerbuka && <p id="edit-nama-catatan" className="text-[11px] leading-snug text-[var(--text-secondary)]">Nama di riwayat transaksi & invoice yang sudah ada tidak ikut berubah. Nama komponen di paket yang memakai barang ini disamakan otomatis.</p>}
                 </div>
                 <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tag Kategori</label><input value={editForm.tag} list="tag_saran" onChange={(e) => setEditForm({ ...editForm, tag: e.target.value })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" placeholder="Cth: Kamera Sony" /></div>
+                  <div className="flex flex-col gap-1.5 sm:col-span-2"><label htmlFor="edit-tag" className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tag Kategori</label><div className="relative"><input id="edit-tag" ref={tagInputRef} value={editForm.tag} list="tag_saran" onChange={(e) => setEditForm({ ...editForm, tag: e.target.value })} readOnly={!tagTerbuka} maxLength={60} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 pr-12 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" placeholder="Cth: Kamera Sony" /><button type="button" onClick={() => { if (tagTerbuka) { setTagTerbuka(false); } else { setTagTerbuka(true); requestAnimationFrame(() => tagInputRef.current?.focus()); } }} aria-label="Ubah tag kategori" aria-pressed={tagTerbuka} title={tagTerbuka ? "Kunci tag kategori" : "Ubah tag kategori"} className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-0 bg-transparent text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]">{tagTerbuka ? <span aria-hidden="true">✓</span> : <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>}</button></div></div>
                   <div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tipe Sewa</label><div id="tipe" className="grid grid-cols-2 rounded-[10px] bg-[var(--bg-subtle)] p-[3px]">
                     {[{ value: "fleksibel", label: "Fleksibel" }, { value: "harian", label: "Harian" }].map((opsi) => <button key={opsi.value} type="button" onClick={() => setEditForm((f) => ({ ...f, tipeSewa: opsi.value }))} aria-pressed={editForm.tipeSewa === opsi.value} className={`h-[36px] rounded-lg border-0 text-[13px] font-medium transition ${editForm.tipeSewa === opsi.value ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm" : "bg-transparent text-[var(--text-secondary)]"}`}>{opsi.label}</button>)}
                   </div></div>
