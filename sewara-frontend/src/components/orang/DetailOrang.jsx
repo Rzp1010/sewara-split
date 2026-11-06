@@ -102,18 +102,16 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
   return (
     <Modal isOpen onClose={onClose} title={`Detail ${orang.nama}`} description="Ubah data per kolom atau kelola dokumen jaminan." size="lg" footer={<Button variant="outline" onClick={onClose}>Tutup</Button>}>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-3.5 gap-y-3 sm:grid-cols-2">
           {FIELDS.map((f) => {
             const nilai = orang[f.key] || "";
             const aktif = edit?.key === f.key;
             return <div key={f.key} className={f.key === "catatan" ? "sm:col-span-2" : ""}>
-              <div className="mb-1 flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">{f.label}</div>
-                  {aktif ? <input autoFocus value={edit.nilai} onChange={(e) => setEdit({ ...edit, nilai: e.target.value })} className={inputClass} /> : <div className={`text-sm ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{nilai || "Belum diisi"}</div>}
-                </div>
-                {aktif ? <div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button><Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button></div> : <button type="button" aria-label={`Ubah ${f.label}`} className="shrink-0 rounded-md px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]" onClick={() => setEdit({ key: f.key, nilai })}>✎</button>}
-              </div>
+              <div className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">{f.label}</div>
+              {aktif ? <div className="flex flex-wrap items-center gap-2"><input autoFocus value={edit.nilai} onChange={(e) => setEdit({ ...edit, nilai: e.target.value })} className={inputClass} /><Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button><Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button></div> : <div className="flex items-center gap-1.5">
+                <div className={`text-sm font-medium ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{nilai || "Belum diisi"}</div>
+                <button type="button" aria-label={`Ubah ${f.label}`} className="rounded-md px-1 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]" onClick={() => setEdit({ key: f.key, nilai })}>✎</button>
+              </div>}
             </div>;
           })}
           {orang.member ? (

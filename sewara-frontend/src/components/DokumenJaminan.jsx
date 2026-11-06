@@ -31,7 +31,7 @@ function KotakSlot({
 }) {
   return (
     <div
-      className={`relative flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors ${terisi ? "border-solid border-emerald-500 bg-[var(--bg-subtle)]" : `border-dashed border-[var(--border-color)] ${bolehUbah && onPickFile ? "cursor-pointer hover:border-[#7181E0] hover:bg-[var(--bg-subtle)]" : ""}`}`}
+      className={`relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[10px] border-[1.5px] px-2 py-1.5 text-center transition-colors ${terisi ? "border-solid border-emerald-500 bg-[var(--bg-subtle)]" : `border-dashed border-[var(--border-color)] ${bolehUbah && onPickFile ? "cursor-pointer hover:border-[#7181E0] hover:bg-[var(--bg-subtle)]" : ""}`}`}
       onClick={onClick}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -115,12 +115,13 @@ export default function DokumenJaminan({
 
   return (
     <section className="w-full">
-      <div className="mb-4 mt-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
-        <span className="whitespace-nowrap text-xs font-semibold text-[var(--text-secondary)]">
-          {judul} (Opsional · {jumlah}/{maks})
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
+          {judul}
         </span>
-        <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
+        <span className="text-xs font-semibold text-[var(--text-primary)]">
+          {jumlah} / {maks}
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
         {FOTO_SLOTS.map((label, index) => {
@@ -143,7 +144,7 @@ export default function DokumenJaminan({
                     <img
                       src={url}
                       alt={label}
-                      className="max-h-20 max-w-full object-contain"
+                      className="max-h-9 max-w-full object-contain"
                     />
                   )
                 ) : null
@@ -245,12 +246,13 @@ export function SlotJaminan({ items, onChange, allowRemoveSnapshot = false }) {
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[var(--border-color)]" />
-        <span className="whitespace-nowrap text-xs font-semibold text-[var(--text-muted)]">
-          Foto Jaminan (Opsional · {jumlah}/5)
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
+          Foto jaminan
         </span>
-        <div className="h-px flex-1 bg-[var(--border-color)]" />
+        <span className="text-xs font-semibold text-[var(--text-primary)]">
+          {jumlah} / 5
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
         {FOTO_SLOTS.map((label, index) => {
@@ -267,14 +269,14 @@ export function SlotJaminan({ items, onChange, allowRemoveSnapshot = false }) {
                   <img
                     src={it.url}
                     alt={label}
-                    className="max-h-20 max-w-full object-contain"
+                    className="max-h-9 max-w-full object-contain"
                   />
                 ) : it?.path && !it.snapshot ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={api.blacklist.photoUrl(it.path)}
                     alt={label}
-                    className="max-h-20 max-w-full object-contain"
+                    className="max-h-9 max-w-full object-contain"
                   />
                 ) : it?.path && it.snapshot ? (
                   <span className="text-[11px] font-semibold text-emerald-700">

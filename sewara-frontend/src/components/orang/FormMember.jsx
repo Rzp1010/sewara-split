@@ -47,7 +47,7 @@ export default function FormMember({ member, prefill, onClose, onDone }) {
   }
 
   const inputClass = "w-full h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
-  const chipClass = (active) => `h-9 rounded-lg border px-3.5 text-[13px] ${active ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] font-semibold text-[var(--color-primary)]" : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]"}`;
+  const chipClass = (active) => `h-9 rounded-lg border border-solid px-3.5 text-[13px] ${active ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] font-semibold text-[var(--color-primary)]" : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)]"}`;
   return <Modal isOpen onClose={onClose} title={member?.id ? "Edit member" : (prefill?.nama ? "Jadikan member" : "Tambah member")} description="Lengkapi data kontak, tipe, dan dokumen jaminan." size="lg" footer={<><Button variant="ghost" onClick={onClose}>Batal</Button><Button loading={saving} onClick={simpan}>Simpan</Button></>}>
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">

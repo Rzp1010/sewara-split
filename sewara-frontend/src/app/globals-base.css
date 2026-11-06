@@ -8,6 +8,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Reset border ala Preflight. tailwind.config mematikan `preflight`, sehingga
+   `border-style` default browser (`none`) bertahan dan kelas `border` /
+   `border-b` dkk tidak pernah terlihat. Tanpa ini chip, panel modal, dan
+   varian tombol outline tampil tanpa garis. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-width: 0;
+    border-style: solid;
+  }
+}
+
 /* Print CSS for invoices */
 @page {
   size: A4;
