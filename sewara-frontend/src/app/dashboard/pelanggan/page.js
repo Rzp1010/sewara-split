@@ -77,9 +77,15 @@ async function ambilOrang() {
 }
 
 function dalamTab(orang, tab) {
-  if (tab === "member") return Boolean(orang.member_id);
+  // Tab bersifat eksklusif: satu orang hanya muncul di satu tab, sesuai
+  // prioritas Blacklist > Member > Pelanggan (badge memakai urutan yang sama).
+  if (tab === "member") return Boolean(orang.member_id) && !orang.black;
   if (tab === "pelanggan")
-    return orang.sumber === "pelanggan" || orang.sumber === "riwayat";
+    return (
+      (orang.sumber === "pelanggan" || orang.sumber === "riwayat") &&
+      !orang.black &&
+      !orang.member_id
+    );
   if (tab === "blacklist") return Boolean(orang.black);
   return true;
 }
@@ -211,9 +217,7 @@ function IsiHalaman() {
   function eksporCSV() {
     if (!daftar.length) return notify("Tidak ada data untuk diekspor.", "error");
     const baris = daftar.map((o) => {
-      const status = [o.member_id ? "Member" : "Pelanggan", o.black ? "Blacklist" : ""]
-        .filter(Boolean)
-        .join(" / ");
+      const status = o.black ? "Blacklist" : o.member_id ? "Member" : "Pelanggan";
       const alamat = String(o.alamat || "").replace(/\r?\n/g, " ");
       return `"${o.nama || ""}","${o.hp || ""}","${o.email || ""}","${alamat}","${status}"`;
     });
