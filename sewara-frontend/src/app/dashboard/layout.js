@@ -304,18 +304,7 @@ const MENU_GRUP = [
     label: "Pelanggan",
     icon: I.user,
     items: [
-      {
-        href: "/dashboard/member",
-        label: "Member",
-        icon: I.user,
-        fitur: "memberPromo",
-      },
-      { href: "/dashboard/pelanggan", label: "Data Pelanggan", icon: I.users },
-      {
-        href: "/dashboard/blacklist",
-        label: "Blacklist",
-        icon: I.shield,
-      },
+      { href: "/dashboard/pelanggan", label: "Pelanggan", icon: I.users },
       {
         href: "/dashboard/promo",
         label: "Kode Promo",

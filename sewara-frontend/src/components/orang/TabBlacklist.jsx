@@ -15,7 +15,7 @@ import { ROLE_OWNER, ROLE_SUPERADMIN } from "@/lib/role";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMuat from "@/components/ErrorMuat";
-import BlacklistFotoSlot, { FOTO_SLOTS } from "@/components/BlacklistFotoSlot";
+import { FOTO_SLOTS, SlotJaminan } from "@/components/DokumenJaminan";
 
 const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
 const SLOT_KOSONG = Array(5).fill(null);
@@ -382,7 +382,7 @@ export default function BlacklistPage() {
                 </div>
 
                 <div className="mt-5">
-                  <BlacklistFotoSlot
+                  <SlotJaminan
                     items={slots}
                     onChange={setSlots}
                     allowRemoveSnapshot={Boolean(editing)}

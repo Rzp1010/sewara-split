@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { tambahBlacklist, uploadBlacklistFoto } from "@/lib/db";
 import { useNotify } from "@/components/NotificationProvider";
-import BlacklistFotoSlot, { FOTO_SLOTS } from "@/components/BlacklistFotoSlot";
+import { FOTO_SLOTS, SlotJaminan } from "@/components/DokumenJaminan";
 
 const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
 const SLOT_KOSONG = Array(5).fill(null);
@@ -159,7 +159,7 @@ export default function BlacklistModal({ open, onClose, prefill, onDone }) {
           </div>
 
           <div className="mt-5">
-            <BlacklistFotoSlot items={slots} onChange={setSlots} />
+            <SlotJaminan items={slots} onChange={setSlots} />
             <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
               JPG/PNG/PDF maks 5MB per file.
             </p>
