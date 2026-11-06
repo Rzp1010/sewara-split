@@ -46,6 +46,8 @@ export default function InventarisPage() {
   const [loading, setLoading] = useState(true);
   const [gagal, setGagal] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [namaTerbuka, setNamaTerbuka] = useState(false);
+  const namaInputRef = useRef(null);
   const tempKomponenRef = useRef([]);
   const [refresh, setRefresh] = useState(0);
   const [dupModal, setDupModal] = useState(null);
@@ -440,6 +442,7 @@ export default function InventarisPage() {
     const item = inv.find((i) => i.id === id);
     if (!item) return;
     setEditId(id);
+    setNamaTerbuka(false);
     setEditItem(item);
     setEditForm({
       nama: item.nama || "",
@@ -461,6 +464,7 @@ export default function InventarisPage() {
   }
 
   function tutupEdit() {
+    setNamaTerbuka(false);
     setEditId(null);
     setEditItem(null);
     setEditKomponen([]);
@@ -2024,157 +2028,43 @@ export default function InventarisPage() {
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
             <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-6">
+              <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-5">
                 <h3 className="text-lg font-semibold">Edit Produk</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditItem(null);
-                  }}
-                  className="rounded-lg border-0 bg-transparent hover:bg-[var(--bg-subtle)] px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors"
-                >
+                <button type="button" onClick={tutupEdit} aria-label="Tutup" className="rounded-lg border-0 bg-transparent px-2 py-2 text-xl text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)]">
                   &times;
                 </button>
               </div>
-              <form
-                onSubmit={simpanEdit}
-                className="flex-1 overflow-y-auto px-6 pb-6 space-y-3"
-              >
-                <div className="space-y-1">
-                  <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary">
-                    Nama Produk
-                  </label>
-                  <input
-                    value={editForm.nama || ""}
-                    onChange={(e) =>
-                      setEditForm((f) => ({ ...f, nama: e.target.value }))
-                    }
-                    required
-                    maxLength={120}
-                    aria-describedby="edit-nama-catatan"
-                    className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 font-bold mt-2"
-                  />
-                  <p
-                    id="edit-nama-catatan"
-                    className="mt-1 text-[11px] leading-snug text-[var(--text-secondary)]"
-                  >
-                    Nama di riwayat transaksi & invoice yang sudah ada tidak ikut
-                    berubah. Nama komponen di paket yang memakai barang ini
-                    disamakan otomatis.
-                  </p>
+              <form onSubmit={simpanEdit} className="flex-1 space-y-[18px] overflow-y-auto px-6 py-5">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="edit-nama" className="text-[12.5px] font-medium text-[var(--text-secondary)]">Nama</label>
+                  <div className="relative">
+                    <input id="edit-nama" ref={namaInputRef} value={editForm.nama || ""} onChange={(e) => setEditForm((f) => ({ ...f, nama: e.target.value }))} readOnly={!namaTerbuka} maxLength={120} aria-describedby={namaTerbuka ? "edit-nama-catatan" : undefined} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 pr-12 text-sm font-semibold text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" />
+                    <button type="button" onClick={() => {
+                      if (namaTerbuka) {
+                        if (!editForm.nama.trim()) return;
+                        setNamaTerbuka(false);
+                      } else {
+                        setNamaTerbuka(true);
+                        requestAnimationFrame(() => namaInputRef.current?.focus());
+                      }
+                    }} aria-label="Ubah nama produk" aria-pressed={namaTerbuka} title={namaTerbuka ? "Kunci nama" : "Ubah nama produk"} className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-0 bg-transparent text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]">
+                      {namaTerbuka ? <span aria-hidden="true">✓</span> : <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>}
+                    </button>
+                  </div>
+                  {namaTerbuka && <p id="edit-nama-catatan" className="text-[11px] leading-snug text-[var(--text-secondary)]">Nama di riwayat transaksi & invoice yang sudah ada tidak ikut berubah. Nama komponen di paket yang memakai barang ini disamakan otomatis.</p>}
                 </div>
-                <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-solid border-[#7181E0] bg-[#7181E0]/10 p-4 sm:grid-cols-2">
-                  <div
-                    className="text-sm font-bold"
-                    style={{ gridColumn: "1 / -1" }}
-                  >
-                    Update Tarif Sewa
-                  </div>
-                  <div className="space-y-1" style={{ gridColumn: "1 / -1" }}>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary text-xs">
-                      Tag Kategori
-                    </label>
-                    <input
-                      value={editForm.tag}
-                      list="tag_saran"
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, tag: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                      placeholder="Cth: Kamera Sony"
-                    />
-                  </div>
-                  <div className="space-y-1" style={{ gridColumn: "1 / -1" }}>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary text-xs">
-                      Tipe Sewa
-                    </label>
-                    <select
-                      value={editForm.tipeSewa}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, tipeSewa: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                    >
-                      <option value="fleksibel">Fleksibel</option>
-                      <option value="harian">Harian</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary text-xs">
-                      Tarif 6 Jam
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.h6}
-                      disabled={editForm.tipeSewa === "harian"}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, h6: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-text-secondary text-xs">
-                      Tarif 12 Jam
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.h12}
-                      disabled={editForm.tipeSewa === "harian"}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, h12: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#7181E0] text-xs">
-                      Tarif 24 Jam
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.h24}
-                      required
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, h24: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#F04438] text-xs">
-                      Denda / Jam
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.denda}
-                      required
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, denda: e.target.value })
-                      }
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60 text-sm"
-                    />
+                <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tag Kategori</label><input value={editForm.tag} list="tag_saran" onChange={(e) => setEditForm({ ...editForm, tag: e.target.value })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" placeholder="Cth: Kamera Sony" /></div>
+                  <div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tipe Sewa</label><div id="tipe" className="grid grid-cols-2 rounded-[10px] bg-[var(--bg-subtle)] p-[3px]">
+                    {[{ value: "fleksibel", label: "Fleksibel" }, { value: "harian", label: "Harian" }].map((opsi) => <button key={opsi.value} type="button" onClick={() => setEditForm((f) => ({ ...f, tipeSewa: opsi.value }))} aria-pressed={editForm.tipeSewa === opsi.value} className={`h-[36px] rounded-lg border-0 text-[13px] font-medium transition ${editForm.tipeSewa === opsi.value ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm" : "bg-transparent text-[var(--text-secondary)]"}`}>{opsi.label}</button>)}
+                  </div></div>
+                  <div className="grid grid-cols-1 gap-[18px] sm:col-span-2 sm:grid-cols-2">
+                    {editForm.tipeSewa !== "harian" && <><div className="flex flex-col gap-1.5"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tarif 6 Jam</label><input type="text" inputMode="numeric" autoComplete="off" value={editForm.h6} onChange={(e) => setEditForm({ ...editForm, h6: e.target.value.replace(/\D/g, "") })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" /></div><div className="flex flex-col gap-1.5"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tarif 12 Jam</label><input type="text" inputMode="numeric" autoComplete="off" value={editForm.h12} onChange={(e) => setEditForm({ ...editForm, h12: e.target.value.replace(/\D/g, "") })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" /></div></>}
+                    <div className="flex flex-col gap-1.5"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tarif 24 Jam</label><input type="text" inputMode="numeric" autoComplete="off" value={editForm.h24} required onChange={(e) => setEditForm({ ...editForm, h24: e.target.value.replace(/\D/g, "") })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" /></div>
+                    <div className="flex flex-col gap-1.5"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Denda per jam</label><input type="text" inputMode="numeric" autoComplete="off" value={editForm.denda} required onChange={(e) => setEditForm({ ...editForm, denda: e.target.value.replace(/\D/g, "") })} className="h-[42px] w-full rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" /></div>
                   </div>
                 </div>
-                {editItem.jenis === "satuan" && (
-                  <div className="rounded-lg border-2 border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-4">
-                    <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#7181E0]">
-                      Tambah S/N Baru
-                    </label>
-                    <p className="text-xs text-[var(--text-muted)] mb-2">
-                      Pisahkan dengan koma.
-                    </p>
-                    <textarea
-                      value={editForm.snBaru}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, snBaru: e.target.value })
-                      }
-                      rows={2}
-                      className="w-full rounded-md border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
-                      placeholder="S/N Tambahan..."
-                    />
-                  </div>
-                )}
+                {editItem.jenis === "satuan" && <div className="flex flex-col gap-1.5"><label className="text-[12.5px] font-medium text-[var(--text-secondary)]">Tambah nomor seri</label><textarea value={editForm.snBaru} onChange={(e) => setEditForm({ ...editForm, snBaru: e.target.value })} rows={3} className="min-h-[72px] w-full resize-y rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[#7181E0] focus:ring-2 focus:ring-[#7181E0]/20" placeholder="S/N Tambahan..." /></div>}
                 {editItem.jenis === "bundling" && (
                   <div className="rounded-lg border-2 border-solid border-[#F89774] bg-[#F89774]/10 p-4">
                     <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[#F89774]">
@@ -2262,31 +2152,12 @@ export default function InventarisPage() {
                     </p>
                   </div>
                 )}
-                <div className="flex items-center gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const idAsli = editId;
-                      tutupEdit();
-                      hapusBarang(idAsli);
-                    }}
-                    className="rounded-lg border-2 border-solid border-[#F04438] bg-transparent hover:bg-[#F04438]/10 px-4 py-2 text-sm font-semibold text-[#F04438] transition-colors"
-                  >
-                    Hapus Produk
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-lg border-0 bg-[#579171] hover:bg-[#447057] px-4 py-2 text-sm font-semibold text-white transition-colors flex-1"
-                  >
-                    Simpan Perubahan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={tutupEdit}
-                    className="rounded-lg border-0 bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors flex-1"
-                  >
-                    Batal
-                  </button>
+                <div className="flex flex-col-reverse items-stretch justify-between gap-3 border-t border-[var(--border-color)] pt-4 sm:flex-row sm:items-center">
+                  <button type="button" onClick={() => { const idAsli = editId; tutupEdit(); hapusBarang(idAsli); }} className="rounded-lg border-0 bg-transparent px-1 py-2 text-left text-sm font-medium text-[#F04438] transition hover:bg-[#F04438]/10" >Hapus Produk</button>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={tutupEdit} className="rounded-lg border border-solid border-[var(--border-color)] bg-transparent px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-subtle)]">Batal</button>
+                    <button type="submit" className="rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90">Simpan</button>
+                  </div>
                 </div>
               </form>
             </div>
