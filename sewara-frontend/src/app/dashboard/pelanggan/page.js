@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   getPelanggan,
   getMembers,
@@ -10,7 +10,7 @@ import {
   hapusBlacklist,
   simpanMember,
 } from "@/lib/db";
-import { samaOrangnya, terBlacklist, unduhCSV } from "@/lib/utils";
+import { hpNormal, samaOrangnya, terBlacklist, unduhCSV } from "@/lib/utils";
 import { ErrorState, LoadingSpinner } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import TabelOrang from "@/components/orang/TabelOrang";
@@ -38,9 +38,19 @@ async function ambilOrang() {
   ]);
   const daftarBlack = Array.isArray(black) ? black : [];
   const petaMember = new Map((members || []).map((m) => [Number(m.id), m]));
+  // Kunci baris = pasangan nama+HP (aturan identitas), plus penghitung kecil
+  // supaya tetap unik kalau pool membawa orang yang sama dua kali. Jangan pakai
+  // `id`/`member_id`: keduanya 0 pada baris riwayat dan bikin key duplikat.
+  const dipakai = new Map();
+  const kunci = (nama, hp) => {
+    const dasar = `${String(nama || "").trim().toLowerCase()}|${hpNormal(hp)}`;
+    const n = (dipakai.get(dasar) || 0) + 1;
+    dipakai.set(dasar, n);
+    return `${dasar}#${n}`;
+  };
   const orang = pool.map((r) => ({
     ...r,
-    key: `${r.sumber}-${r.id}-${r.member_id}`,
+    key: kunci(r.nama, r.hp_normal || r.hp),
     member: r.member_id ? petaMember.get(Number(r.member_id)) || null : null,
     black: terBlacklist(daftarBlack, { nama: r.nama, hp: r.hp }),
   }));
@@ -48,7 +58,7 @@ async function ambilOrang() {
     if (orang.some((o) => samaOrangnya(o, b))) continue;
     const mid = b.memberId ? Number(b.memberId) : 0;
     orang.push({
-      key: `blacklist-${b.id}`,
+      key: kunci(b.nama, b.hp),
       id: 0,
       nama: b.nama,
       hp: b.hp || "",
@@ -76,11 +86,12 @@ function dalamTab(orang, tab) {
 }
 
 function IsiHalaman() {
-  const router = useRouter();
   const sp = useSearchParams();
-  const tabParam = sp.get("tab");
-  const tab = TABS.some((t) => t.kode === tabParam) ? tabParam : "semua";
+  const tabAwal = sp.get("tab");
   const { notify, confirm: konfirm } = useNotify();
+  const [tab, setTab] = useState(
+    TABS.some((t) => t.kode === tabAwal) ? tabAwal : "semua",
+  );
   const [orang, setOrang] = useState([]);
   const [muat, setMuat] = useState(true);
   const [gagal, setGagal] = useState(false);
@@ -113,8 +124,7 @@ function IsiHalaman() {
   }, [putarUlang]);
 
   const muatUlang = () => setPutarUlang((n) => n + 1);
-  const gantiTab = (kode) =>
-    router.replace(`/dashboard/pelanggan?tab=${kode}`, { scroll: false });
+  const gantiTab = (kode) => setTab(kode);
 
   const jumlah = useMemo(
     () =>

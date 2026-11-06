@@ -44,6 +44,10 @@ func (s *Server) handlePelangganPost(w http.ResponseWriter, r *http.Request, me 
 		return
 	}
 	p, e := s.db.UpsertPelanggan(r.Context(), me.UserID, in.Nama, in.Email, in.HP, in.Alamat)
+	if errors.Is(e, db.ErrPelangganDuplikat) {
+		writeError(w, 409, CodeAlreadyExists, db.ErrPelangganDuplikat.Error()+".")
+		return
+	}
 	if e != nil {
 		s.log.Error("gagal menyimpan pelanggan", "err", e)
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")

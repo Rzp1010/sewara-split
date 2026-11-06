@@ -44,7 +44,18 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
       else if (orang.id) await patchPelanggan(orang.id, { [edit.key]: edit.nilai });
       else if (orang.black?.id)
         await ubahBlacklist(orang.black.id, { [edit.key]: edit.nilai });
-      else throw new Error("Baris ini tidak punya tujuan simpan.");
+      else {
+        // Baris riwayat belum punya baris pelanggan: materialkan dulu (upsert
+        // pasangan nama+HP), baru tulis field-nya. Id-nya 0 bukan berarti
+        // "tak bisa disimpan".
+        const baru = await upsertPelanggan({
+          nama: orang.nama,
+          hp: orang.hp,
+          alamat: orang.alamat,
+        });
+        if (!baru?.id) throw new Error("Data pelanggan tidak memiliki ID.");
+        await patchPelanggan(baru.id, { [edit.key]: edit.nilai });
+      }
       notify("Tersimpan.");
       setEdit(null);
       onTersimpan?.();

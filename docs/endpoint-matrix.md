@@ -245,6 +245,10 @@ kini melaporkan **47 path / 68 metode** tanpa satu pun pembungkus mati.
 | `/api/member-types/:id` | DELETE, PATCH | CRUD | app/dashboard/member/page.js |
 | `/api/members` | GET, POST | CRUD | app/dashboard/member/page.js |
 | `/api/members/:id` | PATCH, DELETE | CRUD | app/dashboard/member/page.js |
+| `/api/pelanggan` | GET, POST | CRUD | app/dashboard/pelanggan/page.js, components/orang/DetailOrang.jsx |
+| `/api/pelanggan/:id` | PATCH | CRUD | components/orang/DetailOrang.jsx |
+| `/api/pelanggan/upload` | POST | FILE | components/orang/DetailOrang.jsx |
+| `/api/pelanggan/photo` | GET | FILE | components/orang/DetailOrang.jsx [url] |
 | `/api/pembayaran/export` | GET | FILE | app/dashboard/riwayat/page.js [url] |
 | `/api/pembayaran/photo` | GET | FILE | app/dashboard/status/page.js [url], components/ModalBuktiBayar.jsx [url] |
 | `/api/pembayaran/upload` | POST | FILE | app/dashboard/booking/page.js [url], app/dashboard/status/page.js [url] |

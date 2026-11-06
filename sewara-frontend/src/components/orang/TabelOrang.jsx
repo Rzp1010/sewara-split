@@ -68,8 +68,10 @@ export default function TabelOrang({ people, menuUntuk, onPilih, onAksi }) {
         </tr>
       </thead>
       <tbody>
-        {people.map((p) => {
-          const kunci = p.key || p.id;
+        {people.map((p, i) => {
+          // `p.id` = 0 pada baris riwayat/member (tanpa baris pelanggan), jadi
+          // jangan pernah jatuh ke id — pakai kunci pasangan nama+HP dari halaman.
+          const kunci = p.key ?? i;
           const menu = menuUntuk(p);
           return (
             <tr

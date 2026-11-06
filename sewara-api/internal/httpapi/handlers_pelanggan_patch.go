@@ -106,6 +106,10 @@ func (s *Server) handlePelangganPatch(w http.ResponseWriter, r *http.Request, me
 		writeError(w, 404, CodeNotFound, "Pelanggan tidak ditemukan.")
 		return
 	}
+	if errors.Is(err, db.ErrPelangganDuplikat) {
+		writeError(w, 409, CodeAlreadyExists, db.ErrPelangganDuplikat.Error()+".")
+		return
+	}
 	if err != nil {
 		s.log.Error("gagal memperbarui pelanggan", "err", err)
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")

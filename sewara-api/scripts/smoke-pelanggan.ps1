@@ -53,5 +53,14 @@ try{
  $r=Invoke-Api POST '/api/pelanggan' $a '{"nama":"Email Smoke","email":"awal@example.com"}';$post=($r.Body|ConvertFrom-Json).data.pelanggan;$list=((Invoke-Api GET '/api/pelanggan' $a).Body|ConvertFrom-Json).data.pelanggan;$row=@($list|Where-Object{$_.nama -eq 'Email Smoke'});Add 'o POST email tersimpan + tampil GET' ($r.Status -eq 200 -and $post.email -eq 'awal@example.com' -and $row.Count -eq 1 -and $row[0].email -eq 'awal@example.com') "status=$($r.Status) email=$(if($row.Count){$row[0].email})"
  $r=Invoke-Api PATCH "/api/pelanggan/$($post.id)" $a '{"email":"baru@example.com"}';$row=@(((Invoke-Api GET '/api/pelanggan' $a).Body|ConvertFrom-Json).data.pelanggan|Where-Object{$_.nama -eq 'Email Smoke'});Add 'p PATCH email berubah' ($r.Status -eq 200 -and $row.Count -eq 1 -and $row[0].email -eq 'baru@example.com') "status=$($r.Status) email=$(if($row.Count){$row[0].email})"
  $r=Invoke-Api PATCH "/api/pelanggan/$($post.id)" $a '{"email":"bukan-email"}';Add 'q PATCH email invalid 400' ($r.Status -eq 400) "status=$($r.Status) msg=$(Msg $r)"
+# Identitas = pasangan nama+HP (migration 0011). HP sama dengan nama berbeda
+ # adalah orang berbeda; mengubah nama ke pasangan yang sudah terpakai ditolak
+ # 409 (tidak auto-merge — merge itu destruktif).
+ $r1=Invoke-Api POST '/api/pelanggan' $a '{"nama":"Pasangan HP Sama A","hp":"089911112222"}';$idA1=(($r1.Body|ConvertFrom-Json).data.pelanggan).id
+ $r2=Invoke-Api POST '/api/pelanggan' $a '{"nama":"Pasangan HP Sama B","hp":"089911112222"}';$idB1=(($r2.Body|ConvertFrom-Json).data.pelanggan).id
+ $kembar=@(((Invoke-Api GET '/api/pelanggan' $a).Body|ConvertFrom-Json).data.pelanggan|Where-Object{$_.nama -like 'Pasangan HP Sama *'})
+ Add 'r HP sama nama beda = dua orang terpisah' ($r1.Status -eq 200 -and $r2.Status -eq 200 -and $idA1 -ne $idB1 -and $kembar.Count -eq 2) "idA=$idA1 idB=$idB1 count=$($kembar.Count)"
+ $r=Invoke-Api PATCH "/api/pelanggan/$idA1" $a '{"nama":"Pasangan HP Sama B"}'
+ Add 's ubah nama ke pasangan terpakai ditolak 409' ($r.Status -eq 409 -and (Msg $r) -match 'sudah ada pelanggan') "status=$($r.Status) msg=$(Msg $r)"
 }finally{Stop-Api;Pop-Location -ErrorAction SilentlyContinue}
 $failed=@($script:results|Where-Object{-not $_.OK}).Count;Write-Host "Ringkasan: PASS=$($script:results.Count-$failed) FAIL=$failed TOTAL=$($script:results.Count)";if($failed){exit 1};exit 0

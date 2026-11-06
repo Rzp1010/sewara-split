@@ -3,11 +3,27 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// ErrPelangganDuplikat dikembalikan saat pasangan nama+No. HP (identitas
+// pelanggan, lihat 0011_pelanggan_identitas.sql) sudah dipakai baris lain di
+// tenant yang sama.
+var ErrPelangganDuplikat = errors.New("sudah ada pelanggan dengan nama dan No. HP itu")
+
+func pelangganDup(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" &&
+		(pgErr.ConstraintName == "pelanggan_nama_hp_uniq" || pgErr.ConstraintName == "pelanggan_nama_uniq") {
+		return ErrPelangganDuplikat
+	}
+	return err
+}
 
 type FotoPelanggan struct {
 	Label string `json:"label"`
@@ -164,14 +180,14 @@ func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, email, hp, alama
 	err := d.InTenant(ctx, userID, func(q Querier) error {
 		var sql string
 		if normal != "" {
-			sql = `INSERT INTO pelanggan(user_id,nama,email,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,hp_normal) WHERE hp_normal <> '' DO UPDATE SET nama=excluded.nama,email=excluded.email,hp=excluded.hp,hp_normal=excluded.hp_normal,alamat=excluded.alamat,updated_at=now() RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
+			sql = `INSERT INTO pelanggan(user_id,nama,email,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,(lower(btrim(nama))),hp_normal) WHERE hp_normal <> '' DO UPDATE SET nama=excluded.nama,email=excluded.email,hp=excluded.hp,hp_normal=excluded.hp_normal,alamat=excluded.alamat,updated_at=now() RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
 		} else {
 			sql = `INSERT INTO pelanggan(user_id,nama,email,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,(lower(btrim(nama)))) WHERE hp_normal = '' DO UPDATE SET nama=excluded.nama,email=excluded.email,hp=excluded.hp,hp_normal='',alamat=excluded.alamat,updated_at=now() RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
 		}
 		return q.QueryRow(ctx, sql, userID, nama, email, hp, normal, alamat).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt)
 	})
 	if err != nil {
-		return p, err
+		return p, pelangganDup(err)
 	}
 	_ = json.Unmarshal(foto, &p.Foto)
 	if p.Foto == nil {
@@ -195,7 +211,7 @@ func (d *DB) UpdatePelanggan(ctx context.Context, userID string, id int64, nama,
 		return p, ErrNotFound
 	}
 	if err != nil {
-		return p, err
+		return p, pelangganDup(err)
 	}
 	_ = json.Unmarshal(out, &p.Foto)
 	if p.Foto == nil {
