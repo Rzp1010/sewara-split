@@ -296,13 +296,6 @@ export default function StatusPage() {
       document.removeEventListener("pointerdown", tutupPopover);
     };
   }, []);
-  const ringkasanFilter = [
-    rentangKunci !== "7_hari" && ({ hari_ini: "hari ini", "30_hari": "30 hari", semua: "semua periode", kustom: "rentang kustom", "7_hari": "7 hari" }[rentangKunci] || "rentang kustom"),
-    filterWaktuAmbil !== "semua" && (filterWaktuAmbil === "belum" ? "belum waktunya ambil" : "sudah waktunya ambil"),
-    urutkan !== "ambil_terdekat" && `urut: ${{ ambil_terjauh: "ambil terjauh", nama_az: "nama A-Z", nama_za: "nama Z-A" }[urutkan]}`,
-    sembunyikanRiwayat && "riwayat disembunyikan",
-    cariQ.trim() && `cari: ${cariQ.trim()}`,
-  ].filter(Boolean);
   const filterSettingsLoaded = useRef(false);
   const filterSettingsKey = "status-filter-settings";
 
@@ -376,16 +369,6 @@ export default function StatusPage() {
     cariQ,
   ]);
 
-  function resetFilter() {
-    setRentangKunci("semua");
-    setKustomMulai("");
-    setKustomAkhir("");
-    setFilterWaktuAmbil("semua");
-    setUrutkan("ambil_terdekat");
-    setSembunyikanRiwayat(false);
-    setCariQ("");
-    window.localStorage.removeItem(filterSettingsKey);
-  }
   const [userRole, setUserRole] = useState("");
   const [userId, setUserId] = useState("");
   // Chat internal: thread kartu + angka belum dibaca per transaksi.
@@ -893,13 +876,17 @@ export default function StatusPage() {
             },
           ]
         : []),
-      {
-        status: "Selesai",
-        label: "Selesai",
-        ...STATUS_CONFIG.Selesai,
-        count: selesai.length,
-        filter: (t) => t.status === "Selesai",
-      },
+      ...(sembunyikanRiwayat
+        ? []
+        : [
+            {
+              status: "Selesai",
+              label: "Selesai",
+              ...STATUS_CONFIG.Selesai,
+              count: selesai.length,
+              filter: (t) => t.status === "Selesai",
+            },
+          ]),
     ],
     [
       trxAktifFilter,
@@ -908,6 +895,7 @@ export default function StatusPage() {
       boardBaru,
       belumSelesaiFilter,
       selesai,
+      sembunyikanRiwayat,
     ],
   );
 
@@ -1689,8 +1677,10 @@ export default function StatusPage() {
                   {[{v:"semua",label:"Semua waktu ambil"},{v:"belum",label:"Belum waktunya ambil"},{v:"sudah",label:"Sudah lewat waktu ambil"}].map((o)=><label key={o.v} className={`flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm focus-within:ring-1 focus-within:ring-[var(--color-primary-soft-text,#7181E0)] ${filterWaktuAmbil===o.v?"bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}><span className="flex min-w-0 items-center gap-2"><input className="sr-only" type="radio" name="waktu-ambil" checked={filterWaktuAmbil===o.v} onChange={()=>setFilterWaktuAmbil(o.v)}/>{o.label}</span>{filterWaktuAmbil===o.v&&<span aria-hidden="true">✓</span>}</label>)}
                   <p className="mt-1 text-[11px] leading-snug text-[var(--text-secondary)]">Dihitung terhadap jam sekarang, jadi praktis hanya berpengaruh pada kartu yang waktu ambilnya hari ini. Kartu tanpa waktu ambil dianggap belum waktunya.</p>
                 </section>
-                <label className="flex items-center gap-2 border-t border-[var(--border-color)] pt-3 text-sm text-[var(--text-secondary)]"><input type="checkbox" checked={sembunyikanRiwayat} onChange={toggleSembunyikanRiwayat} style={{accentColor:"#7181E0"}}/>Sembunyikan Selesai &amp; Dibatalkan</label>
-                {ringkasanFilter.length > 0 && <div className="border-t border-[var(--border-color)] pt-3"><button type="button" onClick={resetFilter} className="text-xs text-[var(--color-primary-soft-text,#7181E0)] underline">Reset filter</button></div>}
+                <section className="flex flex-col gap-1 border-t border-[var(--border-color)] pt-3">
+                  <p className="mb-1 text-xs font-semibold text-[var(--text-secondary)]">Status selesai</p>
+                  <label className={`flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm focus-within:ring-1 focus-within:ring-[var(--color-primary-soft-text,#7181E0)] ${sembunyikanRiwayat?"bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}><span className="flex min-w-0 items-center gap-2"><input className="sr-only" type="checkbox" checked={sembunyikanRiwayat} onChange={toggleSembunyikanRiwayat}/>Sembunyikan status selesai</span>{sembunyikanRiwayat&&<span aria-hidden="true">✓</span>}</label>
+                </section>
               </div>}
               {toolbarPopover === "sort" && <div className="flex flex-col gap-1">{[{v:"ambil_terdekat",l:"Ambil terdekat"},{v:"ambil_terjauh",l:"Ambil terjauh"},{v:"nama_az",l:"Nama A-Z"},{v:"nama_za",l:"Nama Z-A"}].map(o=><button key={o.v} type="button" onClick={()=>setUrutkan(o.v)} className={`rounded-md px-3 py-2 text-left text-sm ${urutkan===o.v?"bg-[var(--color-primary-soft)] text-[var(--color-primary-soft-text,#7181E0)]":"text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"}`}>{o.l}</button>)}</div>}
               {toolbarPopover === "search" && <label className="block text-xs font-semibold text-[var(--text-secondary)]">Cari penyewa, invoice, atau alat<input autoFocus aria-label="Cari penyewa, invoice, atau alat" value={cariQ} onChange={(e)=>setCariQ(e.target.value)} placeholder="Ketik untuk mencari..." className="mt-2 w-full rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm font-normal text-[var(--text-primary)] outline-none focus:border-[var(--color-primary-soft-text,#7181E0)]"/></label>}
