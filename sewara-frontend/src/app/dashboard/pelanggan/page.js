@@ -5,6 +5,10 @@ import {
   getPelangganSuggestions,
   getPelangganSuggestionsGagalTerakhir,
   getBlacklist,
+  upsertPelanggan,
+  uploadDokumenPelanggan,
+  patchPelanggan,
+  urlDokumenPelanggan,
 } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
@@ -14,6 +18,7 @@ import { useNotify } from "@/components/NotificationProvider";
 import BlacklistModal from "@/components/BlacklistModal";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMuat from "@/components/ErrorMuat";
+import DokumenJaminan from "@/components/DokumenJaminan";
 
 export default function PelangganPage() {
   const { notify } = useNotify();
@@ -24,6 +29,8 @@ export default function PelangganPage() {
   const [gagal, setGagal] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [blRow, setBlRow] = useState(null);
+  const [docRow, setDocRow] = useState(null);
+  const [docTarget, setDocTarget] = useState(null);
   const [exportModal, setExportModal] = useState(false),
     [exportBulan, setExportBulan] = useState(""),
     [exportTipe, setExportTipe] = useState("semua");
@@ -86,6 +93,35 @@ export default function PelangganPage() {
   useEffect(() => {
     load();
   }, []);
+  async function bukaDokumen(row) {
+    try {
+      const target = row.sumber === "riwayat" || !row.id
+        ? await upsertPelanggan({ nama: row.nama, hp: row.hp, alamat: row.alamat })
+        : row;
+      if (!target?.id) throw new Error("Data pelanggan tidak memiliki ID.");
+      setDocTarget(target);
+      setDocRow({ ...target, foto: target.foto || row.foto || [] });
+    } catch (error) { notify(error.message, "error"); }
+  }
+  async function unggahDokumen(file, slotKey, label) {
+    const docs = docRow?.foto || [];
+    const found = docs.findIndex((item) => item.label === label);
+    const result = await uploadDokumenPelanggan({ pelangganId: docTarget.id, file, label, index: found >= 0 ? found : docs.length });
+    setDocRow((old) => ({ ...old, foto: [...(old.foto || []).filter((item) => item.label !== label), { label: result.label || label, path: result.path }] }));
+    await load();
+  }
+  async function hapusDokumen(label) {
+    try {
+      const foto = (docRow?.foto || [])
+        .filter((item) => item.label !== label)
+        .map(({ label: itemLabel, path }) => ({ label: itemLabel, path }));
+      const updated = await patchPelanggan(docTarget.id, { foto });
+      setDocRow((old) => ({ ...old, foto: updated?.foto || foto }));
+      await load();
+    } catch (error) {
+      notify(error.message || "Gagal menghapus dokumen.", "error");
+    }
+  }
   const isBlacklisted = (row) => !!terBlacklist(blacklist, { nama: row.nama, hp: row.hp });
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -222,6 +258,7 @@ export default function PelangganPage() {
                 <th className="px-4 py-3 text-left">HP</th>
                 <th className="px-4 py-3 text-left">Alamat</th>
                 <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Jaminan</th>
                 <th className="px-4 py-3 text-left">Aksi</th>
               </tr>
             </thead>
@@ -261,7 +298,11 @@ export default function PelangganPage() {
                         </span>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      <button type="button" aria-label={`Lihat dokumen jaminan ${row.nama}`} className="rounded border border-[var(--border-color)] px-2 py-1 text-xs text-[var(--text-primary)]" onClick={() => bukaDokumen(row)}>{(row.foto || []).filter((item) => item?.path).length}/5</button>
+                    </td>
                     <td>
+                      <button type="button" aria-label={`Foto jaminan ${row.nama}`} className="mr-2 rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)]" onClick={() => bukaDokumen(row)}>Foto jaminan</button>
                       {row.sumber !== "member" && (
                         <button
                           className="rounded-lg border-0 bg-[#7181E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5d6fcc]"
@@ -368,6 +409,7 @@ export default function PelangganPage() {
         </p>
       )}
 
+      {docRow && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-label={`Dokumen jaminan ${docRow.nama}`}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-[var(--bg-surface)] p-5 text-[var(--text-primary)]"><div className="mb-4 flex justify-between"><h3 className="text-lg font-bold">Jaminan {docRow.nama}</h3><button type="button" aria-label="Tutup dokumen" onClick={() => { setDocRow(null); setDocTarget(null); }}>Tutup</button></div><DokumenJaminan dokumen={docRow.foto || []} onUpload={unggahDokumen} onHapus={hapusDokumen} urlDokumen={urlDokumenPelanggan} /></div></div>}
       <BlacklistModal
         open={!!blRow}
         prefill={blRow}

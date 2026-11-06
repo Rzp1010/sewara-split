@@ -9,6 +9,7 @@ import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMuat from "@/components/ErrorMuat";
 import BlacklistModal from "@/components/BlacklistModal";
+import DokumenJaminan from "@/components/DokumenJaminan";
 
 const EMPTY = {
   nama: "",
@@ -143,8 +144,6 @@ export default function MemberPage() {
     [saving, setSaving] = useState(false);
   const [documentPreviews, setDocumentPreviews] = useState({}),
     [documentLoading, setDocumentLoading] = useState({});
-  const [editPreviews, setEditPreviews] = useState({}),
-    [draggingDocument, setDraggingDocument] = useState(null);
   const [tierModal, setTierModal] = useState(false),
     [tierEditing, setTierEditing] = useState(null),
     [tierForm, setTierForm] = useState(EMPTY_TIER),
@@ -163,32 +162,6 @@ export default function MemberPage() {
     closeDetail();
     setDetail(member);
   }
-  function handleDrop(event, slot) {
-    event.preventDefault();
-    setDraggingDocument(null);
-    const file = event.dataTransfer.files[0];
-    if (file) upload(file, slot.key, slot.label);
-  }
-  function handleDragOver(event, index) {
-    event.preventDefault();
-    setDraggingDocument(index);
-  }
-
-  useEffect(() => {
-    if (!modal) return;
-    const next = {};
-    form.foto_jaminan.forEach((row) => {
-      if (!row.path) return;
-      const slot = DOCUMENT_SLOTS.find((item) => item.label === row.label);
-      if (!slot) return;
-      next[slot.key] = {
-        url: `${API_BASE}/api/member/photo?key=${encodeURIComponent(row.path)}`,
-        type: /\.pdf(?:$|[?#])/i.test(row.path) ? "pdf" : "image",
-      };
-    });
-    setEditPreviews(next);
-  }, [modal, form.foto_jaminan]);
-
   useEffect(() => {
     if (!detail) return undefined;
     const documents = Array.isArray(detail.foto_jaminan)
@@ -320,13 +293,6 @@ export default function MemberPage() {
         };
         return { ...x, foto_jaminan: documents };
       });
-      setEditPreviews((current) => ({
-        ...current,
-        [slotKey]: {
-          url: URL.createObjectURL(file),
-          type: file.type === "application/pdf" ? "pdf" : "image",
-        },
-      }));
       notify("Dokumen berhasil diupload.");
     } catch (e) {
       notify(e.message, "error");
@@ -341,11 +307,6 @@ export default function MemberPage() {
       ...x,
       foto_jaminan: x.foto_jaminan.filter((item) => item.label !== slotLabel),
     }));
-    setEditPreviews((current) => {
-      const next = { ...current };
-      delete next[slotKey];
-      return next;
-    });
     notify("Dokumen dihapus.");
   }
 
@@ -980,81 +941,15 @@ export default function MemberPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="mb-4 mt-6 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
-                    <span className="whitespace-nowrap text-xs font-semibold text-[var(--text-muted)]">
-                      Dokumen Jaminan (Opsional ·{" "}
-                      {form.foto_jaminan.filter((item) => item?.path).length}/5)
-                    </span>
-                    <div className="h-px flex-1 bg-[var(--bg-subtle)]" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
-                    {DOCUMENT_SLOTS.map((slot, index) => {
-                      const item = form.foto_jaminan.find(
-                        (d) => d.label === slot.label,
-                      );
-                      const preview = editPreviews[slot.key];
-                      const filled = item?.path || preview;
-                      return (
-                        <div
-                          key={slot.key}
-                          className={`relative flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] px-2 py-3.5 text-center transition-colors hover:border-[#7181E0] hover:bg-[#EEF2FF] ${filled ? "border-solid border-emerald-500 bg-green-50" : "border-dashed border-[var(--border-color)]"}`}
-                          onClick={() =>
-                            document.getElementById(`doc-${slot.key}`)?.click()
-                          }
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDrop={(e) => handleDrop(e, slot)}
-                        >
-                          <div
-                            className={`text-xl leading-none ${filled ? "text-emerald-500" : "text-[var(--text-muted)]"}`}
-                          >
-                            {preview?.type === "image" ? (
-                              <img
-                                src={preview.url}
-                                alt={slot.label}
-                                className="max-h-20 max-w-full object-contain"
-                              />
-                            ) : preview?.type === "pdf" ? (
-                              <span className="text-3xl">PDF</span>
-                            ) : (
-                              <span>{filled ? "✓" : "+"}</span>
-                            )}
-                          </div>
-                          <div
-                            className={`text-[11px] font-semibold ${filled ? "text-emerald-800" : "text-[var(--text-muted)]"}`}
-                          >
-                            {slot.label}
-                          </div>
-                          {filled && (
-                            <div
-                              className="text-center text-[10px] text-red-500"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteDocument(slot.key, slot.label);
-                              }}
-                            >
-                              Hapus
-                            </div>
-                          )}
-                          <input
-                            id={`doc-${slot.key}`}
-                            type="file"
-                            hidden
-                            accept="image/jpeg,image/png,application/pdf"
-                            onChange={(e) =>
-                              e.target.files[0] &&
-                              upload(e.target.files[0], slot.key, slot.label)
-                            }
-                          />
-                          {documentLoading[slot.key] && (
-                            <div className="absolute inset-0 flex items-center justify-center rounded bg-[var(--bg-surface)]/80">
-                              Mengunggah...
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <DokumenJaminan
+                    dokumen={form.foto_jaminan}
+                    onUpload={upload}
+                    onHapus={(label) => {
+                      const slot = DOCUMENT_SLOTS.find((item) => item.label === label);
+                      if (slot) deleteDocument(slot.key, label);
+                    }}
+                    urlDokumen={(path) => `${API_BASE}/api/member/photo?key=${encodeURIComponent(path)}`}
+                  />
                 </div>
                 <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-4">
                   <button

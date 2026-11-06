@@ -314,6 +314,18 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	if strings.TrimSpace(tx.Penyewa) != "" {
+		hp, alamat := "", ""
+		if tx.HPPenyewa != nil {
+			hp = *tx.HPPenyewa
+		}
+		if tx.AlamatPenyewa != nil {
+			alamat = *tx.AlamatPenyewa
+		}
+		if _, err := s.db.UpsertPelanggan(r.Context(), me.UserID, tx.Penyewa, hp, alamat); err != nil {
+			s.log.Error("gagal upsert pelanggan dari transaksi", "err", err, "id", tx.ID)
+		}
+	}
 	writeSuccess(w, http.StatusOK, map[string]any{"transaction": result})
 }
 

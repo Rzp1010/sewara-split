@@ -587,6 +587,41 @@ export async function getMembers() {
   return members || [];
 }
 
+export async function getPelanggan() {
+  const data = await apiRequest('/api/pelanggan');
+  return data?.pelanggan || [];
+}
+
+export async function upsertPelanggan({ nama, hp, alamat }) {
+  const data = await apiRequest('/api/pelanggan', { method: 'POST', body: JSON.stringify({ nama, hp, alamat }) });
+  kirimEventData();
+  return data?.pelanggan;
+}
+
+export async function patchPelanggan(id, patch) {
+  const data = await apiRequest(`/api/pelanggan/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+  kirimEventData();
+  return data?.pelanggan;
+}
+
+export async function uploadDokumenPelanggan({ pelangganId, file, label, index }) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('pelangganId', String(pelangganId));
+  form.append('label', label);
+  form.append('index', String(index));
+  const result = await apiRequest('/api/pelanggan/upload', { method: 'POST', body: form });
+  kirimEventData();
+  return result;
+}
+
+export function urlDokumenPelanggan(path) {
+  return `${API_BASE}/api/pelanggan/photo?key=${encodeURIComponent(path)}`;
+}
+
 export async function simpanMember(member) {
   try {
     const body = { ...member };
