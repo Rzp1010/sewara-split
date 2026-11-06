@@ -24,47 +24,115 @@ type Pelanggan struct {
 	Foto      []FotoPelanggan `json:"foto"`
 	Sumber    string          `json:"sumber"`
 	UpdatedAt time.Time       `json:"updated_at"`
+	MemberID  int64           `json:"member_id"`
+	FotoDari  string          `json:"foto_dari"`
+}
+
+func GabungPool(pelanggan, members, riwayat []Pelanggan) []Pelanggan {
+	all := make([]Pelanggan, 0, len(pelanggan)+len(members)+len(riwayat))
+	all = append(all, pelanggan...)
+	all = append(all, members...)
+	all = append(all, riwayat...)
+	out := make([]Pelanggan, 0, len(all))
+	for _, p := range all {
+		if p.HPNormal == "" {
+			p.HPNormal = NormalisasiHP(p.HP)
+		}
+		p.FotoDari = "pelanggan"
+		if p.MemberID != 0 {
+			p.FotoDari = "member"
+		}
+		found := -1
+		for i := range out {
+			if samePoolPerson(out[i], p) {
+				found = i
+				break
+			}
+		}
+		if found < 0 {
+			out = append(out, p)
+			continue
+		}
+		keep := &out[found]
+		if keep.HP == "" {
+			keep.HP = p.HP
+		}
+		if keep.HPNormal == "" {
+			keep.HPNormal = p.HPNormal
+		}
+		if keep.HPNormal == "" {
+			keep.HPNormal = NormalisasiHP(keep.HP)
+		}
+		if keep.Alamat == "" {
+			keep.Alamat = p.Alamat
+		}
+		if keep.Catatan == "" {
+			keep.Catatan = p.Catatan
+		}
+		if keep.MemberID == 0 && p.MemberID != 0 {
+			keep.MemberID = p.MemberID
+			keep.Foto = p.Foto
+			keep.FotoDari = "member"
+		}
+	}
+	return out
+}
+
+func samePoolPerson(a, b Pelanggan) bool {
+	if strings.ToLower(strings.TrimSpace(a.Nama)) != strings.ToLower(strings.TrimSpace(b.Nama)) {
+		return false
+	}
+	ah, bh := NormalisasiHP(a.HP), NormalisasiHP(b.HP)
+	return ah == "" || bh == "" || ah == bh
+}
+
+func decodeFoto(raw []byte) []FotoPelanggan {
+	var foto []FotoPelanggan
+	_ = json.Unmarshal(raw, &foto)
+	if foto == nil {
+		foto = []FotoPelanggan{}
+	}
+	return foto
 }
 
 func ListPelanggan(ctx context.Context, d *DB, userID string) ([]Pelanggan, error) {
-	list := []Pelanggan{}
+	var result []Pelanggan
 	err := d.InTenant(ctx, userID, func(q Querier) error {
-		rows, err := q.Query(ctx, `SELECT id, nama, hp, hp_normal, alamat, catatan, foto, 'pelanggan', updated_at FROM pelanggan
-			UNION ALL
-			SELECT 0, t.penyewa, COALESCE(t.hp_penyewa,''), '', COALESCE(t.alamat_penyewa,''), '', '[]'::jsonb, 'riwayat', max(t.updated_at)
-			FROM transactions t WHERE t.user_id = $1 AND btrim(t.penyewa) <> ''
-			GROUP BY t.penyewa, t.hp_penyewa, t.alamat_penyewa
-			ORDER BY 2, 8`, userID)
+		read := func(query string) ([]Pelanggan, error) {
+			rows, err := q.Query(ctx, query, userID)
+			if err != nil {
+				return nil, err
+			}
+			defer rows.Close()
+			var list []Pelanggan
+			for rows.Next() {
+				var p Pelanggan
+				var foto []byte
+				if err := rows.Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt, &p.MemberID); err != nil {
+					return nil, err
+				}
+				p.Foto = decodeFoto(foto)
+				list = append(list, p)
+			}
+			return list, rows.Err()
+		}
+		pel, err := read(`SELECT p.id,p.nama,p.hp,p.hp_normal,p.alamat,p.catatan,p.foto,'pelanggan',p.updated_at,0 FROM pelanggan p WHERE p.user_id=$1 ORDER BY p.nama`)
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
-		seen := map[string]bool{}
-		for rows.Next() {
-			var p Pelanggan
-			var foto []byte
-			if err := rows.Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt); err != nil {
-				return err
-			}
-			_ = json.Unmarshal(foto, &p.Foto)
-			if p.Foto == nil {
-				p.Foto = []FotoPelanggan{}
-			}
-			key := strings.ToLower(strings.TrimSpace(p.Nama)) + "\x00" + NormalisasiHP(p.HP)
-			if p.HPNormal == "" {
-				key = strings.ToLower(strings.TrimSpace(p.Nama)) + "\x00"
-			}
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			list = append(list, p)
+		mem, err := read(`SELECT 0,m.nama,m.hp,'',m.alamat,'',m.foto_jaminan,'member',m.created_at,m.id FROM members m WHERE m.user_id=$1 ORDER BY m.nama`)
+		if err != nil {
+			return err
 		}
-		return rows.Err()
+		riw, err := read(`SELECT 0,t.penyewa,COALESCE(t.hp_penyewa,''),'',COALESCE(t.alamat_penyewa,''),'','[]'::jsonb,'riwayat',max(t.updated_at),0 FROM transactions t WHERE t.user_id=$1 AND btrim(t.penyewa)<>'' GROUP BY t.penyewa,t.hp_penyewa,t.alamat_penyewa ORDER BY 2,8`)
+		if err != nil {
+			return err
+		}
+		result = GabungPool(pel, mem, riw)
+		return nil
 	})
-	return list, err
+	return result, err
 }
-
 func (d *DB) GetPelanggan(ctx context.Context, userID string, id int64) (Pelanggan, error) {
 	var p Pelanggan
 	var foto []byte

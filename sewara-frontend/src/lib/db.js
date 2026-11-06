@@ -618,6 +618,23 @@ export async function uploadDokumenPelanggan({ pelangganId, file, label, index }
   return result;
 }
 
+export async function uploadDokumenMember({ memberId, file, label, index }) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('memberId', String(memberId));
+  form.append('label', label);
+  form.append('index', String(index));
+  const response = await fetch(`${API_BASE}/api/member/upload`, { method: 'POST', body: form });
+  const result = await response.json();
+  if (!result.ok) throw new Error(result.error || 'Gagal mengunggah dokumen.');
+  kirimEventData();
+  return result;
+}
+
+export function urlDokumenMember(path) {
+  return `${API_BASE}/api/member/photo?key=${encodeURIComponent(path)}`;
+}
+
 export function urlDokumenPelanggan(path) {
   return `${API_BASE}/api/pelanggan/photo?key=${encodeURIComponent(path)}`;
 }

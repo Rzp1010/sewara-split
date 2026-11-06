@@ -41,5 +41,14 @@ try{
  $r=Invoke-Api PATCH '/api/pelanggan/not-a-number' $a '{"catatan":"x"}';Add 'j2 PATCH id non-numerik 404' ($r.Status -eq 404 -and (Msg $r) -eq 'Pelanggan tidak ditemukan.') "status=$($r.Status) msg=$(Msg $r)"
  $h=Invoke-Preflight '/api/pelanggan' 'http://localhost:3002';Add 'k1 preflight origin diizinkan 204 + ACAO' ($h -match ' 204 ' -and $h -match 'Access-Control-Allow-Origin: http://localhost:3002' -and $h -match 'Access-Control-Allow-Credentials: true') "aco=$($h -match 'Access-Control-Allow-Origin')"
  $h=Invoke-Preflight '/api/pelanggan' 'http://jahat.example';Add 'k2 preflight origin asing tanpa ACAO' (-not ($h -match 'Access-Control-Allow-Origin')) "aco=$($h -match 'Access-Control-Allow-Origin')"
+ $mid=Sql "INSERT INTO members(user_id,nama,hp,alamat,status,foto_jaminan) VALUES ('$TA','Member Berfoto','081122233344','Jl Member','aktif',jsonb_build_array(jsonb_build_object('label','KTP','path','$TA/member/1/doc-0.png'))) RETURNING id;"
+ Sql "INSERT INTO pelanggan(user_id,nama,hp,hp_normal) VALUES ('$TA','Member Berfoto','081122233344','68122233344');"|Out-Null
+ Sql "INSERT INTO members(user_id,nama,hp,alamat,status,foto_jaminan) VALUES ('$TA','Member Mandiri','081155566677','Jl Mandiri','aktif','[]');"|Out-Null
+ Sql "INSERT INTO pelanggan(user_id,nama,hp,hp_normal) VALUES ('$TA','Dedupe Beda Sisi','123','123');"|Out-Null
+ Sql "INSERT INTO transactions(id,user_id,penyewa,status) VALUES ((SELECT COALESCE(MAX(id),0)+1 FROM transactions),'$TA','Dedupe Beda Sisi','Booking');"|Out-Null
+ $list=((Invoke-Api GET '/api/pelanggan' $a).Body|ConvertFrom-Json).data.pelanggan
+ $row=@($list|Where-Object{$_.nama -eq 'Member Berfoto'});Add 'l pasangan member: member_id + foto_dari=member + foto member' ($row.Count -eq 1 -and $row[0].member_id -eq [int64]$mid -and $row[0].foto_dari -eq 'member' -and $row[0].foto.Count -eq 1) "count=$($row.Count) member_id=$(if($row.Count){$row[0].member_id}) dari=$(if($row.Count){$row[0].foto_dari}) foto=$(if($row.Count){$row[0].foto.Count})"
+ $row=@($list|Where-Object{$_.nama -eq 'Dedupe Beda Sisi'});Add 'm riwayat tanpa HP menyatu, tidak ganda' ($row.Count -eq 1 -and $row[0].sumber -eq 'pelanggan' -and $row[0].hp -eq '123') "count=$($row.Count) sumber=$(if($row.Count){$row[0].sumber})"
+ $row=@($list|Where-Object{$_.nama -eq 'Member Mandiri'});Add 'n member tanpa baris pelanggan: sumber=member id=0' ($row.Count -eq 1 -and $row[0].sumber -eq 'member' -and $row[0].id -eq 0 -and $row[0].member_id -gt 0 -and $row[0].foto_dari -eq 'member') "count=$($row.Count) sumber=$(if($row.Count){$row[0].sumber}) id=$(if($row.Count){$row[0].id})"
 }finally{Stop-Api;Pop-Location -ErrorAction SilentlyContinue}
 $failed=@($script:results|Where-Object{-not $_.OK}).Count;Write-Host "Ringkasan: PASS=$($script:results.Count-$failed) FAIL=$failed TOTAL=$($script:results.Count)";if($failed){exit 1};exit 0

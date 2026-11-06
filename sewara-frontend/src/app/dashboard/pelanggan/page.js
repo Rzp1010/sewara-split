@@ -2,13 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getTransactionsLaporan,
-  getPelangganSuggestions,
-  getPelangganSuggestionsGagalTerakhir,
+  getPelanggan,
   getBlacklist,
   upsertPelanggan,
   uploadDokumenPelanggan,
+  uploadDokumenMember,
   patchPelanggan,
   urlDokumenPelanggan,
+  urlDokumenMember,
 } from "@/lib/db";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api-client";
@@ -77,10 +78,9 @@ export default function PelangganPage() {
     setLoading(true);
     setGagal(false);
     try {
-      const suggestions = await getPelangganSuggestions();
-      const saranGagal = getPelangganSuggestionsGagalTerakhir();
+      const suggestions = await getPelanggan();
       const daftarBlacklist = await getBlacklist();
-      if (saranGagal || daftarBlacklist === null)
+      if (daftarBlacklist === null)
         throw new Error("Gagal memuat data.");
       setRows(Array.isArray(suggestions) ? suggestions : []);
       setBlacklist(Array.isArray(daftarBlacklist) ? daftarBlacklist : []);
@@ -91,32 +91,48 @@ export default function PelangganPage() {
     }
   }
   useEffect(() => {
-    load();
+    (async () => {
+      await load();
+    })();
   }, []);
   async function bukaDokumen(row) {
     try {
-      const target = row.sumber === "riwayat" || !row.id
-        ? await upsertPelanggan({ nama: row.nama, hp: row.hp, alamat: row.alamat })
-        : row;
+      const target = Number(row.member_id) > 0
+        ? { jenis: "member", id: row.member_id, foto: row.foto }
+        : row.sumber === "riwayat" || !row.id
+          ? await upsertPelanggan({ nama: row.nama, hp: row.hp, alamat: row.alamat })
+          : { ...row, jenis: "pelanggan" };
       if (!target?.id) throw new Error("Data pelanggan tidak memiliki ID.");
       setDocTarget(target);
       setDocRow({ ...target, foto: target.foto || row.foto || [] });
     } catch (error) { notify(error.message, "error"); }
   }
   async function unggahDokumen(file, slotKey, label) {
-    const docs = docRow?.foto || [];
-    const found = docs.findIndex((item) => item.label === label);
-    const result = await uploadDokumenPelanggan({ pelangganId: docTarget.id, file, label, index: found >= 0 ? found : docs.length });
-    setDocRow((old) => ({ ...old, foto: [...(old.foto || []).filter((item) => item.label !== label), { label: result.label || label, path: result.path }] }));
-    await load();
+    try {
+      const docs = docRow?.foto || [];
+      const found = docs.findIndex((item) => item.label === label);
+      const index = found >= 0 ? found : docs.length;
+      const result = docTarget.jenis === "member"
+        ? await uploadDokumenMember({ memberId: docTarget.id, file, label, index })
+        : await uploadDokumenPelanggan({ pelangganId: docTarget.id, file, label, index });
+      const foto = [...docs.filter((item) => item.label !== label), { label: result.label || label, path: result.path }];
+      setDocRow((old) => ({ ...old, foto }));
+      await load();
+    } catch (error) { notify(error.message || "Gagal mengunggah dokumen.", "error"); }
   }
   async function hapusDokumen(label) {
     try {
       const foto = (docRow?.foto || [])
         .filter((item) => item.label !== label)
         .map(({ label: itemLabel, path }) => ({ label: itemLabel, path }));
-      const updated = await patchPelanggan(docTarget.id, { foto });
-      setDocRow((old) => ({ ...old, foto: updated?.foto || foto }));
+      let updated;
+      if (docTarget.jenis === "member") {
+        updated = await api.members.update(docTarget.id, { foto_jaminan: foto });
+        updated = updated?.member;
+      } else {
+        updated = await patchPelanggan(docTarget.id, { foto });
+      }
+      setDocRow((old) => ({ ...old, foto: updated?.foto_jaminan || updated?.foto || foto }));
       await load();
     } catch (error) {
       notify(error.message || "Gagal menghapus dokumen.", "error");
@@ -300,6 +316,7 @@ export default function PelangganPage() {
                     </td>
                     <td className="px-4 py-3">
                       <button type="button" aria-label={`Lihat dokumen jaminan ${row.nama}`} className="rounded border border-[var(--border-color)] px-2 py-1 text-xs text-[var(--text-primary)]" onClick={() => bukaDokumen(row)}>{(row.foto || []).filter((item) => item?.path).length}/5</button>
+                      {row.foto_dari === "member" && <span className="ml-2 text-xs text-[var(--text-secondary)]">dari member</span>}
                     </td>
                     <td>
                       <button type="button" aria-label={`Foto jaminan ${row.nama}`} className="mr-2 rounded-lg border-0 bg-[var(--bg-subtle)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)]" onClick={() => bukaDokumen(row)}>Foto jaminan</button>
@@ -409,7 +426,7 @@ export default function PelangganPage() {
         </p>
       )}
 
-      {docRow && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-label={`Dokumen jaminan ${docRow.nama}`}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-[var(--bg-surface)] p-5 text-[var(--text-primary)]"><div className="mb-4 flex justify-between"><h3 className="text-lg font-bold">Jaminan {docRow.nama}</h3><button type="button" aria-label="Tutup dokumen" onClick={() => { setDocRow(null); setDocTarget(null); }}>Tutup</button></div><DokumenJaminan dokumen={docRow.foto || []} onUpload={unggahDokumen} onHapus={hapusDokumen} urlDokumen={urlDokumenPelanggan} /></div></div>}
+      {docRow && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-label={`Dokumen jaminan ${docRow.nama}`}><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-[var(--bg-surface)] p-5 text-[var(--text-primary)]"><div className="mb-4 flex justify-between"><h3 className="text-lg font-bold">Jaminan {docRow.nama}</h3><button type="button" aria-label="Tutup dokumen" onClick={() => { setDocRow(null); setDocTarget(null); }}>Tutup</button></div><DokumenJaminan dokumen={docRow.foto || []} onUpload={unggahDokumen} onHapus={hapusDokumen} urlDokumen={docTarget?.jenis === "member" ? urlDokumenMember : urlDokumenPelanggan} /></div></div>}
       <BlacklistModal
         open={!!blRow}
         prefill={blRow}
