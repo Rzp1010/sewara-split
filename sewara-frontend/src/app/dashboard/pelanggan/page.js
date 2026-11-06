@@ -90,6 +90,8 @@ function IsiHalaman() {
   const [urut, setUrut] = useState("nama-az");
   const [detail, setDetail] = useState(null);
   const [prefillBlacklist, setPrefillBlacklist] = useState(null);
+  // Tampilan "Kelola" = komponen lama dipakai apa adanya (tanpa duplikasi logika).
+  const [kelolaTab, setKelolaTab] = useState(null);
 
   useEffect(() => {
     let batal = false;
@@ -113,6 +115,7 @@ function IsiHalaman() {
   const muatUlang = () => setPutarUlang((n) => n + 1);
   const gantiTab = (kode) =>
     router.replace(`/dashboard/pelanggan?tab=${kode}`, { scroll: false });
+  const kelola = tab !== "semua" && kelolaTab === tab;
 
   const jumlah = useMemo(
     () =>
@@ -148,13 +151,13 @@ function IsiHalaman() {
 
   async function aksi(kode, o) {
     if (kode === "detail") return setDetail(o);
-    if (kode === "jaminan") {
-      notify("Kelola jaminan di tab Pelanggan.", "info");
-      return gantiTab("pelanggan");
-    }
-    if (kode === "tipe") {
-      notify("Ubah tipe member di tab Member.", "info");
+    if (kode === "kelola-member") {
+      setKelolaTab("member");
       return gantiTab("member");
+    }
+    if (kode === "kelola-blacklist") {
+      setKelolaTab("blacklist");
+      return gantiTab("blacklist");
     }
     if (kode === "jadikan-member") {
       const r = await simpanMember({
@@ -197,10 +200,18 @@ function IsiHalaman() {
   function menuUntuk(o) {
     return [
       { kode: "detail", label: "Detail" },
-      { kode: "jaminan", label: "Jaminan" },
       { kode: "jadikan-member", label: "Jadikan member", tampil: !o.member_id },
-      { kode: "tipe", label: "Ubah tipe", tampil: Boolean(o.member_id) },
+      {
+        kode: "kelola-member",
+        label: "Kelola member",
+        tampil: Boolean(o.member_id),
+      },
       { kode: "blacklist", label: "Blacklist", danger: true, tampil: !o.black },
+      {
+        kode: "kelola-blacklist",
+        label: "Ubah entri blacklist",
+        tampil: Boolean(o.black),
+      },
       {
         kode: "hapus-member",
         label: "Hapus member",
@@ -245,7 +256,32 @@ function IsiHalaman() {
           ))}
         </nav>
 
-        {tab === "semua" ? (
+        {tab !== "semua" ? (
+          <div className="flex items-center justify-between gap-3 px-4 pt-4">
+            <span className="text-xs text-[var(--text-muted)]">
+              {kelola
+                ? "Tampilan lengkap: kelola data, tipe, dan ekspor."
+                : `${daftar.length} orang ditampilkan`}
+            </span>
+            <button
+              type="button"
+              onClick={() => setKelolaTab(kelola ? null : tab)}
+              className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+            >
+              {kelola ? "Tampilan tabel" : "Kelola lengkap"}
+            </button>
+          </div>
+        ) : null}
+
+        {kelola ? (
+          tab === "member" ? (
+            <TabMember />
+          ) : tab === "pelanggan" ? (
+            <TabPelanggan />
+          ) : (
+            <TabBlacklist />
+          )
+        ) : (
           <>
             <div className="flex flex-wrap items-center gap-3 p-4">
               <input
@@ -266,9 +302,11 @@ function IsiHalaman() {
                 <option value="alamat-az">Alamat A–Z</option>
                 <option value="alamat-za">Alamat Z–A</option>
               </select>
-              <span className="text-xs text-[var(--text-muted)]">
-                {daftar.length} orang ditampilkan
-              </span>
+              {tab === "semua" ? (
+                <span className="text-xs text-[var(--text-muted)]">
+                  {daftar.length} orang ditampilkan
+                </span>
+              ) : null}
             </div>
             {muat ? (
               <div className="p-8">
@@ -287,12 +325,6 @@ function IsiHalaman() {
               />
             )}
           </>
-        ) : tab === "member" ? (
-          <TabMember />
-        ) : tab === "pelanggan" ? (
-          <TabPelanggan />
-        ) : (
-          <TabBlacklist />
         )}
       </section>
 
