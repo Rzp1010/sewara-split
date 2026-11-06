@@ -26,6 +26,7 @@ func (s *Server) handlePelangganGet(w http.ResponseWriter, r *http.Request, me d
 func (s *Server) handlePelangganPost(w http.ResponseWriter, r *http.Request, me db.Identity) {
 	var in struct {
 		Nama   string `json:"nama"`
+		Email  string `json:"email"`
 		HP     string `json:"hp"`
 		Alamat string `json:"alamat"`
 	}
@@ -37,7 +38,12 @@ func (s *Server) handlePelangganPost(w http.ResponseWriter, r *http.Request, me 
 		writeValidationError(w, "Nama wajib diisi.", nil)
 		return
 	}
-	p, e := s.db.UpsertPelanggan(r.Context(), me.UserID, in.Nama, in.HP, in.Alamat)
+	in.Email = strings.TrimSpace(in.Email)
+	if len(in.Email) > 254 || (in.Email != "" && !strings.Contains(in.Email, "@")) {
+		writeValidationError(w, "Email tidak valid (maksimum 254 karakter dan harus mengandung @).", nil)
+		return
+	}
+	p, e := s.db.UpsertPelanggan(r.Context(), me.UserID, in.Nama, in.Email, in.HP, in.Alamat)
 	if e != nil {
 		s.log.Error("gagal menyimpan pelanggan", "err", e)
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")

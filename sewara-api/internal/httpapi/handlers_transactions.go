@@ -322,7 +322,7 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 		if tx.AlamatPenyewa != nil {
 			alamat = *tx.AlamatPenyewa
 		}
-		if _, err := s.db.UpsertPelanggan(r.Context(), me.UserID, tx.Penyewa, hp, alamat); err != nil {
+		if _, err := s.db.UpsertPelanggan(r.Context(), me.UserID, tx.Penyewa, "", hp, alamat); err != nil {
 			s.log.Error("gagal upsert pelanggan dari transaksi", "err", err, "id", tx.ID)
 		}
 	}

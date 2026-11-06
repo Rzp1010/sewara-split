@@ -17,6 +17,7 @@ type FotoPelanggan struct {
 type Pelanggan struct {
 	ID        int64           `json:"id"`
 	Nama      string          `json:"nama"`
+	Email     string          `json:"email"`
 	HP        string          `json:"hp"`
 	HPNormal  string          `json:"hp_normal"`
 	Alamat    string          `json:"alamat"`
@@ -108,7 +109,7 @@ func ListPelanggan(ctx context.Context, d *DB, userID string) ([]Pelanggan, erro
 			for rows.Next() {
 				var p Pelanggan
 				var foto []byte
-				if err := rows.Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt, &p.MemberID); err != nil {
+				if err := rows.Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt, &p.MemberID); err != nil {
 					return nil, err
 				}
 				p.Foto = decodeFoto(foto)
@@ -116,15 +117,15 @@ func ListPelanggan(ctx context.Context, d *DB, userID string) ([]Pelanggan, erro
 			}
 			return list, rows.Err()
 		}
-		pel, err := read(`SELECT p.id,p.nama,p.hp,p.hp_normal,p.alamat,p.catatan,p.foto,'pelanggan',p.updated_at,0 FROM pelanggan p WHERE p.user_id=$1 ORDER BY p.nama`)
+		pel, err := read(`SELECT p.id,p.nama,p.email,p.hp,p.hp_normal,p.alamat,p.catatan,p.foto,'pelanggan',p.updated_at,0 FROM pelanggan p WHERE p.user_id=$1 ORDER BY p.nama`)
 		if err != nil {
 			return err
 		}
-		mem, err := read(`SELECT 0,m.nama,m.hp,'',m.alamat,'',m.foto_jaminan,'member',m.created_at,m.id FROM members m WHERE m.user_id=$1 ORDER BY m.nama`)
+		mem, err := read(`SELECT 0,m.nama,'',m.hp,'',m.alamat,'',m.foto_jaminan,'member',m.created_at,m.id FROM members m WHERE m.user_id=$1 ORDER BY m.nama`)
 		if err != nil {
 			return err
 		}
-		riw, err := read(`SELECT 0,t.penyewa,COALESCE(t.hp_penyewa,''),'',COALESCE(t.alamat_penyewa,''),'','[]'::jsonb,'riwayat',max(t.updated_at),0 FROM transactions t WHERE t.user_id=$1 AND btrim(t.penyewa)<>'' GROUP BY t.penyewa,t.hp_penyewa,t.alamat_penyewa ORDER BY 2,8`)
+		riw, err := read(`SELECT 0,t.penyewa,'',COALESCE(t.hp_penyewa,''),'',COALESCE(t.alamat_penyewa,''),'','[]'::jsonb,'riwayat',max(t.updated_at),0 FROM transactions t WHERE t.user_id=$1 AND btrim(t.penyewa)<>'' GROUP BY t.penyewa,t.hp_penyewa,t.alamat_penyewa ORDER BY 2,8`)
 		if err != nil {
 			return err
 		}
@@ -137,7 +138,7 @@ func (d *DB) GetPelanggan(ctx context.Context, userID string, id int64) (Pelangg
 	var p Pelanggan
 	var foto []byte
 	err := d.InTenant(ctx, userID, func(q Querier) error {
-		return q.QueryRow(ctx, `SELECT id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at FROM pelanggan WHERE id=$1`, id).Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt)
+		return q.QueryRow(ctx, `SELECT id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at FROM pelanggan WHERE id=$1`, id).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt)
 	})
 	if err == pgx.ErrNoRows {
 		return p, ErrNotFound
@@ -152,8 +153,9 @@ func (d *DB) GetPelanggan(ctx context.Context, userID string, id int64) (Pelangg
 	return p, nil
 }
 
-func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, hp, alamat string) (Pelanggan, error) {
+func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, email, hp, alamat string) (Pelanggan, error) {
 	nama = strings.TrimSpace(nama)
+	email = strings.TrimSpace(email)
 	hp = strings.TrimSpace(hp)
 	alamat = strings.TrimSpace(alamat)
 	normal := NormalisasiHP(hp)
@@ -162,11 +164,11 @@ func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, hp, alamat strin
 	err := d.InTenant(ctx, userID, func(q Querier) error {
 		var sql string
 		if normal != "" {
-			sql = `INSERT INTO pelanggan(user_id,nama,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5) ON CONFLICT (user_id,hp_normal) WHERE hp_normal <> '' DO UPDATE SET nama=excluded.nama,hp=excluded.hp,hp_normal=excluded.hp_normal,alamat=excluded.alamat,updated_at=now() RETURNING id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
+			sql = `INSERT INTO pelanggan(user_id,nama,email,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,hp_normal) WHERE hp_normal <> '' DO UPDATE SET nama=excluded.nama,email=excluded.email,hp=excluded.hp,hp_normal=excluded.hp_normal,alamat=excluded.alamat,updated_at=now() RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
 		} else {
-			sql = `INSERT INTO pelanggan(user_id,nama,hp,hp_normal,alamat) VALUES($1,$2,$3,'',$4) ON CONFLICT (user_id,(lower(btrim(nama)))) WHERE hp_normal = '' DO UPDATE SET nama=excluded.nama,hp=excluded.hp,hp_normal='',alamat=excluded.alamat,updated_at=now() RETURNING id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
+			sql = `INSERT INTO pelanggan(user_id,nama,email,hp,hp_normal,alamat) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,(lower(btrim(nama)))) WHERE hp_normal = '' DO UPDATE SET nama=excluded.nama,email=excluded.email,hp=excluded.hp,hp_normal='',alamat=excluded.alamat,updated_at=now() RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`
 		}
-		return q.QueryRow(ctx, sql, userID, nama, hp, normal, alamat).Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt)
+		return q.QueryRow(ctx, sql, userID, nama, email, hp, normal, alamat).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &foto, &p.Sumber, &p.UpdatedAt)
 	})
 	if err != nil {
 		return p, err
@@ -178,16 +180,16 @@ func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, hp, alamat strin
 	return p, nil
 }
 
-func (d *DB) UpdatePelanggan(ctx context.Context, userID string, id int64, nama, hp, alamat, catatan string, foto []FotoPelanggan, ubahFoto bool) (Pelanggan, error) {
+func (d *DB) UpdatePelanggan(ctx context.Context, userID string, id int64, nama, email, hp, alamat, catatan string, foto []FotoPelanggan, ubahFoto bool) (Pelanggan, error) {
 	normal := NormalisasiHP(hp)
 	fotoJSON, _ := json.Marshal(foto)
 	var p Pelanggan
 	var out []byte
 	err := d.InTenant(ctx, userID, func(q Querier) error {
 		if ubahFoto {
-			return q.QueryRow(ctx, `UPDATE pelanggan SET nama=$2,hp=$3,hp_normal=$4,alamat=$5,catatan=$6,foto=$7,updated_at=now() WHERE id=$1 RETURNING id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, nama, hp, normal, alamat, catatan, fotoJSON).Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
+			return q.QueryRow(ctx, `UPDATE pelanggan SET nama=$2,email=$3,hp=$4,hp_normal=$5,alamat=$6,catatan=$7,foto=$8,updated_at=now() WHERE id=$1 RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, nama, email, hp, normal, alamat, catatan, fotoJSON).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
 		}
-		return q.QueryRow(ctx, `UPDATE pelanggan SET nama=$2,hp=$3,hp_normal=$4,alamat=$5,catatan=$6,updated_at=now() WHERE id=$1 RETURNING id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, nama, hp, normal, alamat, catatan).Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
+		return q.QueryRow(ctx, `UPDATE pelanggan SET nama=$2,email=$3,hp=$4,hp_normal=$5,alamat=$6,catatan=$7,updated_at=now() WHERE id=$1 RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, nama, email, hp, normal, alamat, catatan).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
 	})
 	if err == pgx.ErrNoRows {
 		return p, ErrNotFound
@@ -207,7 +209,7 @@ func (d *DB) SetFotoPelanggan(ctx context.Context, userID string, id int64, foto
 	var p Pelanggan
 	var out []byte
 	err := d.InTenant(ctx, userID, func(q Querier) error {
-		return q.QueryRow(ctx, `UPDATE pelanggan SET foto=$2,updated_at=now() WHERE id=$1 RETURNING id,nama,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, b).Scan(&p.ID, &p.Nama, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
+		return q.QueryRow(ctx, `UPDATE pelanggan SET foto=$2,updated_at=now() WHERE id=$1 RETURNING id,nama,email,hp,hp_normal,alamat,catatan,foto,'pelanggan',updated_at`, id, b).Scan(&p.ID, &p.Nama, &p.Email, &p.HP, &p.HPNormal, &p.Alamat, &p.Catatan, &out, &p.Sumber, &p.UpdatedAt)
 	})
 	if err == pgx.ErrNoRows {
 		return p, ErrNotFound

@@ -32,13 +32,24 @@ func (s *Server) handlePelangganPatch(w http.ResponseWriter, r *http.Request, me
 		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
 		return
 	}
-	nama, hp, alamat, catatan := old.Nama, old.HP, old.Alamat, old.Catatan
+	nama, email, hp, alamat, catatan := old.Nama, old.Email, old.HP, old.Alamat, old.Catatan
 	if v, ok := raw["nama"]; ok {
 		if json.Unmarshal(v, &nama) != nil || strings.TrimSpace(nama) == "" {
 			writeValidationError(w, "Nama pelanggan wajib diisi.", nil)
 			return
 		}
 		nama = strings.TrimSpace(nama)
+	}
+	if v, ok := raw["email"]; ok {
+		if json.Unmarshal(v, &email) != nil {
+			writeValidationError(w, "Email tidak valid.", nil)
+			return
+		}
+		email = strings.TrimSpace(email)
+		if len(email) > 254 || (email != "" && !strings.Contains(email, "@")) {
+			writeValidationError(w, "Email tidak valid (maksimum 254 karakter dan harus mengandung @).", nil)
+			return
+		}
 	}
 	if v, ok := raw["hp"]; ok {
 		if json.Unmarshal(v, &hp) != nil {
@@ -90,7 +101,7 @@ func (s *Server) handlePelangganPatch(w http.ResponseWriter, r *http.Request, me
 		foto = f
 		bekas = old.Foto
 	}
-	p, err := s.db.UpdatePelanggan(r.Context(), me.UserID, id, nama, hp, alamat, catatan, foto, raw["foto"] != nil)
+	p, err := s.db.UpdatePelanggan(r.Context(), me.UserID, id, nama, email, hp, alamat, catatan, foto, raw["foto"] != nil)
 	if errors.Is(err, db.ErrNotFound) {
 		writeError(w, 404, CodeNotFound, "Pelanggan tidak ditemukan.")
 		return
