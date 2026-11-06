@@ -17,6 +17,11 @@ type Config struct {
 	SessionTTL   time.Duration
 	PurgeSecret  string
 
+	// CORSOrigins adalah daftar origin frontend yang diizinkan memakai API ini
+	// lintas origin (mis. dev: UI di :3002, API di :4000). Kosong = CORS mati,
+	// yaitu kondisi produksi karena nginx menyajikan UI dan API dalam satu origin.
+	CORSOrigins []string
+
 	// Storage adalah object storage S3-compatible (Cloudflare R2). Di development
 	// boleh kosong; di produksi wajib lengkap karena upload foto jaminan, foto
 	// member, bukti bayar, dan header invoice bergantung padanya.
@@ -167,6 +172,11 @@ func Load() (Config, error) {
 		}
 	}
 
+	corsOrigins, err := parseCORSOrigins(os.Getenv("CORS_ORIGINS"))
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Addr:                  addr,
 		DatabaseURL:           dbURL,
@@ -174,6 +184,7 @@ func Load() (Config, error) {
 		CookieSecure:          env == EnvProd,
 		SessionTTL:            ttl,
 		PurgeSecret:           os.Getenv("PURGE_SECRET"),
+		CORSOrigins:           corsOrigins,
 		Storage:               storageCfg,
 		TelegramWebhookSecret: strings.TrimSpace(os.Getenv("WEBHOOK_TELEGRAM_SECRET")),
 		TelegramChatID:        tgChatID,
@@ -190,6 +201,24 @@ func Load() (Config, error) {
 		EmailTokenSecret:      tokenSecret,
 		EmailTokenTTL:         tokenTTL,
 	}, nil
+}
+
+// parseCORSOrigins membaca CORS_ORIGINS (dipisah koma). "*" ditolak: cookie sesi
+// dikirim dengan kredensial, dan Allow-Credentials tidak boleh berpasangan dengan
+// wildcard — lebih baik gagal start daripada diam-diam membuka API ke semua situs.
+func parseCORSOrigins(raw string) ([]string, error) {
+	var out []string
+	for _, bagian := range strings.Split(raw, ",") {
+		b := strings.TrimRight(strings.TrimSpace(bagian), "/")
+		if b == "" {
+			continue
+		}
+		if b == "*" {
+			return nil, fmt.Errorf("CORS_ORIGINS tidak boleh \"*\" (cookie sesi butuh Allow-Credentials); sebutkan origin persis")
+		}
+		out = append(out, b)
+	}
+	return out, nil
 }
 
 // loadStorage membaca kredensial R2.

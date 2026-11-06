@@ -60,3 +60,19 @@ func TestDevTanpaFrontendURLTetapLulus(t *testing.T) {
 		t.Fatalf("dev tanpa FRONTEND_URL harus kosong, dapat: %q", cfg.FrontendURL)
 	}
 }
+
+func TestParseCORSOrigins(t *testing.T) {
+	got, err := parseCORSOrigins(" http://localhost:3002 , http://127.0.0.1:3002/ ,, ")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if len(got) != 2 || got[0] != "http://localhost:3002" || got[1] != "http://127.0.0.1:3002" {
+		t.Fatalf("hasil = %#v (garis miring akhir harus dibuang, entri kosong dilewati)", got)
+	}
+	if _, err := parseCORSOrigins("*"); err == nil {
+		t.Fatal("wildcard harus ditolak karena cookie sesi butuh Allow-Credentials")
+	}
+	if got, err := parseCORSOrigins(""); err != nil || len(got) != 0 {
+		t.Fatalf("kosong berarti CORS mati, dapat %#v err=%v", got, err)
+	}
+}
