@@ -100,7 +100,7 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
 
   const inputClass = "w-full h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
   return (
-    <Modal isOpen onClose={onClose} title="Data pelanggan" description={orang.nama} size="lg" footer={<Button variant="dark" onClick={onClose}>Tutup</Button>}>
+    <Modal isOpen onClose={onClose} title="Data pelanggan" description={orang.nama || undefined} size="lg" footer={<Button variant="dark" onClick={onClose}>Tutup</Button>}>
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-x-3.5 gap-y-3 sm:grid-cols-2">
           {FIELDS.map((f) => {
@@ -108,9 +108,9 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
             const aktif = edit?.key === f.key;
             return <div key={f.key} className={f.key === "catatan" ? "sm:col-span-2" : ""}>
               <div className="mb-1 block text-[13px] font-medium text-[var(--text-secondary)]">{f.label}</div>
-              {aktif ? <div className="flex flex-wrap items-center gap-2"><input autoFocus value={edit.nilai} onChange={(e) => setEdit({ ...edit, nilai: e.target.value })} className={inputClass} /><Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button><Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button></div> : <div className="flex items-center gap-1.5">
-                <div className={`text-sm font-medium ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{nilai || "Belum diisi"}</div>
-                <button type="button" aria-label={`Ubah ${f.label}`} className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]" onClick={() => setEdit({ key: f.key, nilai })}>
+              {aktif ? <div className="flex flex-wrap items-center gap-2"><input autoFocus value={edit.nilai} onChange={(e) => setEdit({ ...edit, nilai: e.target.value })} className={inputClass} /><Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button><Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button></div> : <div className={`flex items-center justify-between gap-2 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 ${f.key === "catatan" ? "min-h-16 py-2.5" : "h-10"}`}>
+                <div className={`min-w-0 break-words text-sm font-medium ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{nilai || "Belum diisi"}</div>
+                <button type="button" aria-label={`Ubah ${f.label}`} className="shrink-0 rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]" onClick={() => setEdit({ key: f.key, nilai })}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                 </button>
               </div>}
@@ -123,10 +123,10 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
                 {/* tipeNama berupa string (bukan array) dari lib/db. */}
                 {[].concat(orang.member.tipeNama || []).filter(Boolean).length ? (
                   [].concat(orang.member.tipeNama || []).filter(Boolean).map((tipe) => (
-                    <span key={tipe} className="h-9 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] leading-9 text-[var(--text-secondary)]">{tipe}</span>
+                    <span key={tipe} className="h-9 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] leading-9 text-[var(--text-secondary)]">{tipe}</span>
                   ))
                 ) : (
-                  <span className="h-9 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] leading-9 text-[var(--text-secondary)]">Tanpa tipe</span>
+                  <span className="h-9 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] leading-9 text-[var(--text-secondary)]">Tanpa tipe</span>
                 )}
               </div>
             </div>
