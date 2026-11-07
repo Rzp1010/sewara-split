@@ -100,17 +100,19 @@ export default function DetailOrang({ orang, onClose, onTersimpan }) {
 
   const inputClass = "w-full h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
   return (
-    <Modal isOpen onClose={onClose} title={`Detail ${orang.nama}`} description="Ubah data per kolom atau kelola dokumen jaminan." size="lg" footer={<Button variant="outline" onClick={onClose}>Tutup</Button>}>
+    <Modal isOpen onClose={onClose} title="Data pelanggan" description={orang.nama} size="lg" footer={<Button variant="dark" onClick={onClose}>Tutup</Button>}>
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-x-3.5 gap-y-3 sm:grid-cols-2">
           {FIELDS.map((f) => {
             const nilai = orang[f.key] || "";
             const aktif = edit?.key === f.key;
             return <div key={f.key} className={f.key === "catatan" ? "sm:col-span-2" : ""}>
-              <div className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">{f.label}</div>
+              <div className="mb-1 block text-[13px] font-medium text-[var(--text-secondary)]">{f.label}</div>
               {aktif ? <div className="flex flex-wrap items-center gap-2"><input autoFocus value={edit.nilai} onChange={(e) => setEdit({ ...edit, nilai: e.target.value })} className={inputClass} /><Button size="sm" loading={saving} onClick={simpanField}>Simpan</Button><Button size="sm" variant="ghost" onClick={() => setEdit(null)}>Batal</Button></div> : <div className="flex items-center gap-1.5">
                 <div className={`text-sm font-medium ${nilai ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{nilai || "Belum diisi"}</div>
-                <button type="button" aria-label={`Ubah ${f.label}`} className="rounded-md px-1 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]" onClick={() => setEdit({ key: f.key, nilai })}>✎</button>
+                <button type="button" aria-label={`Ubah ${f.label}`} className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]" onClick={() => setEdit({ key: f.key, nilai })}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                </button>
               </div>}
             </div>;
           })}
