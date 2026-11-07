@@ -105,6 +105,7 @@ function IsiHalaman() {
   const [cari, setCari] = useState("");
   const [urut, setUrut] = useState("nama-az");
   const [urutMenu, setUrutMenu] = useState(false);
+  const [eksporMenu, setEksporMenu] = useState(false);
   useEffect(() => {
     if (!urutMenu) return undefined;
     const tutup = (event) => {
@@ -118,6 +119,19 @@ function IsiHalaman() {
       document.removeEventListener("keydown", tutup);
     };
   }, [urutMenu]);
+  useEffect(() => {
+    if (!eksporMenu) return undefined;
+    const tutup = (event) => {
+      if (event.type === "keydown" || !event.target.closest("[data-menu-ekspor]"))
+        setEksporMenu(false);
+    };
+    document.addEventListener("click", tutup);
+    document.addEventListener("keydown", tutup);
+    return () => {
+      document.removeEventListener("click", tutup);
+      document.removeEventListener("keydown", tutup);
+    };
+  }, [eksporMenu]);
   const [detail, setDetail] = useState(null);
   const [prefillBlacklist, setPrefillBlacklist] = useState(null);
   const [formMember, setFormMember] = useState(null);
@@ -228,18 +242,29 @@ function IsiHalaman() {
     }
   }
 
-  /** Ekspor daftar yang sedang tampil (tab aktif, sudah difilter/diurutkan). */
-  function eksporCSV() {
-    if (!daftar.length) return notify("Tidak ada data untuk diekspor.", "error");
-    const baris = daftar.map((o) => {
+  /** Ekspor direktori sesuai cakupan, pencarian, dan urutan aktif. */
+  function eksporCSV(cakupan) {
+    const q = cari.trim().toLowerCase();
+    const [kunci, arah] = urut.split("-");
+    const field = kunci === "nama" ? "nama" : "alamat";
+    const hasil = orang
+      .filter((o) => cakupan === "member" ? dalamTab(o, "member") : true)
+      .filter((o) => !q || FIELD_CARI.map((f) => o[f]).join(" ").toLowerCase().includes(q))
+      .sort((a, b) => String(a[field] || "").localeCompare(String(b[field] || ""), "id") * (arah === "az" ? 1 : -1));
+    if (!hasil.length) {
+      setEksporMenu(false);
+      return notify("Tidak ada data untuk diekspor.", "error");
+    }
+    const baris = hasil.map((o) => {
       const status = o.black ? "Blacklist" : o.member_id ? "Member" : "Pelanggan";
       const alamat = String(o.alamat || "").replace(/\r?\n/g, " ");
       return `"${o.nama || ""}","${o.hp || ""}","${o.email || ""}","${alamat}","${status}"`;
     });
     unduhCSV(
       ["Nama,No HP,Email,Alamat,Status", ...baris].join("\n") + "\n",
-      `Pelanggan_${tab}.csv`,
+      `Pelanggan_${cakupan}.csv`,
     );
+    setEksporMenu(false);
     notify("Ekspor selesai.");
   }
 
@@ -309,7 +334,16 @@ function IsiHalaman() {
               <button type="button" onClick={() => setModalTipe(true)} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Tipe member</button>
             </> : null}
             {tab === "blacklist" ? <button type="button" onClick={() => setPrefillBlacklist({ nama: "", hp: "", alamat: "" })} className="h-[34px] rounded-lg border-0 bg-[var(--color-danger)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Blacklist</button> : null}
-            {tab !== "blacklist" ? <button type="button" onClick={eksporCSV} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor CSV</button> : null}
+            <div className="relative" data-menu-ekspor>
+              <button type="button" aria-label="Ekspor" title="Ekspor" onClick={(e) => { e.stopPropagation(); setEksporMenu(!eksporMenu); }} className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" /></svg>
+              </button>
+              {eksporMenu ? <div className="absolute right-0 top-10 z-30 w-44 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Ekspor</div>
+                <button type="button" onClick={() => eksporCSV("semua")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor semua</button>
+                <button type="button" onClick={() => eksporCSV("member")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor hanya member</button>
+              </div> : null}
+            </div>
           </div>
         </div>
         {muat ? <div className="p-8"><LoadingSpinner message="Memuat direktori..." /></div> : gagal ? <div className="p-6"><ErrorState message="Gagal memuat data." onRetry={muatUlang} /></div> : <TabelOrang people={daftar} menuUntuk={menuUntuk} onPilih={setDetail} onAksi={aksi} />}
