@@ -13,6 +13,7 @@ import { hpNormal, samaOrangnya, terBlacklist, unduhCSV } from "@/lib/utils";
 import { ErrorState, LoadingSpinner } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import TabelOrang from "@/components/orang/TabelOrang";
+import PencarianAdaptif from "@/components/ui/PencarianAdaptif";
 import DetailOrang from "@/components/orang/DetailOrang";
 import FormMember from "@/components/orang/FormMember";
 import ModalTipeMember from "@/components/orang/ModalTipeMember";
@@ -103,6 +104,20 @@ function IsiHalaman() {
   const [putarUlang, setPutarUlang] = useState(0);
   const [cari, setCari] = useState("");
   const [urut, setUrut] = useState("nama-az");
+  const [urutMenu, setUrutMenu] = useState(false);
+  useEffect(() => {
+    if (!urutMenu) return undefined;
+    const tutup = (event) => {
+      if (event.type === "keydown" || !event.target.closest("[data-menu-urut]") )
+        setUrutMenu(false);
+    };
+    document.addEventListener("click", tutup);
+    document.addEventListener("keydown", tutup);
+    return () => {
+      document.removeEventListener("click", tutup);
+      document.removeEventListener("keydown", tutup);
+    };
+  }, [urutMenu]);
   const [detail, setDetail] = useState(null);
   const [prefillBlacklist, setPrefillBlacklist] = useState(null);
   const [formMember, setFormMember] = useState(null);
@@ -263,112 +278,41 @@ function IsiHalaman() {
     ].filter((m) => m.tampil !== false);
   }
 
+  const opsiUrut = [
+    ["nama-az", "Nama A–Z"], ["nama-za", "Nama Z–A"],
+    ["alamat-az", "Alamat A–Z"], ["alamat-za", "Alamat Z–A"],
+  ];
+
   return (
     <div className="min-h-full">
-      <div className="mb-5">
-        <h2 className="text-2xl font-bold tracking-tight">Pelanggan</h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Direktori orang: member, pelanggan, dan blacklist dalam satu daftar.
-        </p>
-      </div>
-
-      <section className="overflow-visible rounded-xl bg-[var(--bg-surface)] shadow-lg">
-        <nav
-          className="flex gap-1 overflow-x-auto border-b border-[var(--border-color)] px-2 pt-3"
-          aria-label="Filter direktori"
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.kode}
-              type="button"
-              onClick={() => gantiTab(t.kode)}
-              className={`flex-none whitespace-nowrap border-b-2 px-3 pb-2 pt-1 text-sm font-semibold ${tab === t.kode ? "border-[var(--color-primary)] text-[var(--color-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
-            >
-              {t.label}
-              <span className="ml-1.5 text-[11px] text-[var(--text-muted)]">
-                {jumlah[t.kode]}
-              </span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex flex-wrap items-center gap-3 p-4">
-          <input
-            value={cari}
-            onChange={(e) => setCari(e.target.value)}
-            placeholder="Cari nama, HP, email, atau alamat"
-            aria-label="Cari"
-            className="h-9 min-w-[12rem] max-w-[26rem] flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]"
-          />
-          <select
-            value={urut}
-            onChange={(e) => setUrut(e.target.value)}
-            aria-label="Urutkan"
-            className="h-9 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 text-sm text-[var(--text-primary)]"
-          >
-            <option value="nama-az">Nama A–Z</option>
-            <option value="nama-za">Nama Z–A</option>
-            <option value="alamat-az">Alamat A–Z</option>
-            <option value="alamat-za">Alamat Z–A</option>
-          </select>
-          <span className="text-xs text-[var(--text-muted)]">
-            {daftar.length} orang ditampilkan
-          </span>
-          <div className="ml-auto flex flex-wrap gap-2">
-            {tab === "member" ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setFormMember({ member: null })}
-                  className="rounded-lg border-0 bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
-                >
-                  + Member
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalTipe(true)}
-                  className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                >
-                  Tipe member
-                </button>
-              </>
-            ) : null}
-            {tab === "blacklist" ? (
-              <button
-                type="button"
-                onClick={() => setPrefillBlacklist({ nama: "", hp: "", alamat: "" })}
-                className="rounded-lg border-0 bg-[var(--color-danger)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
-              >
-                + Blacklist
+      <section className="overflow-visible rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Pelanggan</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <nav className="inline-flex rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-0.5" aria-label="Filter direktori">
+              {TABS.map((t) => <button key={t.kode} type="button" onClick={() => gantiTab(t.kode)} className={`h-[30px] whitespace-nowrap rounded-md border-0 px-3 text-[13px] font-medium text-[var(--text-secondary)] ${tab === t.kode ? "bg-[var(--bg-surface)] font-semibold text-[var(--text-primary)] shadow-sm" : "hover:text-[var(--text-primary)]"}`}>
+                {t.label}<span className="ml-1.5 text-[11px] font-semibold text-[var(--text-muted)]">{jumlah[t.kode]}</span>
+              </button>)}
+            </nav>
+            <div className="relative" data-menu-urut>
+              <button type="button" aria-label="Urutkan" onClick={(e) => { e.stopPropagation(); setUrutMenu(!urutMenu); }} className="flex h-8 w-8 items-center justify-center rounded-md border-0 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
               </button>
-            ) : null}
-            {tab !== "blacklist" ? (
-              <button
-                type="button"
-                onClick={eksporCSV}
-                className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-              >
-                Ekspor CSV
-              </button>
-            ) : null}
+              {urutMenu && <div className="absolute right-0 top-10 z-30 w-44 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Urutkan</div>
+                {opsiUrut.map(([value, label]) => <button key={value} type="button" onClick={() => { setUrut(value); setUrutMenu(false); }} className={`flex w-full items-center gap-2 rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] ${urut === value ? "font-semibold" : ""}`}><span className="w-3.5 text-[var(--color-primary)]">{urut === value ? "✓" : ""}</span>{label}</button>)}
+              </div>}
+            </div>
+            <PencarianAdaptif value={cari} onChange={setCari} />
+            {tab === "member" ? <>
+              <button type="button" onClick={() => setFormMember({ member: null })} className="h-[34px] rounded-lg border-0 bg-[var(--color-primary)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Member</button>
+              <button type="button" onClick={() => setModalTipe(true)} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Tipe member</button>
+            </> : null}
+            {tab === "blacklist" ? <button type="button" onClick={() => setPrefillBlacklist({ nama: "", hp: "", alamat: "" })} className="h-[34px] rounded-lg border-0 bg-[var(--color-danger)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Blacklist</button> : null}
+            {tab !== "blacklist" ? <button type="button" onClick={eksporCSV} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor CSV</button> : null}
           </div>
         </div>
-        {muat ? (
-          <div className="p-8">
-            <LoadingSpinner message="Memuat direktori..." />
-          </div>
-        ) : gagal ? (
-          <div className="p-6">
-            <ErrorState message="Gagal memuat data." onRetry={muatUlang} />
-          </div>
-        ) : (
-          <TabelOrang
-            people={daftar}
-            menuUntuk={menuUntuk}
-            onPilih={setDetail}
-            onAksi={aksi}
-          />
-        )}
+        {muat ? <div className="p-8"><LoadingSpinner message="Memuat direktori..." /></div> : gagal ? <div className="p-6"><ErrorState message="Gagal memuat data." onRetry={muatUlang} /></div> : <TabelOrang people={daftar} menuUntuk={menuUntuk} onPilih={setDetail} onAksi={aksi} />}
       </section>
 
       {detail ? (
