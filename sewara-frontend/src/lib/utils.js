@@ -51,10 +51,11 @@ export function formatJaminan(nilai) {
   return arr.length ? arr.join(", ") : "-";
 }
 
-// Normalisasi HP: strip non-digit, leading '0' → '6' sekali (samakan backend).
+// Aturan kanonik ini wajib sama dengan NormalisasiHP di sewara-api/internal/db/blacklist.go.
 export function hpNormal(hp) {
   let d = String(hp || "").replace(/\D/g, "");
-  if (d.startsWith("0")) d = "6" + d.slice(1);
+  if (d.length >= 11 && d.startsWith("62")) d = d.slice(2);
+  if (d.startsWith("0")) d = d.slice(1);
   return d;
 }
 

@@ -81,12 +81,9 @@ func decodeFotoJaminan(raw []byte) []FotoJaminan {
 	return foto
 }
 
-// NormalisasiHP menyeragamkan nomor HP untuk pencocokan.
-//
-// Aturannya sama dengan helper frontend (hpNormal): buang semua non-digit, lalu
-// satu angka 0 di depan diganti 6. "0812-345" dan "+62812 345" karena itu
-// dianggap nomor yang sama. Fungsi ini diekspor karena handler check memakainya
-// untuk masukan pencarian, bukan untuk menyimpan.
+// NormalisasiHP menerapkan aturan kanonik pencocokan HP; aturan ini wajib sama
+// dengan helper frontend (hpNormal): buang non-digit, buang awalan 62 bila
+// panjang minimal 11, lalu buang satu awalan 0.
 func NormalisasiHP(hp string) string {
 	var b strings.Builder
 	for _, r := range hp {
@@ -95,10 +92,13 @@ func NormalisasiHP(hp string) string {
 		}
 	}
 	digit := b.String()
-	if strings.HasPrefix(digit, "0") {
-		return "6" + digit[1:]
+	if digit == "" {
+		return ""
 	}
-	return digit
+	if len(digit) >= 11 && strings.HasPrefix(digit, "62") {
+		digit = digit[2:]
+	}
+	return strings.TrimPrefix(digit, "0")
 }
 
 // ListBlacklist membaca seluruh entri tenant, terbaru dulu.

@@ -11,7 +11,7 @@ func TestGabungPool(t *testing.T) {
 		member  int64
 		foto    string
 	}{
-		{"nama hp sama", []Pelanggan{{Nama: "A", HP: "0812-3456-789", Sumber: "pelanggan"}}, nil, []Pelanggan{{Nama: "A", HP: "68123456789", Sumber: "riwayat"}}, 1, "pelanggan", 0, "pelanggan"},
+		{"nama hp sama", []Pelanggan{{Nama: "A", HP: "0812-3456-789", Sumber: "pelanggan"}}, nil, []Pelanggan{{Nama: "A", HP: "8123456789", Sumber: "riwayat"}}, 1, "pelanggan", 0, "pelanggan"},
 		{"nama hp beda", []Pelanggan{{Nama: "A", HP: "0812", Sumber: "pelanggan"}}, nil, []Pelanggan{{Nama: "A", HP: "0813", Sumber: "riwayat"}}, 2, "pelanggan", 0, "pelanggan"},
 		{"nama hp kosong", []Pelanggan{{Nama: "test blacklisy", HP: "123", Sumber: "pelanggan"}}, nil, []Pelanggan{{Nama: " test blacklisy ", Sumber: "riwayat"}}, 1, "pelanggan", 0, "pelanggan"},
 		{"member menempel", []Pelanggan{{ID: 1, Nama: "A", HP: "0812", Sumber: "pelanggan"}}, []Pelanggan{{Nama: "A", HP: "0812", MemberID: 9, Foto: []FotoPelanggan{{Path: "member"}}, Sumber: "member"}}, nil, 1, "pelanggan", 9, "member"},
