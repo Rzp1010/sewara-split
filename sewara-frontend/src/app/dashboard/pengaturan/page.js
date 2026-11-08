@@ -10,13 +10,12 @@ import {
   hapusSemuaData,
   hapusInvoiceHeader,
 } from "@/lib/db";
-import { api, API_BASE } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 import { ROLE_SUPERADMIN, ROLE_OWNER } from "@/lib/role";
 import { VERSI_APLIKASI } from "@/lib/version";
 import { useTheme } from "@/components/ThemeProvider";
 import { useNotify } from "@/components/NotificationProvider";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import PasswordInput from "@/components/PasswordInput";
 import JamPicker from "@/components/JamPicker";
 import InvoiceLayoutEditor from "@/components/InvoiceLayoutEditor";
 import { DEFAULT_LAYOUT } from "@/components/invoiceFields";
@@ -37,7 +36,6 @@ const TABS = [
   { id: "profil", label: "Profil" },
   { id: "operasional", label: "Operasional" },
   { id: "tampilan", label: "Tampilan" },
-  { id: "integrasi", label: "Integrasi & Notifikasi" },
   { id: "pengembangan", label: "Pengembangan" },
   { id: "diskon", label: "Diskon & Promo" },
   { id: "info", label: "Info Aplikasi" },
@@ -81,14 +79,6 @@ const KEYS_TAB = {
     "board_mode",
     "cari_sembunyikan_riwayat",
     "kalender_selesai",
-  ],
-  integrasi: [
-    "tg_aktif",
-    "tg_botToken",
-    "tg_chatId",
-    "tg_kirimSukses",
-    "tg_kirimGagal",
-    "tg_topicLogin",
   ],
   diskon: ["diskon_stack", "diskon_maks_persen", "promo_min_transaksi"],
 };
@@ -156,7 +146,6 @@ const IKON_TAB = {
   profil: Ikon.user,
   operasional: Ikon.jam,
   tampilan: Ikon.mata,
-  integrasi: Ikon.plug,
   pengembangan: Ikon.alert,
   diskon: Ikon.tag,
   info: Ikon.info,
@@ -529,25 +518,7 @@ export default function PengaturanPage() {
         printilan_daftar: Array.isArray(printilanDaftar) ? printilanDaftar : [],
         daftar_jaminan: Array.isArray(daftarJaminanTenant) ? daftarJaminanTenant : [],
         printilan_invoice_mode: printilanMode || "dicentang",
-        /* Telegram — config milik superadmin (pola halaman Log Login) */
-        tg_aktif: false,
-        tg_botToken: "",
-        tg_chatId: "",
-        tg_kirimSukses: true,
-        tg_kirimGagal: true,
-        tg_topicLogin: "4",
       };
-
-      if (role === ROLE_SUPERADMIN) {
-        const cfg = await getSettingTenant("telegram_login_notif", {});
-        f.tg_aktif = Boolean(cfg?.aktif);
-        f.tg_botToken = cfg?.botToken || "";
-        f.tg_chatId = cfg?.chatId || "";
-        f.tg_kirimSukses = cfg?.kirimSukses !== false;
-        f.tg_kirimGagal = cfg?.kirimGagal !== false;
-        f.tg_topicLogin =
-          cfg?.topicLogin != null ? String(cfg.topicLogin) : "4";
-      }
 
       if (!aktif) return;
       setForm(f);
@@ -664,21 +635,6 @@ export default function PengaturanPage() {
           f.kalender_selesai === "sembunyi" ? "sembunyi" : "tampil",
         );
         selesaiSimpan(KEYS_TAB.tampilan, "Tampilan");
-      } else if (tab === "integrasi") {
-        if (userRole === ROLE_SUPERADMIN) {
-          const hasil = await setSettingTenant("telegram_login_notif", {
-            aktif: f.tg_aktif,
-            botToken: f.tg_botToken.trim(),
-            chatId: f.tg_chatId.trim(),
-            kirimSukses: f.tg_kirimSukses,
-            kirimGagal: f.tg_kirimGagal,
-            topicLogin:
-              f.tg_topicLogin === "" ? null : parseInt(f.tg_topicLogin, 10),
-          });
-          if (!hasil.ok)
-            return notify(`Gagal menyimpan Telegram: ${hasil.error}`, "error");
-        }
-        selesaiSimpan(KEYS_TAB.integrasi, "Integrasi & Notifikasi");
       } else if (tab === "diskon") {
         setSetting("diskon_stack", f.diskon_stack || "terbesar");
         const maks = Math.min(
@@ -695,21 +651,6 @@ export default function PengaturanPage() {
         }));
         selesaiSimpan(["diskon_stack", "diskon_maks_persen", "promo_min_transaksi"], "Diskon & Promo");
       }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function tesTelegram() {
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/telegram/test`, { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok)
-        return notify(data.error || "Gagal mengirim pesan uji.", "error");
-      notify("Pesan uji terkirim ke Telegram. Cek chat Anda.");
-    } catch {
-      notify("Gagal mengirim pesan uji.", "error");
     } finally {
       setSaving(false);
     }
@@ -791,7 +732,6 @@ export default function PengaturanPage() {
           <nav className="flex gap-1 overflow-x-auto pb-1 lg:sticky lg:top-6 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
             {TABS.filter(
               (t) =>
-                (t.id !== "integrasi" || userRole === ROLE_SUPERADMIN) &&
                 ((t.id !== "profil" && t.id !== "pengembangan") ||
                   userRole === ROLE_OWNER),
             ).map((t) => (
@@ -1445,107 +1385,6 @@ export default function PengaturanPage() {
         </div>
       )}
 
-      {/* ===== Tab: Integrasi & Notifikasi ===== */}
-      {tab === "integrasi" && (
-        <div className="space-y-6">
-          {userRole === ROLE_SUPERADMIN && (
-            <KartuSeksi
-              ikon={Ikon.plug}
-              judul="Notifikasi Telegram (Super Admin)"
-              deskripsi="Kirim notifikasi login ke Telegram untuk memantau semua aktivitas login di aplikasi."
-            >
-              <ToggleBaris
-                checked={f.tg_aktif === true}
-                onChange={(v) => setNilai("tg_aktif", v)}
-                label="Status Notifikasi"
-                hint="Superadmin menerima notifikasi untuk semua login di aplikasi (sukses & gagal), lintas tenant."
-              />
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <Field
-                  label="Bot Token"
-                  hint="Dari @BotFather di Telegram. Disimpan di pengaturan akun Anda."
-                >
-                  <PasswordInput
-                    value={f.tg_botToken}
-                    onChange={ubah("tg_botToken")}
-                    placeholder="123456:ABC-DEF..."
-                  />
-                </Field>
-                <Field
-                  label="Chat ID"
-                  hint="ID chat Telegram Anda. Cara dapat: kirim pesan ke bot, lalu buka https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates"
-                >
-                  <input
-                    value={f.tg_chatId}
-                    onChange={ubah("tg_chatId")}
-                    className={INPUT_CLS}
-                    placeholder="mis. 123456789"
-                  />
-                </Field>
-              </div>
-
-              <div className="space-y-4">
-                <ToggleBaris
-                  checked={f.tg_kirimSukses === true}
-                  onChange={(v) => setNilai("tg_kirimSukses", v)}
-                  label="Notifikasi Login Sukses"
-                />
-                <ToggleBaris
-                  checked={f.tg_kirimGagal === true}
-                  onChange={(v) => setNilai("tg_kirimGagal", v)}
-                  label="Notifikasi Login Gagal"
-                />
-                <Field
-                  label="Topic ID (Log Login)"
-                  hint="Khusus grup dengan topik. Kosongkan jika tidak memakai topik."
-                >
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={f.tg_topicLogin}
-                    onChange={ubahAngka("tg_topicLogin")}
-                    className={INPUT_CLS}
-                    placeholder="mis. 4"
-                  />
-                </Field>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
-                {dirtyTab([
-                  "tg_aktif",
-                  "tg_botToken",
-                  "tg_chatId",
-                  "tg_kirimSukses",
-                  "tg_kirimGagal",
-                  "tg_topicLogin",
-                ]) && !saving && (
-                  <span className="text-xs font-medium text-amber-600">
-                    Ada perubahan belum disimpan
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={tesTelegram}
-                  disabled={saving}
-                  className={BTN_SEKUNDER}
-                >
-                  Kirim Pesan Uji
-                </button>
-                <button
-                  type="button"
-                  onClick={simpanSeksi}
-                  disabled={saving || !dirtyTab(KEYS_TAB.integrasi)}
-                  className={BTN_UTAMA}
-                >
-                  Simpan Perubahan
-                </button>
-              </div>
-            </KartuSeksi>
-          )}
-        </div>
-      )}
 
       {/* ===== Tab: Pengembangan (owner) ===== */}
       {tab === "pengembangan" && (
