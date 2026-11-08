@@ -14,13 +14,32 @@ import (
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
 )
 
-// Thread Telegram. Paritas sewara-backend/app/api/telegram/webhook/route.ts
-// (THREAD_BACKUP=6, THREAD_DAFTAR=25) dan lib/api/constants.ts (THREAD_LOGIN=4).
-const (
-	telegramThreadLogin  = 4
-	telegramThreadBackup = 6
-	telegramThreadDaftar = 25
-)
+const telegramMessageLimit = 4096
+const telegramTruncatedMarker = "\n… (dipotong)"
+
+func telegramSiap(cfg config.Config) bool {
+	return strings.TrimSpace(cfg.TelegramBotToken) != "" && strings.TrimSpace(cfg.TelegramChatID) != ""
+}
+
+func formatPesanLogin(event, email, ip, detail string, now time.Time) string {
+	emoji, label := "⚠️", "Login Gagal"
+	if event == "login_sukses" {
+		emoji, label = "🔓", "Login Sukses"
+	}
+	text := emoji + " " + label + "\n👤 " + email + "\n🕐 " + waktuID(now) + "\n🌐 IP: " + teksAtau(ip, "-")
+	if detail != "" {
+		text += "\n📝 " + detail
+	}
+	return text
+}
+
+func potongPesanTelegram(text string) string {
+	if len([]rune(text)) <= telegramMessageLimit {
+		return text
+	}
+	limit := telegramMessageLimit - len([]rune(telegramTruncatedMarker))
+	return string([]rune(text)[:limit]) + telegramTruncatedMarker
+}
 
 // Paritas sendTelegramMessage(..., parseMode="HTML") di lib/services/telegram.ts.
 const telegramParseModeHTML = "HTML"
@@ -195,20 +214,6 @@ func transaksiDeleteTanpaRecord(eventType string, record map[string]any) bool {
 	return eventType == "DELETE" && teksPertama(record, "no_invoice") == "" && teksPertama(record, "id") == ""
 }
 
-// telegramChatID menormalkan chatId dari JSON (string atau angka).
-func telegramChatID(v any) string {
-	switch t := v.(type) {
-	case string:
-		return t
-	case float64:
-		return strconv.FormatFloat(t, 'f', -1, 64)
-	case json.Number:
-		return t.String()
-	default:
-		return ""
-	}
-}
-
 // telegramSender adalah klien Bot API minimal.
 type telegramSender struct {
 	base   string
@@ -232,7 +237,7 @@ func (t *telegramSender) sendMessage(ctx context.Context, botToken, chatID strin
 	body := map[string]any{
 		"chat_id":           chatID,
 		"message_thread_id": threadID,
-		"text":              text,
+		"text":              potongPesanTelegram(text),
 	}
 	if parseMode != "" {
 		body["parse_mode"] = parseMode

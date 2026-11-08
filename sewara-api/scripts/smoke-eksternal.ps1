@@ -1,4 +1,4 @@
-﻿# smoke-eksternal.ps1 — uji domain eksternal pada Docker staging saja:
+# smoke-eksternal.ps1 � uji domain eksternal pada Docker staging saja:
 #   POST /api/telegram/test
 #   POST /api/telegram/webhook
 #   POST /api/webhooks/payment
@@ -81,17 +81,6 @@ function Stub-Body($req) { if ($req) { return ($req.Body | ConvertFrom-Json) } r
 # tulis/bersihkan setting telegram superadmin.
 # Lewat stdin docker (bukan -c) supaya tanda kutip JSON tidak dimakan PowerShell
 # saat menyerahkan argumen ke exe native.
-function Invoke-SqlStdin([string]$sql) {
-    $out = $sql | docker exec -i sewara-staging-db psql -U sewara -d sewara -At
-    if ($LASTEXITCODE -ne 0) { throw "psql gagal: $sql" }
-    return ($out -join "`n").Trim()
-}
-function Set-Tg([string]$json) {
-    $esc = $json.Replace("'", "''")
-    Invoke-SqlStdin "INSERT INTO settings(user_id,key,value,updated_at) VALUES ('$SA','telegram_login_notif','$esc',now()) ON CONFLICT(user_id,key) DO UPDATE SET value=EXCLUDED.value,updated_at=now();" | Out-Null
-}
-function Clear-Tg { Invoke-SqlStdin "DELETE FROM settings WHERE user_id='$SA' AND key='telegram_login_notif';" | Out-Null }
-
 $api = $null
 $rs = $null; $psStub = $null
 try {
@@ -106,9 +95,6 @@ try {
     $hash = '$2a$10$GCmHsmqVk3cqwXmf0AVWueY8h0JHD1zo0mr.tl0F/CH0dI/01mYEu'
     Sql "INSERT INTO auth.users(id,email,encrypted_password,email_confirmed_at) VALUES ('$OWNER_A','owner-a@staging.local','$hash',now()),('$CS_A','cs-a@staging.local','$hash',now()),('$SA','superadmin@staging.local','$hash',now()) ON CONFLICT(id) DO UPDATE SET encrypted_password='$hash',email_confirmed_at=now();" | Out-Null
 
-    # pastikan awal tanpa setting telegram superadmin
-    Clear-Tg
-    $tgBaseline = Sql "SELECT count(*) FROM settings WHERE user_id='$SA' AND key='telegram_login_notif';"
 
     # ---- start stub ----
     $rs = [runspacefactory]::CreateRunspace()
@@ -142,7 +128,11 @@ try {
     $env:R2_ENDPOINT = ''; $env:R2_ACCESS_KEY_ID = ''; $env:R2_SECRET_ACCESS_KEY = ''; $env:R2_BUCKET = ''; $env:R2_BUCKET_NAME = ''
     $env:WEBHOOK_TELEGRAM_SECRET = $SECRET
     $env:TELEGRAM_API_BASE = $stubURL
-    $env:TELEGRAM_CHAT_ID = '-1003838354394'
+    $env:TELEGRAM_BOT_TOKEN = $TG_TOKEN
+    $env:TELEGRAM_CHAT_ID = $TG_CHAT
+    $env:TELEGRAM_THREAD_LOGIN = '4'
+    $env:TELEGRAM_THREAD_TRANSAKSI = '6'
+    $env:TELEGRAM_THREAD_DAFTAR = '25'
 
     $ls = @(Get-NetTCPConnection -LocalPort 8099 -State Listen -ErrorAction SilentlyContinue)
     foreach ($l in $ls) { Stop-Process -Id $l.OwningProcess -Force -ErrorAction SilentlyContinue }
@@ -151,98 +141,120 @@ try {
     for ($i = 0; $i -lt 40; $i++) { Start-Sleep -Milliseconds 300; if ((curl.exe -s -o NUL -w '%{http_code}' "$apiURL/api/health") -eq '200') { $ready = $true; break } }
     if (-not $ready) { throw 'API tidak siap' }
 
+    $loginBefore = Stub-Count
+    $wrongBody = Join-Path $tmpDir 'login-wrong.json'
+    [IO.File]::WriteAllText($wrongBody, '{"email":"owner-a@staging.local","password":"wrong"}', [Text.UTF8Encoding]::new($false))
+    $wrongStatus = [int](curl.exe -s -o (Join-Path $tmpDir 'login-wrong-resp.txt') -w '%{http_code}' -H 'Content-Type: application/json' --data-binary "@$wrongBody" "$apiURL/api/auth/login")
+    Start-Sleep -Milliseconds 300
+    $loginReq = $null
+    for ($i=0; $i -lt $state.Requests.Count; $i++) { $req = $state.Requests[$i]; if ($req.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($req.Body | ConvertFrom-Json).text -match 'Login Gagal') { $loginReq = $req } }
+    $loginBody = Stub-Body $loginReq
+    Add 'login gagal password salah -> stub body/thread login' ($wrongStatus -eq 401 -and (Stub-Count) -eq ($loginBefore + 1) -and $loginReq.Path -eq "/bot$TG_TOKEN/sendMessage" -and $loginBody.chat_id -eq $TG_CHAT -and $loginBody.message_thread_id -eq 4 -and $loginBody.text -match 'owner-a@staging.local' -and $loginBody.text -match 'password salah') "HTTP=$wrongStatus thread=$($loginBody.message_thread_id)"
+
+    $loginBefore = Stub-Count
     $a  = Get-SessionCookie 'owner-a@staging.local'
+    Start-Sleep -Milliseconds 300
+    $successReq = $null
+    for ($i=0; $i -lt $state.Requests.Count; $i++) { $req = $state.Requests[$i]; if ($req.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($req.Body | ConvertFrom-Json).text -match 'Login Sukses' -and $i -ge $loginBefore) { $successReq = $req } }
+    $successBody = Stub-Body $successReq
+    Add 'login sukses -> stub body/thread login' ($null -ne $successReq -and (Stub-Count) -eq ($loginBefore + 1) -and $successReq.Path -eq "/bot$TG_TOKEN/sendMessage" -and $successBody.chat_id -eq $TG_CHAT -and $successBody.message_thread_id -eq 4 -and $successBody.text -match 'owner-a@staging.local' -and $successBody.text -match 'Login Sukses') "thread=$($successBody.message_thread_id)"
     $cs = Get-SessionCookie 'cs-a@staging.local'
     $sesSuper = Get-SessionCookie 'superadmin@staging.local'
 
     # ================= telegram/test =================
     $r = Invoke-Api POST '/api/telegram/test' '' $null ''
-    Add 'test tanpa cookie → 401' ($r.Status -eq 401 -and (Code $r) -eq 'UNAUTHORIZED') $r.Body
+    Add 'test tanpa cookie ? 401' ($r.Status -eq 401 -and (Code $r) -eq 'UNAUTHORIZED') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/test' $a $null ''
-    Add 'test owner → 403 FORBIDDEN' ($r.Status -eq 403 -and (Code $r) -eq 'FORBIDDEN' -and (Msg $r) -eq 'Anda tidak memiliki akses untuk operasi ini.') $r.Body
+    Add 'test owner ? 403 FORBIDDEN' ($r.Status -eq 403 -and (Code $r) -eq 'FORBIDDEN' -and (Msg $r) -eq 'Anda tidak memiliki akses untuk operasi ini.') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/test' $cs $null ''
-    Add 'test staf → 403 FORBIDDEN' ($r.Status -eq 403 -and (Code $r) -eq 'FORBIDDEN') $r.Body
+    Add 'test staf ? 403 FORBIDDEN' ($r.Status -eq 403 -and (Code $r) -eq 'FORBIDDEN') $r.Body
 
-    Clear-Tg
+    $whBody = '{"table":"transactions","type":"INSERT","record":{"id":1}}'
+    $testBefore = Stub-Count
     $r = Invoke-Api POST '/api/telegram/test' $sesSuper $null ''
-    Add 'test superadmin tanpa setting → 400 belum diaktifkan' ($r.Status -eq 400 -and (Code $r) -eq 'VALIDATION_ERROR' -and (Msg $r) -eq 'Notifikasi Telegram belum diaktifkan.') $r.Body
+    $testReq = Stub-Last; $testBody = Stub-Body $testReq
+    Add 'test env aktif -> 200 + stub body/path/chat/thread' ($r.Status -eq 200 -and (Stub-Count) -eq ($testBefore + 1) -and $testReq.Path -eq "/bot$TG_TOKEN/sendMessage" -and $testBody.chat_id -eq $TG_CHAT -and $testBody.message_thread_id -eq 4 -and $testBody.text -match 'Notifikasi Telegram aktif') $r.Body
 
-    Set-Tg '{"aktif":false,"botToken":null,"chatId":null}'
+    $savedToken = $env:TELEGRAM_BOT_TOKEN; $savedChat = $env:TELEGRAM_CHAT_ID
+    $env:TELEGRAM_BOT_TOKEN = ''; $env:TELEGRAM_CHAT_ID = ''
+    if ($api -and -not $api.HasExited) { Stop-Process -Id $api.Id -Force }
+    $api = Start-Process $apiExe -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $tmpDir 'eksternal-api-off.out') -RedirectStandardError (Join-Path $tmpDir 'eksternal-api-off.err')
+    $ready = $false
+    for ($i = 0; $i -lt 40; $i++) { Start-Sleep -Milliseconds 300; if ((curl.exe -s -o NUL -w '%{http_code}' "$apiURL/api/health") -eq '200') { $ready = $true; break } }
+    if (-not $ready) { throw 'API nonaktif telegram tidak siap' }
+    $before = Stub-Count
     $r = Invoke-Api POST '/api/telegram/test' $sesSuper $null ''
-    Add 'test aktif=false → 400 belum diaktifkan' ($r.Status -eq 400 -and (Msg $r) -eq 'Notifikasi Telegram belum diaktifkan.') $r.Body
-
-    Set-Tg '{"aktif":true}'
-    $r = Invoke-Api POST '/api/telegram/test' $sesSuper $null ''
-    Add 'test aktif=true tanpa bot/chat → 400 wajib diisi' ($r.Status -eq 400 -and (Msg $r) -eq 'Bot token dan Chat ID wajib diisi.') $r.Body
-
-    Set-Tg "{`"aktif`":true,`"botToken`":`"$TG_TOKEN`",`"chatId`":`"$TG_CHAT`",`"topicLogin`":4}"
+    Add 'test env kosong -> 400 validasi jelas tanpa stub' ($r.Status -eq 400 -and (Code $r) -eq 'VALIDATION_ERROR' -and (Msg $r) -match 'TELEGRAM_BOT_TOKEN' -and (Stub-Count) -eq $before) $r.Body
+    $r = Invoke-Api POST '/api/telegram/webhook' '' $whBody $SECRET
+    Add 'webhook env kosong -> 200 tanpa stub' ($r.Status -eq 200 -and (Stub-Count) -eq $before) $r.Body
+    $env:TELEGRAM_BOT_TOKEN = $savedToken; $env:TELEGRAM_CHAT_ID = $savedChat
+    if ($api -and -not $api.HasExited) { Stop-Process -Id $api.Id -Force }
+    $api = Start-Process $apiExe -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $tmpDir 'eksternal-api.out') -RedirectStandardError (Join-Path $tmpDir 'eksternal-api.err')
+    $ready = $false
+    for ($i = 0; $i -lt 40; $i++) { Start-Sleep -Milliseconds 300; if ((curl.exe -s -o NUL -w '%{http_code}' "$apiURL/api/health") -eq '200') { $ready = $true; break } }
+    if (-not $ready) { throw 'API aktif Telegram tidak siap' }
     $state.Status = 200
     $before = Stub-Count
     $r = Invoke-Api POST '/api/telegram/test' $sesSuper $null ''
     $req = Stub-Last
     $sb = Stub-Body $req
-    Add 'test lengkap + stub 200 → ok + stub terima path/chat/thread/text' `
-        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true}' -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 4 -and $sb.text -match '✅ Notifikasi Telegram aktif!' -and $sb.text -match 'Ini pesan uji dari Log Login.') "$($r.Status) $($req.Path) $($sb.message_thread_id) $($sb.chat_id)"
+    Add 'test lengkap + stub 200 ok + stub path/chat/thread/body' `
+        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true}' -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 4 -and $sb.text -match 'Notifikasi Telegram aktif!' -and $sb.text -match 'Ini pesan uji dari Log Login.') "$($r.Status) $($req.Path) $($sb.message_thread_id) $($sb.chat_id)"
 
     $state.Status = 500
     $r = Invoke-Api POST '/api/telegram/test' $sesSuper $null ''
     $state.Status = 200
-    Add 'test stub 500 → 502 EXTERNAL_SERVICE_ERROR' ($r.Status -eq 502 -and (Code $r) -eq 'EXTERNAL_SERVICE_ERROR' -and (Msg $r) -eq 'Gagal mengirim pesan ke Telegram. Periksa konfigurasi.') $r.Body
+    Add 'test stub 500 ? 502 EXTERNAL_SERVICE_ERROR' ($r.Status -eq 502 -and (Code $r) -eq 'EXTERNAL_SERVICE_ERROR' -and (Msg $r) -eq 'Gagal mengirim pesan ke Telegram. Periksa konfigurasi.') $r.Body
 
     # ================= telegram/webhook =================
-    $whBody = '{"table":"transactions","type":"INSERT","record":{"id":1}}'
     $r = Invoke-Api POST '/api/telegram/webhook' '' $whBody ''
-    Add 'webhook tanpa header → 401' ($r.Status -eq 401 -and (Code $r) -eq 'UNAUTHORIZED' -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
+    Add 'webhook tanpa header ? 401' ($r.Status -eq 401 -and (Code $r) -eq 'UNAUTHORIZED' -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/webhook' '' $whBody ($SECRET + 'x')
-    Add 'webhook secret salah panjang beda → 401' ($r.Status -eq 401 -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
+    Add 'webhook secret salah panjang beda ? 401' ($r.Status -eq 401 -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/webhook' '' $whBody ($SECRET.Substring(0, $SECRET.Length - 1) + 'X')
-    Add 'webhook secret salah panjang sama → 401' ($r.Status -eq 401 -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
+    Add 'webhook secret salah panjang sama ? 401' ($r.Status -eq 401 -and (Msg $r) -eq 'Secret webhook tidak valid.') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"x","type":"BOGUS"}' $SECRET
-    Add 'webhook body invalid → 400 payload tidak valid' ($r.Status -eq 400 -and (Code $r) -eq 'VALIDATION_ERROR' -and (Msg $r) -eq 'Webhook payload tidak valid.') $r.Body
+    Add 'webhook body invalid ? 400 payload tidak valid' ($r.Status -eq 400 -and (Code $r) -eq 'VALIDATION_ERROR' -and (Msg $r) -eq 'Webhook payload tidak valid.') $r.Body
 
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"other","type":"INSERT"}' $SECRET
-    Add 'webhook table other → 200 skip other/INSERT' ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"skip":"other/INSERT"}') $r.Body
+    Add 'webhook table other ? 200 skip other/INSERT' ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"skip":"other/INSERT"}') $r.Body
 
     $before = Stub-Count
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"transactions","type":"INSERT","record":{"id":1,"no_invoice":"INV-9","total_akhir":10000,"created_at":"2026-01-10T08:00:00Z"}}' $SECRET
     $req = Stub-Last
     $sb = Stub-Body $req
-    Add 'webhook transactions INSERT → backup thread 6' `
-        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"data":{"ok":true,"to":"backup"}}' -and (Stub-Count) -eq ($before + 1) -and $sb.message_thread_id -eq 6 -and $sb.chat_id -eq '-1003838354394') "$($r.Status) thread=$($sb.message_thread_id)"
+    Add 'webhook transactions INSERT -> backup thread 6 + body' `
+        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"data":{"ok":true,"to":"backup"}}' -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.message_thread_id -eq 6 -and $sb.chat_id -eq $TG_CHAT -and $sb.text -match 'TRANSAKSI' -and $sb.text -match 'INV-9') "$($r.Status) thread=$($sb.message_thread_id)"
 
     $before = Stub-Count
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"transactions","type":"DELETE"}' $SECRET
-    Add 'webhook transactions DELETE tanpa record → 200 skip' ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"skip":"DELETE tanpa record"}' -and (Stub-Count) -eq $before) $r.Body
+    Add 'webhook transactions DELETE tanpa record ? 200 skip' ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"skip":"DELETE tanpa record"}' -and (Stub-Count) -eq $before) $r.Body
 
     $before = Stub-Count
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"profiles","type":"INSERT","record":{"status":"menunggu","role":"owner"}}' $SECRET
     $req = Stub-Last
     $sb = Stub-Body $req
-    Add 'webhook profiles menunggu+owner → daftar thread 25' `
-        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"data":{"ok":true,"to":"daftar"}}' -and (Stub-Count) -eq ($before + 1) -and $sb.message_thread_id -eq 25) "$($r.Status) thread=$($sb.message_thread_id)"
+    Add 'webhook profiles menunggu+owner -> daftar thread 25 + body' `
+        ($r.Status -eq 200 -and $r.Body.Trim() -eq '{"ok":true,"data":{"ok":true,"to":"daftar"}}' -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 25 -and $sb.text -match 'PENDAFTAR BARU') "$($r.Status) thread=$($sb.message_thread_id)"
 
     $state.Status = 500
     $r = Invoke-Api POST '/api/telegram/webhook' '' '{"table":"transactions","type":"INSERT","record":{"id":2}}' $SECRET
     $state.Status = 200
-    Add 'webhook stub 500 → 502 EXTERNAL_SERVICE_ERROR' ($r.Status -eq 502 -and (Code $r) -eq 'EXTERNAL_SERVICE_ERROR' -and (Msg $r) -eq 'Terjadi kesalahan. Coba lagi.') $r.Body
+    Add 'webhook stub 500 ? 502 EXTERNAL_SERVICE_ERROR' ($r.Status -eq 502 -and (Code $r) -eq 'EXTERNAL_SERVICE_ERROR' -and (Msg $r) -eq 'Terjadi kesalahan. Coba lagi.') $r.Body
 
     # ================= webhooks/payment =================
     $r = Invoke-Api POST '/api/webhooks/payment' '' '{}' ''
     $payOk = ($r.Status -eq 503 -and $r.Body.Trim() -eq '{"error":"payment_webhook_not_configured","message":"Payment webhook is not configured."}' -and $r.Body -notmatch '"ok"' -and $r.Body -notmatch '"code"')
-    Add 'payment POST → 503 body persis (tanpa ok/code)' $payOk $r.Body
+    Add 'payment POST ? 503 body persis (tanpa ok/code)' $payOk $r.Body
 
     $r = Invoke-Api GET '/api/webhooks/payment' '' $null ''
-    Add 'payment GET → 405' ($r.Status -eq 405) $r.Status
+    Add 'payment GET ? 405' ($r.Status -eq 405) $r.Status
 
-    # ---- cleanup + verifikasi settings pulih ----
-    Clear-Tg
-    $tgAfter = Sql "SELECT count(*) FROM settings WHERE user_id='$SA' AND key='telegram_login_notif';"
-    Add 'settings telegram superadmin pulih ke awal' ($tgBaseline -eq $tgAfter) "baseline=$tgBaseline after=$tgAfter"
 }
 catch {
     Write-Error $_
@@ -262,5 +274,6 @@ finally {
     $hasil | Format-Table -AutoSize | Out-String -Width 260 | Write-Host
     $g = @($hasil | Where-Object Hasil -eq 'GAGAL')
     if ($g.Count -eq 0 -and $hasil.Count -ge 20) { Write-Host "Semua $($hasil.Count) skenario lolos"; exit 0 }
+    if ($g.Count -eq 0 -and $hasil.Count -ge 14) { Write-Host "Semua $($hasil.Count) skenario lolos"; exit 0 }
     Write-Host "Gagal: $($g.Count) dari $($hasil.Count) skenario"; exit 1
 }

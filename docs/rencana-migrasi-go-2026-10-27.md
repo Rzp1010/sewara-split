@@ -592,12 +592,31 @@ Catatan batch:
 - Keputusan domain eksternal: (1) base URL Telegram jadi env `TELEGRAM_API_BASE`
   (seam uji; Next menulis URL hardcoded di route/lib) dan timeout dari
   `TELEGRAM_TIMEOUT` default 10 s (paritas `TELEGRAM.REQUEST_TIMEOUT`); (2) chat
-  id dari env `TELEGRAM_CHAT_ID` default `-1003838354394`, thread 4/6/25 sebagai
-  konstanta; (3) route Next memakai `NextResponse.json` mentah untuk `skip` dan
+  id dari env `TELEGRAM_CHAT_ID` (default hardcoded `-1003838354394` dibuang
+  2026-11-08, lihat butir "Telegram pindah ke env server" di bawah), thread
+  4/6/25 juga dari env; (3) route Next memakai `NextResponse.json` mentah untuk `skip` dan
   `{error}` 500, jadi handler Go ikut mentah, bukan envelope; (4) skeleton
   provider pembayaran (Midtrans/Xendit/Stripe) dan tabel `sewara_subscription_*`
   TIDAK diport: tabel itu tidak ada di skema staging Go dan itu ranah langganan
   Sewara, bukan aplikasi tenant.
+- **Telegram pindah ke env server (2026-11-08, keputusan user).** Konfigurasi
+  Telegram BUKAN lagi dari tabel `settings`: key `telegram_login_notif` jadi
+  legacy dan hanya dibaca stack Next sampai cutover, sedangkan UI-nya dihapus
+  dari frontend (tab "Integrasi & Notifikasi" di `/dashboard/pengaturan` dan
+  modal "Notifikasi Telegram" di `/dashboard/loginlog`). Sumber tunggal sekarang
+  env server: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_THREAD_LOGIN`
+  (default 4), `TELEGRAM_THREAD_TRANSAKSI` (6), `TELEGRAM_THREAD_DAFTAR` (25);
+  token atau chat id kosong = fitur mati, tanpa fallback chat id hardcoded.
+  Fitur baru: notifikasi login sukses dan **semua** kegagalan login (termasuk
+  password salah yang di Next luput) dari `handlers_login.go` (closure `reject`
+  dan `afterLoginSuccess`), fire-and-forget dengan timeout `TELEGRAM_TIMEOUT`.
+  `POST /api/telegram/test` membaca config server dan menolak dengan pesan
+  validasi kalau env belum diisi; webhook saat fitur mati membalas
+  `{"ok":true,"skip":"telegram nonaktif"}`. Semua kiriman dipotong ke 4096
+  karakter (batas Telegram) dengan penanda `... (dipotong)`. Keputusan: TIDAK ada
+  outbox/retry — kegagalan cukup dicatat ke log. Bukti: `smoke-eksternal.ps1`
+  21 skenario (stub menerima pesan `Login Gagal` dan `Login Sukses` di thread 4)
+  dan `smoke-auth.ps1` 5 skenario tetap hijau.
 - Deviasi kecil yang belum diuji kontrak: `waktuID` memakai format `dd/mm/yy,
   HH.MM` (pendekatan deterministik, bukan salinan ICU `toLocaleString('id-ID')`,
   karena format timestamp memang tidak dijaga kontrak); `record:null`

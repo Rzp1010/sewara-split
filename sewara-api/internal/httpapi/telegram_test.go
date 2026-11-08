@@ -3,7 +3,49 @@ package httpapi
 import (
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestPotongPesanTelegram(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		text      string
+		wantLen   int
+		truncated bool
+	}{
+		{"batas tepat", strings.Repeat("é", 4096), 4096, false},
+		{"melewati batas utf8", strings.Repeat("界", 4097), 4096, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := potongPesanTelegram(tc.text)
+			if n := len([]rune(got)); n != tc.wantLen {
+				t.Fatalf("rune length=%d want %d", n, tc.wantLen)
+			}
+			if strings.HasSuffix(got, telegramTruncatedMarker) != tc.truncated {
+				t.Fatalf("marker mismatch: %q", got[len(got)-len([]rune(telegramTruncatedMarker)):])
+			}
+		})
+	}
+}
+
+func TestFormatPesanLogin(t *testing.T) {
+	now := time.Date(2026, 11, 8, 9, 5, 0, 0, time.UTC)
+	for _, tc := range []struct{ event, want string }{
+		{"login_sukses", "🔓 Login Sukses\n👤 user@example.com\n🕐 08/11/26, 09.05\n🌐 IP: 127.0.0.1"},
+		{"login_gagal", "⚠️ Login Gagal\n👤 user@example.com\n🕐 08/11/26, 09.05\n🌐 IP: 127.0.0.1\n📝 password salah"},
+	} {
+		t.Run(tc.event, func(t *testing.T) {
+			if got := formatPesanLogin(tc.event, "user@example.com", "127.0.0.1", func() string {
+				if tc.event == "login_gagal" {
+					return "password salah"
+				}
+				return ""
+			}(), now); got != tc.want {
+				t.Fatalf("got %q want %q", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestFormatRupiah(t *testing.T) {
 	for _, tc := range []struct {

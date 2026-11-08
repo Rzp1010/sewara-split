@@ -3,7 +3,6 @@ package httpapi
 import (
 	"crypto/subtle"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -27,43 +26,6 @@ func hanyaPOST(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// telegramConfigLokal adalah konfigurasi milik user sendiri (dipakai /api/telegram/test).
-type telegramConfigLokal struct {
-	Aktif      bool
-	BotToken   string
-	ChatID     string
-	TopicLogin int
-}
-
-// bacaTelegramConfigLokal meniru getTelegramConfig() lokal di
-// app/api/telegram/test/route.ts: default diisi lebih dulu, JSON rusak diabaikan.
-func (s *Server) bacaTelegramConfigLokal(r *http.Request, userID string) (telegramConfigLokal, error) {
-	cfg := telegramConfigLokal{TopicLogin: telegramThreadLogin}
-	setting, err := s.db.GetSettingByKey(r.Context(), userID, "telegram_login_notif")
-	if err != nil {
-		return cfg, err
-	}
-	if setting == nil || setting.Value == nil || *setting.Value == "" {
-		return cfg, nil
-	}
-	var raw struct {
-		Aktif      bool   `json:"aktif"`
-		BotToken   string `json:"botToken"`
-		ChatID     any    `json:"chatId"`
-		TopicLogin *int   `json:"topicLogin"`
-	}
-	if err := json.Unmarshal([]byte(*setting.Value), &raw); err != nil {
-		return cfg, nil
-	}
-	cfg.Aktif = raw.Aktif
-	cfg.BotToken = raw.BotToken
-	cfg.ChatID = telegramChatID(raw.ChatID)
-	if raw.TopicLogin != nil {
-		cfg.TopicLogin = *raw.TopicLogin
-	}
-	return cfg, nil
-}
-
 // handleTelegramTest: POST /api/telegram/test (superadmin only).
 func (s *Server) handleTelegramTest(w http.ResponseWriter, r *http.Request, me db.Identity) {
 	if me.Role != "superadmin" {
@@ -71,23 +33,13 @@ func (s *Server) handleTelegramTest(w http.ResponseWriter, r *http.Request, me d
 		return
 	}
 
-	cfg, err := s.bacaTelegramConfigLokal(r, me.UserID)
-	if err != nil {
-		s.log.Error("gagal membaca konfigurasi telegram", "err", err)
-		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
-		return
-	}
-	if !cfg.Aktif {
-		writeValidationError(w, "Notifikasi Telegram belum diaktifkan.", nil)
-		return
-	}
-	if cfg.BotToken == "" || cfg.ChatID == "" {
-		writeValidationError(w, "Bot token dan Chat ID wajib diisi.", nil)
+	if !telegramSiap(s.cfg) {
+		writeValidationError(w, "TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID wajib diatur di server.", nil)
 		return
 	}
 
 	text := "✅ Notifikasi Telegram aktif!\n\n" + waktuID(time.Now()) + "\nIni pesan uji dari Log Login."
-	if err := s.tg.sendMessage(r.Context(), cfg.BotToken, cfg.ChatID, cfg.TopicLogin, text, ""); err != nil {
+	if err := s.tg.sendMessage(r.Context(), s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadLogin, text, ""); err != nil {
 		s.log.Error("gagal mengirim pesan uji telegram", "err", err)
 		writeError(w, http.StatusBadGateway, CodeExternalServiceError, "Gagal mengirim pesan ke Telegram. Periksa konfigurasi.")
 		return
@@ -176,26 +128,18 @@ func (s *Server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, err := s.db.TelegramConfigSuperadmin(r.Context(), "telegram_login_notif")
-	if err != nil {
-		if errors.Is(err, db.ErrTelegramNoSuperadmin) || errors.Is(err, db.ErrTelegramNoBotToken) {
-			// Paritas: Next membalas NextResponse.json({error}, {status:500}).
-			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return
-		}
-		s.log.Error("gagal membaca konfigurasi telegram global", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "Terjadi kesalahan server. Coba lagi."})
+	if !telegramSiap(s.cfg) {
+		s.log.Info("telegram webhook dilewati: konfigurasi belum lengkap")
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "skip": "telegram nonaktif"})
 		return
 	}
-
-	chatID := s.cfg.TelegramChatID
 
 	if body.Table == "transactions" {
 		if transaksiDeleteTanpaRecord(body.Type, body.Record) {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "skip": "DELETE tanpa record"})
 			return
 		}
-		if err := s.tg.sendMessage(r.Context(), cfg.BotToken, chatID, telegramThreadBackup, formatPesanTransaksi(body.Type, body.Record), telegramParseModeHTML); err != nil {
+		if err := s.tg.sendMessage(r.Context(), s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadTransaksi, formatPesanTransaksi(body.Type, body.Record), telegramParseModeHTML); err != nil {
 			s.log.Error("gagal mengirim webhook telegram", "err", err, "table", body.Table, "type", body.Type)
 			writeError(w, http.StatusBadGateway, CodeExternalServiceError, "Terjadi kesalahan. Coba lagi.")
 			return
@@ -205,7 +149,7 @@ func (s *Server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if body.Table == "profiles" && body.Record["status"] == "menunggu" && body.Record["role"] == "owner" {
-		if err := s.tg.sendMessage(r.Context(), cfg.BotToken, chatID, telegramThreadDaftar, formatPesanRegistrasi(body.Type, body.Record), telegramParseModeHTML); err != nil {
+		if err := s.tg.sendMessage(r.Context(), s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadDaftar, formatPesanRegistrasi(body.Type, body.Record), telegramParseModeHTML); err != nil {
 			s.log.Error("gagal mengirim webhook telegram", "err", err, "table", body.Table, "type", body.Type)
 			writeError(w, http.StatusBadGateway, CodeExternalServiceError, "Terjadi kesalahan. Coba lagi.")
 			return

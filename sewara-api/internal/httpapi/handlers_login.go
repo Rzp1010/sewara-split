@@ -77,6 +77,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := s.buildLoginContext(r, input.email)
 	reject := func(rej loginRejection) {
 		s.logLoginAttempt(input.email, ctx.ownerID, ctx.ip, ctx.userAgent, "login_gagal", rej.detail)
+		go s.notifyLoginTelegram(input.email, "login_gagal", rej.detail, ctx.ip)
 		writeErrorExtra(w, rej.status, rej.code, rej.message, rej.extra, rej.headers)
 	}
 
@@ -317,6 +318,18 @@ func (s *Server) afterLoginSuccess(userID, email string, ownerID *string, ip, us
 		Detail: &detail, IP: ip, UserAgent: userAgent,
 	}); err != nil {
 		s.log.Error("gagal mencatat login sukses", "err", err)
+	}
+	go s.notifyLoginTelegram(email, "login_sukses", "", ip)
+}
+
+func (s *Server) notifyLoginTelegram(email, event, detail, ip string) {
+	if !telegramSiap(s.cfg) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.cfg.TelegramTimeout)
+	defer cancel()
+	if err := s.tg.sendMessage(ctx, s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadLogin, formatPesanLogin(event, email, ip, detail, time.Now()), ""); err != nil {
+		s.log.Error("gagal mengirim notifikasi login telegram", "err", err, "event", event)
 	}
 }
 

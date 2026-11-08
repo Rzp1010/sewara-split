@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,10 +29,14 @@ type Config struct {
 	Storage StorageConfig
 
 	// Eksternal Telegram + webhook.
-	TelegramWebhookSecret string        // secret header x-webhook-secret untuk /api/telegram/webhook
-	TelegramChatID        string        // chat_id default notifikasi
-	TelegramAPIBase       string        // basis Bot API; seam uji menunjuk stub lokal
-	TelegramTimeout       time.Duration // timeout klien HTTP Telegram
+	TelegramWebhookSecret   string        // secret header x-webhook-secret untuk /api/telegram/webhook
+	TelegramBotToken        string        // token bot; kosong = Telegram mati
+	TelegramChatID          string        // chat_id notifikasi; kosong = Telegram mati
+	TelegramThreadLogin     int           // topic notifikasi login
+	TelegramThreadTransaksi int           // topic notifikasi transaksi
+	TelegramThreadDaftar    int           // topic pendaftar
+	TelegramAPIBase         string        // basis Bot API; seam uji menunjuk stub lokal
+	TelegramTimeout         time.Duration // timeout klien HTTP Telegram
 
 	// Email verifikasi akun.
 	FrontendURL      string        // basis redirect callback (mis. https://app.sewara.my.id)
@@ -122,9 +127,19 @@ func Load() (Config, error) {
 	if tgBase == "" {
 		tgBase = "https://api.telegram.org"
 	}
+	tgBotToken := strings.TrimSpace(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	tgChatID := strings.TrimSpace(os.Getenv("TELEGRAM_CHAT_ID"))
-	if tgChatID == "" {
-		tgChatID = "-1003838354394"
+	tgThreadLogin, err := telegramThreadEnv("TELEGRAM_THREAD_LOGIN", 4)
+	if err != nil {
+		return Config{}, err
+	}
+	tgThreadTransaksi, err := telegramThreadEnv("TELEGRAM_THREAD_TRANSAKSI", 6)
+	if err != nil {
+		return Config{}, err
+	}
+	tgThreadDaftar, err := telegramThreadEnv("TELEGRAM_THREAD_DAFTAR", 25)
+	if err != nil {
+		return Config{}, err
 	}
 
 	// Email. Default driver: smtp di produksi, log di luar produksi (agar
@@ -178,29 +193,45 @@ func Load() (Config, error) {
 	}
 
 	return Config{
-		Addr:                  addr,
-		DatabaseURL:           dbURL,
-		Env:                   env,
-		CookieSecure:          env == EnvProd,
-		SessionTTL:            ttl,
-		PurgeSecret:           os.Getenv("PURGE_SECRET"),
-		CORSOrigins:           corsOrigins,
-		Storage:               storageCfg,
-		TelegramWebhookSecret: strings.TrimSpace(os.Getenv("WEBHOOK_TELEGRAM_SECRET")),
-		TelegramChatID:        tgChatID,
-		TelegramAPIBase:       tgBase,
-		TelegramTimeout:       tgTimeout,
-		FrontendURL:           frontendURL,
-		PublicAPIURL:          strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_API_URL")), "/"),
-		MailDriver:            mailDriver,
-		SMTPHost:              smtpHost,
-		SMTPPort:              strings.TrimSpace(os.Getenv("SMTP_PORT")),
-		SMTPUser:              strings.TrimSpace(os.Getenv("SMTP_USER")),
-		SMTPPass:              os.Getenv("SMTP_PASS"),
-		SMTPFrom:              smtpFrom,
-		EmailTokenSecret:      tokenSecret,
-		EmailTokenTTL:         tokenTTL,
+		Addr:                    addr,
+		DatabaseURL:             dbURL,
+		Env:                     env,
+		CookieSecure:            env == EnvProd,
+		SessionTTL:              ttl,
+		PurgeSecret:             os.Getenv("PURGE_SECRET"),
+		CORSOrigins:             corsOrigins,
+		Storage:                 storageCfg,
+		TelegramWebhookSecret:   strings.TrimSpace(os.Getenv("WEBHOOK_TELEGRAM_SECRET")),
+		TelegramBotToken:        tgBotToken,
+		TelegramChatID:          tgChatID,
+		TelegramThreadLogin:     tgThreadLogin,
+		TelegramThreadTransaksi: tgThreadTransaksi,
+		TelegramThreadDaftar:    tgThreadDaftar,
+		TelegramAPIBase:         tgBase,
+		TelegramTimeout:         tgTimeout,
+		FrontendURL:             frontendURL,
+		PublicAPIURL:            strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_API_URL")), "/"),
+		MailDriver:              mailDriver,
+		SMTPHost:                smtpHost,
+		SMTPPort:                strings.TrimSpace(os.Getenv("SMTP_PORT")),
+		SMTPUser:                strings.TrimSpace(os.Getenv("SMTP_USER")),
+		SMTPPass:                os.Getenv("SMTP_PASS"),
+		SMTPFrom:                smtpFrom,
+		EmailTokenSecret:        tokenSecret,
+		EmailTokenTTL:           tokenTTL,
 	}, nil
+}
+
+func telegramThreadEnv(name string, fallback int) (int, error) {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("%s tidak valid: %w", name, err)
+	}
+	return value, nil
 }
 
 // parseCORSOrigins membaca CORS_ORIGINS (dipisah koma). "*" ditolak: cookie sesi
