@@ -592,8 +592,8 @@ export async function getPelanggan() {
   return data?.pelanggan || [];
 }
 
-export async function upsertPelanggan({ nama, hp, alamat }) {
-  const data = await apiRequest('/api/pelanggan', { method: 'POST', body: JSON.stringify({ nama, hp, alamat }) });
+export async function upsertPelanggan({ nama, hp, email, alamat }) {
+  const data = await apiRequest('/api/pelanggan', { method: 'POST', body: JSON.stringify({ nama, hp, email, alamat }) });
   kirimEventData();
   return data?.pelanggan;
 }

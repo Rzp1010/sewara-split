@@ -16,6 +16,7 @@ import TabelOrang from "@/components/orang/TabelOrang";
 import PencarianAdaptif from "@/components/ui/PencarianAdaptif";
 import DetailOrang from "@/components/orang/DetailOrang";
 import FormMember from "@/components/orang/FormMember";
+import FormPelanggan from "@/components/orang/FormPelanggan";
 import ModalTipeMember from "@/components/orang/ModalTipeMember";
 import BlacklistModal from "@/components/BlacklistModal";
 
@@ -106,10 +107,12 @@ function IsiHalaman() {
   const [urut, setUrut] = useState("nama-az");
   const [urutMenu, setUrutMenu] = useState(false);
   const [eksporMenu, setEksporMenu] = useState(false);
+  const [tambahMenu, setTambahMenu] = useState(false);
+  const [formPelangganOpen, setFormPelangganOpen] = useState(false);
   useEffect(() => {
     if (!urutMenu) return undefined;
     const tutup = (event) => {
-      if (event.type === "keydown" || !event.target.closest("[data-menu-urut]") )
+      if (event.type === "keydown" || !event.target.closest("[data-menu-urut]"))
         setUrutMenu(false);
     };
     document.addEventListener("click", tutup);
@@ -132,6 +135,19 @@ function IsiHalaman() {
       document.removeEventListener("keydown", tutup);
     };
   }, [eksporMenu]);
+  useEffect(() => {
+    if (!tambahMenu) return undefined;
+    const tutup = (event) => {
+      if (event.type === "keydown" || !event.target.closest("[data-menu-tambah]"))
+        setTambahMenu(false);
+    };
+    document.addEventListener("click", tutup);
+    document.addEventListener("keydown", tutup);
+    return () => {
+      document.removeEventListener("click", tutup);
+      document.removeEventListener("keydown", tutup);
+    };
+  }, [tambahMenu]);
   const [detail, setDetail] = useState(null);
   const [prefillBlacklist, setPrefillBlacklist] = useState(null);
   const [formMember, setFormMember] = useState(null);
@@ -248,9 +264,20 @@ function IsiHalaman() {
     const [kunci, arah] = urut.split("-");
     const field = kunci === "nama" ? "nama" : "alamat";
     const hasil = orang
-      .filter((o) => cakupan === "member" ? dalamTab(o, "member") : true)
-      .filter((o) => !q || FIELD_CARI.map((f) => o[f]).join(" ").toLowerCase().includes(q))
-      .sort((a, b) => String(a[field] || "").localeCompare(String(b[field] || ""), "id") * (arah === "az" ? 1 : -1));
+      .filter((o) => (cakupan === "member" ? dalamTab(o, "member") : true))
+      .filter(
+        (o) =>
+          !q ||
+          FIELD_CARI.map((f) => o[f])
+            .join(" ")
+            .toLowerCase()
+            .includes(q),
+      )
+      .sort(
+        (a, b) =>
+          String(a[field] || "").localeCompare(String(b[field] || ""), "id") *
+          (arah === "az" ? 1 : -1),
+      );
     if (!hasil.length) {
       setEksporMenu(false);
       return notify("Tidak ada data untuk diekspor.", "error");
@@ -304,50 +331,65 @@ function IsiHalaman() {
   }
 
   const opsiUrut = [
-    ["nama-az", "Nama A–Z"], ["nama-za", "Nama Z–A"],
-    ["alamat-az", "Alamat A–Z"], ["alamat-za", "Alamat Z–A"],
+    ["nama-az", "Nama A–Z"],
+    ["nama-za", "Nama Z–A"],
+    ["alamat-az", "Alamat A–Z"],
+    ["alamat-za", "Alamat Z–A"],
   ];
 
   return (
     <div className="min-h-full">
-      <section className="overflow-visible rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Pelanggan</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <nav className="inline-flex rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-subtle)] p-0.5" aria-label="Filter direktori">
-              {TABS.map((t) => <button key={t.kode} type="button" onClick={() => gantiTab(t.kode)} className={`h-[30px] whitespace-nowrap rounded-md border-0 px-3 text-[13px] font-medium text-[var(--text-secondary)] ${tab === t.kode ? "bg-[var(--bg-surface)] font-semibold text-[var(--text-primary)] shadow-sm" : "hover:text-[var(--text-primary)]"}`}>
-                {t.label}<span className="ml-1.5 text-[11px] font-semibold text-[var(--text-muted)]">{jumlah[t.kode]}</span>
-              </button>)}
-            </nav>
-            <div className="relative" data-menu-urut>
-              <button type="button" aria-label="Urutkan" onClick={(e) => { e.stopPropagation(); setUrutMenu(!urutMenu); }} className="flex h-8 w-8 items-center justify-center rounded-md border-0 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
-              </button>
-              {urutMenu && <div className="absolute right-0 top-10 z-30 w-44 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Urutkan</div>
-                {opsiUrut.map(([value, label]) => <button key={value} type="button" onClick={() => { setUrut(value); setUrutMenu(false); }} className={`flex w-full items-center gap-2 rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] ${urut === value ? "font-semibold" : ""}`}><span className="w-3.5 text-[var(--color-primary)]">{urut === value ? "✓" : ""}</span>{label}</button>)}
-              </div>}
-            </div>
-            <PencarianAdaptif value={cari} onChange={setCari} />
-            {tab === "member" ? <>
-              <button type="button" onClick={() => setFormMember({ member: null })} className="h-[34px] rounded-lg border-0 bg-[var(--color-primary)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Member</button>
-              <button type="button" onClick={() => setModalTipe(true)} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Tipe member</button>
-            </> : null}
-            {tab === "blacklist" ? <button type="button" onClick={() => setPrefillBlacklist({ nama: "", hp: "", alamat: "" })} className="h-[34px] rounded-lg border-0 bg-[var(--color-danger)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Blacklist</button> : null}
-            <div className="relative" data-menu-ekspor>
-              <button type="button" aria-label="Ekspor" title="Ekspor" onClick={(e) => { e.stopPropagation(); setEksporMenu(!eksporMenu); }} className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" /></svg>
-              </button>
-              {eksporMenu ? <div className="absolute right-0 top-10 z-30 w-44 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Ekspor</div>
-                <button type="button" onClick={() => eksporCSV("semua")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor semua</button>
-                <button type="button" onClick={() => eksporCSV("member")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor hanya member</button>
-              </div> : null}
-            </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[22px] font-bold tracking-tight text-[var(--text-primary)]">Pelanggan</h2>
+        <nav className="inline-flex gap-[6px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-body)] p-[3px]" aria-label="Filter direktori">
+          {TABS.map((t) => (
+            <button key={t.kode} type="button" onClick={() => gantiTab(t.kode)} className={`h-8 whitespace-nowrap rounded-md border-0 px-3 text-[13px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] ${tab === t.kode ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm" : ""}`}>
+              {t.label}<span className={`ml-1.5 text-[11px] font-semibold ${tab === t.kode ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>{jumlah[t.kode]}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="flex items-center gap-1">
+          <div className="relative" data-menu-urut>
+            <button type="button" aria-label="Urutkan" onClick={(e) => { e.stopPropagation(); setUrutMenu(!urutMenu); }} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border-0 text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
+            </button>
+            {urutMenu && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[250px] rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-2 shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="px-1.5 py-2 text-[10.5px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Urutkan</div>
+              {opsiUrut.map(([value, label]) => <button key={value} type="button" onClick={() => { setUrut(value); setUrutMenu(false); }} className={`flex w-full items-center gap-2 rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] ${urut === value ? "font-semibold" : ""}`}><span className="w-3.5 text-[var(--color-primary)]">{urut === value ? "✓" : ""}</span>{label}</button>)}
+            </div>}
+          </div>
+          <PencarianAdaptif value={cari} onChange={setCari} />
+          <div className="relative" data-menu-ekspor>
+            <button type="button" aria-label="Ekspor" title="Ekspor" onClick={(e) => { e.stopPropagation(); setEksporMenu(!eksporMenu); }} className="flex h-[30px] w-[30px] items-center justify-center rounded-md border-0 text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            </button>
+            {eksporMenu && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[250px] rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-2 shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="px-1.5 py-2 text-[10.5px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Ekspor</div>
+              <button type="button" onClick={() => eksporCSV("semua")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor semua</button>
+              <button type="button" onClick={() => eksporCSV("member")} className="block w-full rounded-md border-0 px-2 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Ekspor hanya member</button>
+            </div>}
+          </div>
+          {tab === "member" ? <button type="button" onClick={() => setModalTipe(true)} className="h-[34px] rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Tipe member</button> : null}
+          <div className="relative" data-menu-tambah>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setTambahMenu(!tambahMenu); }} className="flex h-[34px] items-center gap-1.5 rounded-lg border-0 bg-[var(--color-primary)] px-3.5 text-[13px] font-semibold text-white hover:opacity-90">+ Tambah<span className="text-[10px] opacity-85">▾</span></button>
+            {tambahMenu && <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[190px] rounded-[10px] border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-lg">
+              <button type="button" onClick={() => { setTambahMenu(false); setFormPelangganOpen(true); }} className="block w-full rounded-md border-0 px-2.5 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Pelanggan baru</button>
+              <button type="button" onClick={() => { setTambahMenu(false); setFormMember({ member: null }); }} className="block w-full rounded-md border-0 px-2.5 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Member baru</button>
+              <button type="button" onClick={() => { setTambahMenu(false); setPrefillBlacklist({ nama: "", hp: "", alamat: "" }); }} className="block w-full rounded-md border-0 px-2.5 py-2 text-left text-[13px] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]">Entri blacklist</button>
+            </div>}
           </div>
         </div>
+      </div>
+      <section className="overflow-visible rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)]">
         {muat ? <div className="p-8"><LoadingSpinner message="Memuat direktori..." /></div> : gagal ? <div className="p-6"><ErrorState message="Gagal memuat data." onRetry={muatUlang} /></div> : <TabelOrang people={daftar} menuUntuk={menuUntuk} onPilih={setDetail} onAksi={aksi} />}
       </section>
+
+      {formPelangganOpen ? (
+        <FormPelanggan
+          onClose={() => setFormPelangganOpen(false)}
+          onDone={muatUlang}
+        />
+      ) : null}
 
       {detail ? (
         <DetailOrang
