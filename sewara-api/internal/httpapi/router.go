@@ -83,6 +83,7 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 	mux.HandleFunc("GET /api/pelanggan", s.requireAuth(s.handlePelangganGet))
 	mux.HandleFunc("POST /api/pelanggan", s.requireAuth(s.handlePelangganPost))
 	mux.HandleFunc("PATCH /api/pelanggan/{id}", s.requireAuth(s.handlePelangganPatch))
+	mux.HandleFunc("DELETE /api/pelanggan/{id}", s.requireAuth(s.handlePelangganDelete))
 	mux.HandleFunc("POST /api/pelanggan/upload", s.requireAuth(s.handlePelangganUpload))
 	mux.HandleFunc("GET /api/pelanggan/photo", s.requireAuth(s.handlePelangganPhoto))
 

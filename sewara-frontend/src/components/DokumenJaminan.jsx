@@ -31,19 +31,19 @@ function KotakSlot({
 }) {
   return (
     <div
-      className={`relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[10px] border-[1.5px] px-2 py-1.5 text-center transition-colors ${terisi ? "border-solid border-emerald-500 bg-[var(--bg-subtle)]" : `border-dashed border-[var(--border-color)] ${bolehUbah && onPickFile ? "cursor-pointer hover:border-[#7181E0] hover:bg-[var(--bg-subtle)]" : ""}`}`}
+      className={`relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg border-[1.5px] px-2 py-1.5 text-center text-[11px] transition-colors ${terisi ? "border-solid border-[#a7f3d0] bg-[#f0fdf4] text-[#047857]" : `border-dashed border-[#cbd5e1] text-[var(--text-secondary)] ${bolehUbah && onPickFile ? "cursor-pointer hover:border-[var(--color-primary)] hover:bg-[var(--bg-subtle)]" : ""}`}`}
       onClick={onClick}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
       <div
-        className={`text-xl leading-none ${terisi ? "text-emerald-500" : "text-[var(--text-muted)]"}`}
+        className={`text-sm leading-none ${terisi ? "text-[#047857]" : "text-[var(--text-muted)]"}`}
       >
         {media || <span>{dragging ? "↓" : "+"}</span>}
       </div>
       <div
-        className={`text-[11px] font-semibold ${terisi ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}
+        className={`text-[11px] font-semibold ${terisi ? "text-[#047857]" : "text-[var(--text-secondary)]"}`}
       >
         {label}
       </div>
@@ -93,6 +93,7 @@ export default function DokumenJaminan({
   urlDokumen,
   maks = 5,
   bolehUbah = true,
+  tampilkanJudul = true,
 }) {
   const [preview, setPreview] = useState(null);
   const [dragging, setDragging] = useState(null);
@@ -115,15 +116,15 @@ export default function DokumenJaminan({
 
   return (
     <section className="w-full">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
+      {tampilkanJudul ? <div className="mb-2 flex items-baseline justify-between gap-2">
         <span className="text-xs font-medium text-[var(--text-secondary)]">
           {judul}
         </span>
         <span className="text-xs font-semibold text-[var(--text-primary)]">
           {jumlah} / {maks}
         </span>
-      </div>
-      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
+      </div> : null}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {FOTO_SLOTS.map((label, index) => {
           const item = valid.find((d) => d?.label === label && d.path);
           const url = item ? urlDokumen(item.path) : "";
@@ -141,6 +142,7 @@ export default function DokumenJaminan({
                   pdf ? (
                     <span className="text-[11px] font-semibold">PDF</span>
                   ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={url}
                       alt={label}

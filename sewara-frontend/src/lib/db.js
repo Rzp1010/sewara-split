@@ -598,6 +598,11 @@ export async function upsertPelanggan({ nama, hp, email, alamat }) {
   return data?.pelanggan;
 }
 
+export async function hapusPelanggan(id) {
+  await apiRequest(`/api/pelanggan/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  kirimEventData();
+}
+
 export async function patchPelanggan(id, patch) {
   const data = await apiRequest(`/api/pelanggan/${encodeURIComponent(id)}`, {
     method: 'PATCH',

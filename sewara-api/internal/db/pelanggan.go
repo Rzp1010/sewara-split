@@ -169,6 +169,19 @@ func (d *DB) GetPelanggan(ctx context.Context, userID string, id int64) (Pelangg
 	return p, nil
 }
 
+func (d *DB) DeletePelanggan(ctx context.Context, userID string, id int64) error {
+	return d.InTenant(ctx, userID, func(q Querier) error {
+		tag, err := q.Exec(ctx, `DELETE FROM pelanggan WHERE id=$1`, id)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
+}
+
 func (d *DB) UpsertPelanggan(ctx context.Context, userID, nama, email, hp, alamat string) (Pelanggan, error) {
 	nama = strings.TrimSpace(nama)
 	email = strings.TrimSpace(email)

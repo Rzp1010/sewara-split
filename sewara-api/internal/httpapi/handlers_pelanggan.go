@@ -55,6 +55,42 @@ func (s *Server) handlePelangganPost(w http.ResponseWriter, r *http.Request, me 
 	}
 	writeSuccess(w, 200, map[string]any{"pelanggan": p})
 }
+func (s *Server) handlePelangganDelete(w http.ResponseWriter, r *http.Request, me db.Identity) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeError(w, 404, CodeNotFound, "Pelanggan tidak ditemukan.")
+		return
+	}
+	p, err := s.db.GetPelanggan(r.Context(), me.UserID, id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, 404, CodeNotFound, "Pelanggan tidak ditemukan.")
+		return
+	}
+	if err != nil {
+		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+	tenant, err := s.db.TenantID(r.Context(), me.UserID)
+	if err != nil {
+		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+	if err = s.db.DeletePelanggan(r.Context(), me.UserID, id); errors.Is(err, db.ErrNotFound) {
+		writeError(w, 404, CodeNotFound, "Pelanggan tidak ditemukan.")
+		return
+	} else if err != nil {
+		s.log.Error("gagal menghapus pelanggan", "err", err)
+		writeError(w, 500, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+		return
+	}
+	if s.store != nil {
+		for _, foto := range p.Foto {
+			s.hapusObjekPelanggan(r.Context(), tenant, foto.Path)
+		}
+	}
+	writeSuccess(w, 200, map[string]any{"ok": true})
+}
+
 func keyDokumenPelanggan(tenantID, pelangganID string, index int, ext string) string {
 	return tenantID + "/pelanggan/" + pelangganID + "/doc-" + strconv.Itoa(index) + "." + ext
 }
