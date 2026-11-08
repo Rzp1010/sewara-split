@@ -922,16 +922,16 @@ export default function StatusPage() {
     const perluSN = [];
     for (let ii = 0; ii < itemsAwal.length; ii++) {
       const item = itemsAwal[ii];
-      if (item.ref.jenis === "satuan") {
+      if (item.ref?.jenis === "satuan") {
         const terpasang = String(item.sn || "").split(",").map((sn) => sn.trim()).filter(Boolean);
         // idBarangItem() mengembalikan array; di sini butuh satu id barang.
-        perluSN.push({ key: `${ii}:satuan`, itemIndex: ii, idBarang: item.idBarang, nama: item.ref.nama, butuh: item.qty || 1, terpasang, jenis: "satuan" });
-      } else if (item.ref.jenis === "bundling") {
-        for (const komp of item.ref.komponen || []) {
+        perluSN.push({ key: `${ii}:satuan`, itemIndex: ii, idBarang: item.idBarang, nama: item.ref?.nama ?? "(barang tidak ditemukan)", butuh: item.qty || 1, terpasang, jenis: "satuan" });
+      } else if (item.ref?.jenis === "bundling") {
+        for (const komp of item.ref?.komponen || []) {
           const idKomp = komp.idBarang ?? komp.id;
           const lama = (item.assignedSNs || []).find((a) => String(a.idKomp) === String(idKomp));
           const terpasang = lama?.sns || [];
-          perluSN.push({ key: `${ii}:${idKomp}`, itemIndex: ii, idKomp, idBarang: idKomp, nama: `${item.ref.nama} — ${komp.nama}`, butuh: (item.qty || 1) * (komp.qty || 1), terpasang, jenis: "bundling" });
+          perluSN.push({ key: `${ii}:${idKomp}`, itemIndex: ii, idKomp, idBarang: idKomp, nama: `${item.ref?.nama ?? "(barang tidak ditemukan)"} — ${komp.nama}`, butuh: (item.qty || 1) * (komp.qty || 1), terpasang, jenis: "bundling" });
         }
       }
     }
@@ -975,7 +975,7 @@ export default function StatusPage() {
     trx.status = "Disewa";
     let detailSnOut = [];
     (trx.items || []).forEach((c) => {
-      if (c.ref.jenis === "satuan") detailSnOut.push(`[${c.sn}]`);
+      if (c.ref?.jenis === "satuan") detailSnOut.push(`[${c.sn}]`);
       else
         (c.assignedSNs || []).forEach((a) =>
           detailSnOut.push(`[Paket -> ${a.sns.join(",")}]`),
@@ -1154,7 +1154,7 @@ export default function StatusPage() {
     let namaPelayan = (await getNamaInvoice()) || "-";
     const modeTelat = kebijakanTelat();
     if (modeTelat === "perjam" && telatEfektif > 0) {
-      (trx.items || []).forEach((c) => (denda += (c.ref.denda || 0) * c.qty * telatJam));
+      (trx.items || []).forEach((c) => (denda += (c.ref?.denda || 0) * c.qty * telatJam));
       if (denda > 0) {
         const pilih = await confirmChoice(
           `KETERLAMBATAN!\nTelat ${telatJam} Jam.\nDenda: ${formatRupiah(denda)}.`,
@@ -1179,7 +1179,7 @@ export default function StatusPage() {
     const inv = await getInventory();
     const invDiubah = new Set();
     (trx.items || []).forEach((c) => {
-      if (c.ref.jenis === "satuan") {
+      if (c.ref?.jenis === "satuan") {
         let db = inv.find((i) => i.id == c.idBarang);
         if (db) {
           const rujuk = snsDirujukLainnya(t, trx.id, c.idBarang);
@@ -1210,7 +1210,7 @@ export default function StatusPage() {
       const entries = [];
       (trx.items || []).forEach((c) => {
         const daftar = [];
-        if (c.ref.jenis === "satuan") {
+        if (c.ref?.jenis === "satuan") {
           daftar.push({
             idBarang: c.idBarang,
             sns: pisahSN(c.sn),
@@ -1964,13 +1964,13 @@ export default function StatusPage() {
                                 className="bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]"
                               >
                                 <td className="px-4 py-3 align-middle font-semibold">
-                                  {i.ref.nama}
+                                  {i.ref?.nama ?? "(barang tidak ditemukan)"}
                                 </td>
                                 <td className="px-4 py-3 align-middle text-center text-[var(--text-primary)]">
                                   {i.qty}x
                                 </td>
                                 <td className="px-4 py-3 align-middle text-[var(--text-primary)]">
-                                  {i.ref.jenis === "satuan" ? (
+                                  {i.ref?.jenis === "satuan" ? (
                                     <span
                                       className="text-xs"
                                       style={{

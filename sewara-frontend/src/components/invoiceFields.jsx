@@ -107,8 +107,8 @@ export function TabelItem({ data }) {
         {(data.items || []).map((item, idx) => (
           <tr key={idx}>
             <td className="px-2.5 py-2 align-top">
-              {item.ref.nama}
-              {item.ref.jenis === "satuan" ? (
+              {item.ref?.nama ?? "(barang tidak ditemukan)"}
+              {item.ref?.jenis === "satuan" ? (
                 <span> ({item.sn})</span>
               ) : (
                 <span>

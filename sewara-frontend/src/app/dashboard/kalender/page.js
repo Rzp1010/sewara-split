@@ -114,7 +114,7 @@ const DetailCard = memo(function DetailCard({ t }) {
             key={idx}
             className="rounded-md border border-[var(--border-color)] bg-[var(--bg-surface)] px-1.5 py-0.5 text-xs text-[var(--text-secondary)]"
           >
-            {i.qty}x {i.ref.nama}
+            {i.qty}x {i.ref?.nama ?? "(barang tidak ditemukan)"}
           </span>
         ))}
         {(t.items || []).length > 3 && (

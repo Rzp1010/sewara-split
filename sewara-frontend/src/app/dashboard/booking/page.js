@@ -207,7 +207,7 @@ export default function BookingPage() {
       const invDiubah = new Set();
 
       for (let item of t.items) {
-        if (item.ref.jenis === "satuan") {
+        if (item.ref?.jenis === "satuan") {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (dbItem) {
             const rujuk = snsRujukLainIdx(idx, t.id, item.idBarang);
@@ -387,8 +387,8 @@ export default function BookingPage() {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              • {i.qty}x {i.ref.nama}{" "}
-                              {i.ref.jenis === "satuan" ? `[${i.sn}]` : ""}
+                              • {i.qty}x {i.ref?.nama ?? "(barang tidak ditemukan)"}{" "}
+                              {i.ref?.jenis === "satuan" ? `[${i.sn}]` : ""}
                             </div>
                           ))}
                         </div>

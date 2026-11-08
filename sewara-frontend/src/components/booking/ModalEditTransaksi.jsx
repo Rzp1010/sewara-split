@@ -433,7 +433,7 @@ export default function ModalEditTransaksi({
         const refInventaris = rawInv.find((i) => i.id == item.idBarang) || item.ref;
         const stokBebasJumlah = bebasJumlahPerPeriode(inv, trxAllSebelum, refInventaris, ambil, kembali, t.id);
         if (item.qty > stokBebasJumlah)
-          return notify(`Unit bebas tidak cukup untuk ${item.ref.nama} (sisa ${stokBebasJumlah}).`, "error");
+          return notify(`Unit bebas tidak cukup untuk ${item.ref?.nama ?? "barang tidak ditemukan"} (sisa ${stokBebasJumlah}).`, "error");
         if (item.ref.jenis === "satuan") {
           const snsTerkunci = (item.sn || "").split(", ").filter(Boolean);
           if (snsTerkunci.length && snsTerkunci.length !== item.qty)
@@ -448,7 +448,7 @@ export default function ModalEditTransaksi({
           for (let s of (item.sn || "").split(", ").filter(Boolean)) {
             if (terpakai.includes(s))
               return notify(
-                `S/N ${s} pada ${item.ref.nama} sudah di-booking pada periode tersebut.`,
+                `S/N ${s} pada ${item.ref?.nama ?? "barang tidak ditemukan"} sudah di-booking pada periode tersebut.`,
                 "error",
               );
           }
@@ -456,7 +456,7 @@ export default function ModalEditTransaksi({
           const stokBebas = hitungStokIdx(idx, item.ref, ambil, kembali, t.id);
           if (item.qty > stokBebas)
             return notify(
-              `Stok ${item.ref.nama} tidak cukup pada periode tersebut.`,
+              `Stok ${item.ref?.nama ?? "barang tidak ditemukan"} tidak cukup pada periode tersebut.`,
               "error",
             );
         }
@@ -468,7 +468,7 @@ export default function ModalEditTransaksi({
         if (item.ref.jenis === "satuan") {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (!dbItem)
-            return notify(`Barang ${item.ref.nama} tidak ditemukan!`, "error");
+            return notify(`Barang ${item.ref?.nama ?? "barang tidak ditemukan"} tidak ditemukan!`, "error");
           let snList = (item.sn || "").split(", ").filter(Boolean);
           for (let s of snList) {
             let snIdx = (dbItem.sns || []).indexOf(s);
@@ -772,10 +772,10 @@ export default function ModalEditTransaksi({
                     {editItems.map((item, idx) => (
                       <tr key={idx} className="bg-[var(--bg-surface)] even:bg-[var(--bg-subtle)]">
                         <td className="px-4 py-3 align-middle font-semibold">
-                          {item.ref.nama}
+                          {item.ref?.nama ?? "barang tidak ditemukan"}
                         </td>
                         <td className="px-4 py-3 align-middle text-center text-[var(--text-secondary)]">
-                          <input type="text" inputMode="numeric" value={item.qty} onChange={(e) => ubahQtyEdit(idx, e.target.value.replace(/\D/g, ""))} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${item.ref.nama}`} />
+                          <input type="text" inputMode="numeric" value={item.qty} onChange={(e) => ubahQtyEdit(idx, e.target.value.replace(/\D/g, ""))} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${item.ref?.nama ?? "barang tidak ditemukan"}`} />
                         </td>
                         <td className="px-4 py-3 align-middle text-[var(--text-secondary)]">
                           {item.ref.jenis === "satuan" ? (
