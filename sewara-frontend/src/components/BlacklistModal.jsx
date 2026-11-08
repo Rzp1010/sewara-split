@@ -5,6 +5,8 @@ import { tambahBlacklist, ubahBlacklist, uploadBlacklistFoto } from "@/lib/db";
 import { useNotify } from "@/components/NotificationProvider";
 import { FOTO_SLOTS, SlotJaminan } from "@/components/DokumenJaminan";
 import { Button, Modal } from "@/components/ui";
+import { hpNormal } from "@/lib/utils";
+import InputHP from "@/components/ui/InputHP";
 
 const EMPTY = { nama: "", hp: "", alamat: "", alasan: "" };
 const SLOT_KOSONG = Array(5).fill(null);
@@ -20,7 +22,7 @@ function slotsAwal(prefill, entry) {
   return awal;
 }
 
-export default function BlacklistModal({ open, onClose, prefill, entry, onDone }) {
+export default function BlacklistModal({ open, onClose, prefill, entry, onDone, daftarPembanding = [] }) {
   const { notify } = useNotify();
   const [form, setForm] = useState(() => formAwal(prefill, entry));
   const [slots, setSlots] = useState(() => slotsAwal(prefill, entry));
@@ -34,7 +36,7 @@ export default function BlacklistModal({ open, onClose, prefill, entry, onDone }
     try {
       const snapshot = slots.filter((s) => s?.path).map((s) => ({ label: s.label, path: s.path }));
       if (entry?.id) {
-        const r = await ubahBlacklist(entry.id, { nama: form.nama.trim(), hp: form.hp.trim(), alamat: form.alamat || "", alasan: form.alasan.trim() });
+        const r = await ubahBlacklist(entry.id, { nama: form.nama.trim(), hp: hpNormal(form.hp), alamat: form.alamat || "", alasan: form.alasan.trim() });
         if (!r.ok) return notify(r.error || "Gagal menyimpan blacklist.", "error");
         for (const s of slots.filter((x) => x?.file)) {
           const up = await uploadBlacklistFoto(entry.id, s.file, s.label);
@@ -42,7 +44,7 @@ export default function BlacklistModal({ open, onClose, prefill, entry, onDone }
         }
         notify("Entri blacklist diperbarui."); onDone?.(); onClose?.(); return;
       }
-      const r = await tambahBlacklist({ nama: form.nama.trim(), hp: form.hp.trim(), alamat: form.alamat || "", alasan: form.alasan.trim(), transaksiId: prefill?.transaksiId, memberId: prefill?.memberId, fotoJaminan: snapshot });
+      const r = await tambahBlacklist({ nama: form.nama.trim(), hp: hpNormal(form.hp), alamat: form.alamat || "", alasan: form.alasan.trim(), transaksiId: prefill?.transaksiId, memberId: prefill?.memberId, fotoJaminan: snapshot });
       if (!r.ok) return notify(r.code === "BLACKLIST_DUPLIKAT" || /duplikat/i.test(r.error || "") ? "Penyewa ini sudah ada di blacklist." : r.error || "Gagal menyimpan blacklist.", "error");
       const entryId = r.data?.id || r.data?.entry?.id;
       const baru = slots.filter((s) => s?.file);
@@ -65,7 +67,7 @@ export default function BlacklistModal({ open, onClose, prefill, entry, onDone }
     <div className="flex flex-col gap-3.5">
       {tampilkanKontak ? <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <label className="block text-[13px] font-medium text-[var(--text-secondary)]">Nama <span className="text-[var(--color-danger)]">*</span><input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama penyewa" className={inputClass} /></label>
-        <label className="block text-[13px] font-medium text-[var(--text-secondary)]">No. HP <span className="text-[var(--color-danger)]">*</span><input value={form.hp} onChange={(e) => setForm({ ...form, hp: e.target.value })} placeholder="08xxxxxxxxxx" className={inputClass} /><span className="mt-1 block text-xs text-[var(--text-muted)]">Pencocokan memakai pasangan nama dan nomor HP.</span></label>
+        <label className="block text-[13px] font-medium text-[var(--text-secondary)]">No. HP <span className="text-[var(--color-danger)]">*</span><InputHP name="hp" value={form.hp} onChange={(hp) => setForm({ ...form, hp })} placeholder="8123456789" daftarPembanding={daftarPembanding.filter((orang) => orang.hp !== form.hp)} /><span className="mt-1 block text-xs text-[var(--text-muted)]">Pencocokan memakai pasangan nama dan nomor HP.</span></label>
         <label className="block text-[13px] font-medium text-[var(--text-secondary)] sm:col-span-2">Alamat<input value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} placeholder="Alamat penyewa (opsional)" className={inputClass} /></label>
       </div> : null}
       <label className="block text-[13px] font-medium text-[var(--text-secondary)]">Alasan <span className="text-[var(--color-danger)]">*</span><textarea value={form.alasan} onChange={(e) => setForm({ ...form, alasan: e.target.value })} placeholder="Jelaskan alasan penyewa masuk blacklist." className="w-full h-auto min-h-16 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]" /></label>

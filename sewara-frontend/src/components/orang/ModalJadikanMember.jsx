@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Modal } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import { getMemberTemplates, simpanMember } from "@/lib/db";
+import { hpNormal } from "@/lib/utils";
 
 export default function ModalJadikanMember({ orang, onClose, onDone }) {
   const { notify } = useNotify();
@@ -31,7 +32,7 @@ export default function ModalJadikanMember({ orang, onClose, onDone }) {
     setSaving(true);
     const hasil = await simpanMember({
       nama: orang.nama,
-      hp: orang.hp,
+      hp: hpNormal(orang.hp),
       email: orang.email,
       alamat: orang.alamat,
       tipe_id: Number(tipe),

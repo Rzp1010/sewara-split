@@ -23,6 +23,7 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 import ModalKunciSN from "@/components/booking/ModalKunciSN";
 import PanelJaminan from "@/components/booking/PanelJaminan";
 import PanelAksesoris from "@/components/booking/PanelAksesoris";
+import InputHP from "@/components/ui/InputHP";
 
 import {
   DEFAULT_JAMINAN,
@@ -1256,16 +1257,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
                   No. HP
                 </label>
-                <input
-                  id="hp_penyewa"
-                  type="text"
-                  inputMode="numeric"
-                  value={hp_penyewa}
-                  onChange={(e) =>
-                    setHpPenyewa(e.target.value.replace(/\D/g, ""))
-                  }
-                  className="appearance-none border-solid rounded-md block w-full px-3 py-2.5 text-[14px] outline-none transition-colors duration-200 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-[var(--bg-subtle)] disabled:opacity-60"
-                />
+                <InputHP name="hp_penyewa" ariaLabel="No. HP penyewa" value={hp_penyewa} onChange={setHpPenyewa} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

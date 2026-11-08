@@ -27,8 +27,10 @@ import {
   catatanUnit,
   parseJaminan,
   bebasJumlahPerPeriode,
+  hpNormal,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
+import InputHP from "@/components/ui/InputHP";
 import {
   DEFAULT_JAMINAN,
   TANPA_JAMINAN,
@@ -506,7 +508,7 @@ export default function ModalEditTransaksi({
         ...t,
         items: editItemsBaru,
         penyewa: editForm.penyewa,
-        hp_penyewa: editForm.hp_penyewa,
+        hp_penyewa: hpNormal(editForm.hp_penyewa),
         alamat_penyewa: editForm.alamat_penyewa,
         jaminan_sewa: editForm.jaminan_sewa,
         waktu_ambil_rencana: ambil,
@@ -636,17 +638,7 @@ export default function ModalEditTransaksi({
                     <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                       No. HP
                     </label>
-                    <input
-                      value={editForm.hp_penyewa}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          hp_penyewa: e.target.value,
-                        })
-                      }
-                      inputMode="numeric"
-                      className="w-full rounded-[0.375rem] border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand-light disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-60"
-                    />
+                    <InputHP name="hp_penyewa" ariaLabel="No. HP penyewa" value={editForm.hp_penyewa || ""} onChange={(hp_penyewa) => setEditForm({ ...editForm, hp_penyewa })} daftarPembanding={daftarMember} onPilihDuplikat={(orang) => setEditForm({ ...editForm, penyewa: orang.nama, hp_penyewa: hpNormal(orang.hp), alamat_penyewa: orang.alamat || editForm.alamat_penyewa })} />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">

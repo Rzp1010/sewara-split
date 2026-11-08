@@ -380,6 +380,7 @@ function IsiHalaman() {
 
       {formPelangganOpen ? (
         <FormPelanggan
+          daftarPembanding={orang.filter((o) => !o.id || Number(o.id) > 0)}
           onClose={() => setFormPelangganOpen(false)}
           onDone={muatUlang}
         />

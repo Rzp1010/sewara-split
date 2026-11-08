@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button, FormField, Modal } from "@/components/ui";
 import { useNotify } from "@/components/NotificationProvider";
 import { upsertPelanggan } from "@/lib/db";
+import { hpNormal } from "@/lib/utils";
+import InputHP from "@/components/ui/InputHP";
 
 const KOSONG = { nama: "", hp: "", email: "", alamat: "" };
 
-export default function FormPelanggan({ onClose, onDone }) {
+export default function FormPelanggan({ onClose, onDone, daftarPembanding = [] }) {
   const { notify } = useNotify();
   const [form, setForm] = useState(KOSONG);
   const [saving, setSaving] = useState(false);
@@ -20,7 +22,7 @@ export default function FormPelanggan({ onClose, onDone }) {
       return notify("Email tidak valid atau melebihi 254 karakter.", "error");
     setSaving(true);
     try {
-      await upsertPelanggan({ nama, hp: form.hp.trim(), email, alamat: form.alamat.trim() });
+      await upsertPelanggan({ nama, hp: hpNormal(form.hp), email, alamat: form.alamat.trim() });
       notify("Pelanggan disimpan.");
       onDone?.();
       onClose?.();
@@ -35,7 +37,7 @@ export default function FormPelanggan({ onClose, onDone }) {
     <Modal isOpen onClose={onClose} title="Pelanggan baru" description="Lengkapi data pelanggan." size="lg" footer={<><Button variant="ghost" onClick={onClose}>Batal</Button><Button loading={saving} variant="dark" onClick={simpan}>Simpan</Button></>}>
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <FormField name="nama" label="Nama" required value={form.nama} onChange={(event) => setForm({ ...form, nama: event.target.value })} />
-        <FormField name="hp" label="No. HP" value={form.hp} onChange={(event) => setForm({ ...form, hp: event.target.value })} />
+        <FormField name="hp" label="No. HP"><InputHP name="hp" value={form.hp} onChange={(hp) => setForm({ ...form, hp })} daftarPembanding={daftarPembanding} /></FormField>
         <FormField name="email" label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
         <FormField name="alamat" label="Alamat" value={form.alamat} onChange={(event) => setForm({ ...form, alamat: event.target.value })} />
       </div>
