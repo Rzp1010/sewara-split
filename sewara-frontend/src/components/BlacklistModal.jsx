@@ -56,14 +56,21 @@ export default function BlacklistModal({ open, onClose, prefill, entry, onDone }
 
   if (typeof document === "undefined" || !open) return null;
   const snapshotAda = slots.some((slot) => slot?.snapshot);
-  const inputClass = "w-full h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
-  return <Modal isOpen={open} onClose={onClose} title={entry ? "Ubah entri blacklist" : "Tambah ke blacklist"} description="Data ini dipakai untuk memberi peringatan saat penyewa dikenali." size="lg" footer={<><Button variant="ghost" onClick={onClose}>Batal</Button><Button variant="danger" loading={saving} disabled={!form.nama.trim() || !form.hp.trim() || !form.alasan.trim()} onClick={simpan}>{entry ? "Simpan perubahan" : "Tambahkan ke blacklist"}</Button></>}>
-    <div className="flex flex-col gap-4"><div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-      <label className="block text-[13px] font-medium text-[var(--text-secondary)]">Nama <span className="text-[var(--color-danger)]">*</span><input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama penyewa" className={inputClass} /></label>
-      <label className="block text-[13px] font-medium text-[var(--text-secondary)]">No. HP <span className="text-[var(--color-danger)]">*</span><input value={form.hp} onChange={(e) => setForm({ ...form, hp: e.target.value })} placeholder="08xxxxxxxxxx" className={inputClass} /><span className="mt-1 block text-xs text-[var(--text-muted)]">Pencocokan memakai pasangan nama dan nomor HP.</span></label>
-      <label className="block text-[13px] font-medium text-[var(--text-secondary)] sm:col-span-2">Alamat<input value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} placeholder="Alamat penyewa (opsional)" className={inputClass} /></label>
-      <label className="block text-[13px] font-medium text-[var(--text-secondary)] sm:col-span-2">Alasan <span className="text-[var(--color-danger)]">*</span><textarea value={form.alasan} onChange={(e) => setForm({ ...form, alasan: e.target.value })} placeholder="Jelaskan alasan penyewa masuk blacklist." className="w-full h-auto min-h-16 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]" /></label>
-      <div className="sm:col-span-2"><SlotJaminan items={slots} onChange={setSlots} /><p className="mt-1 text-xs text-[var(--text-muted)]">JPG/PNG/PDF maks 5MB per file.</p>{snapshotAda ? <p className="mt-1 text-xs text-[var(--text-muted)]">Dokumen tersalin dari data member; tidak dapat diubah di sini.</p> : null}</div>
-    </div></div>
+  const orangSudahAda = Boolean(prefill?.nama?.trim());
+  const tampilkanKontak = Boolean(entry) || !orangSudahAda;
+  const tampilkanDokumen = Boolean(entry) || !orangSudahAda;
+  const inputClass = "w-full h-10 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]";
+  const judul = entry ? "Ubah entri blacklist" : "Tambah ke blacklist";
+  return <Modal isOpen={open} onClose={onClose} title={judul} description={form.nama || undefined} size={orangSudahAda && !entry ? "action" : "lg"} footer={<><Button variant="ghost" onClick={onClose}>Batal</Button><Button variant="danger" loading={saving} disabled={!form.nama.trim() || !form.hp.trim() || !form.alasan.trim()} onClick={simpan}>{entry ? "Simpan perubahan" : "Tambahkan"}</Button></>}>
+    <div className="flex flex-col gap-3.5">
+      {tampilkanKontak ? <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        <label className="block text-[13px] font-medium text-[var(--text-secondary)]">Nama <span className="text-[var(--color-danger)]">*</span><input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama penyewa" className={inputClass} /></label>
+        <label className="block text-[13px] font-medium text-[var(--text-secondary)]">No. HP <span className="text-[var(--color-danger)]">*</span><input value={form.hp} onChange={(e) => setForm({ ...form, hp: e.target.value })} placeholder="08xxxxxxxxxx" className={inputClass} /><span className="mt-1 block text-xs text-[var(--text-muted)]">Pencocokan memakai pasangan nama dan nomor HP.</span></label>
+        <label className="block text-[13px] font-medium text-[var(--text-secondary)] sm:col-span-2">Alamat<input value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} placeholder="Alamat penyewa (opsional)" className={inputClass} /></label>
+      </div> : null}
+      <label className="block text-[13px] font-medium text-[var(--text-secondary)]">Alasan <span className="text-[var(--color-danger)]">*</span><textarea value={form.alasan} onChange={(e) => setForm({ ...form, alasan: e.target.value })} placeholder="Jelaskan alasan penyewa masuk blacklist." className="w-full h-auto min-h-16 rounded-lg border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)]" /></label>
+      <div className="rounded-lg border border-solid border-[var(--color-danger)] bg-[var(--color-danger-soft)] p-2.5 text-[12px] text-[var(--color-danger-text)]">Penyewa ini tidak bisa melakukan booking selama masuk blacklist.</div>
+      {tampilkanDokumen ? <div><SlotJaminan items={slots} onChange={setSlots} /><p className="mt-1 text-xs text-[var(--text-muted)]">JPG/PNG/PDF maks 5MB per file.</p>{snapshotAda ? <p className="mt-1 text-xs text-[var(--text-muted)]">Dokumen tersalin dari data member; tidak dapat diubah di sini.</p> : null}</div> : null}
+    </div>
   </Modal>;
 }

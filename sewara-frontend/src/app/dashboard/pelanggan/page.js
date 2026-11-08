@@ -17,6 +17,7 @@ import PencarianAdaptif from "@/components/ui/PencarianAdaptif";
 import DetailOrang from "@/components/orang/DetailOrang";
 import FormMember from "@/components/orang/FormMember";
 import FormPelanggan from "@/components/orang/FormPelanggan";
+import ModalJadikanMember from "@/components/orang/ModalJadikanMember";
 import ModalTipeMember from "@/components/orang/ModalTipeMember";
 import BlacklistModal from "@/components/BlacklistModal";
 
@@ -109,6 +110,7 @@ function IsiHalaman() {
   const [eksporMenu, setEksporMenu] = useState(false);
   const [tambahMenu, setTambahMenu] = useState(false);
   const [formPelangganOpen, setFormPelangganOpen] = useState(false);
+  const [jadikanMember, setJadikanMember] = useState(null);
   useEffect(() => {
     if (!urutMenu) return undefined;
     const tutup = (event) => {
@@ -222,15 +224,7 @@ function IsiHalaman() {
       });
     if (kode === "ubah-blacklist") return setBlackEdit(o.black);
     if (kode === "jadikan-member")
-      return setFormMember({
-        member: null,
-        prefill: {
-          nama: o.nama,
-          hp: o.hp,
-          email: o.email || "",
-          alamat: o.alamat || "",
-        },
-      });
+      return setJadikanMember({ nama: o.nama, hp: o.hp, email: o.email || "", alamat: o.alamat || "" });
     if (kode === "blacklist") {
       if (!o.hp) return notify("HP wajib diisi untuk blacklist.", "error");
       return setPrefillBlacklist({
@@ -387,6 +381,14 @@ function IsiHalaman() {
       {formPelangganOpen ? (
         <FormPelanggan
           onClose={() => setFormPelangganOpen(false)}
+          onDone={muatUlang}
+        />
+      ) : null}
+
+      {jadikanMember ? (
+        <ModalJadikanMember
+          orang={jadikanMember}
+          onClose={() => setJadikanMember(null)}
           onDone={muatUlang}
         />
       ) : null}
