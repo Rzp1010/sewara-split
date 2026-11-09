@@ -680,8 +680,10 @@ Catatan batch:
   proses, aturan portabilitas). MIME divalidasi dari yang dideklarasikan klien
   (`file.type`) tanpa sniffing byte — sama seperti Next.
 - Env baru yang harus ada saat deploy Go API: `PURGE_SECRET` (pembayaran/purge),
-  `WEBHOOK_TELEGRAM_SECRET` (telegram webhook), `TELEGRAM_CHAT_ID` (default
-  `-1003838354394`), `TELEGRAM_API_BASE` (default `https://api.telegram.org`),
+  `WEBHOOK_TELEGRAM_SECRET` (telegram webhook), `TELEGRAM_BOT_TOKEN` +
+  `TELEGRAM_CHAT_ID` (kosong = notifikasi mati; default chat id hardcoded dibuang
+  2026-11-08), `TELEGRAM_THREAD_LOGIN`/`TRANSAKSI`/`DAFTAR` (default 4/6/25),
+  `TELEGRAM_API_BASE` (default `https://api.telegram.org`),
   `TELEGRAM_TIMEOUT` (default `10s`), dan untuk auth: `FRONTEND_URL` (basis
   redirect callback), `PUBLIC_API_URL` (basis tautan verifikasi), `MAIL_DRIVER`
   (`log`|`smtp`), `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM`,

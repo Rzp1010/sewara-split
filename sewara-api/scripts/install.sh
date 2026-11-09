@@ -155,7 +155,12 @@ SMTP_PASS=
 SMTP_FROM=
 
 WEBHOOK_TELEGRAM_SECRET=$(openssl rand -hex 24)
+# Notifikasi Telegram: token + chat id kosong = fitur mati (tidak ada chat default).
+TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
+TELEGRAM_THREAD_LOGIN=4
+TELEGRAM_THREAD_TRANSAKSI=6
+TELEGRAM_THREAD_DAFTAR=25
 TELEGRAM_API_BASE=https://api.telegram.org
 TELEGRAM_TIMEOUT=10s
 
