@@ -117,7 +117,7 @@ try {
         ($r.Status -eq 200 -and $m.totalOwner -eq 2 -and $m.ownerAktif -eq 2 -and $m.ownerNonaktif -eq 0 -and $m.totalStaf -eq 2 -and $m.stafAktif -eq 2 -and $m.totalAkun -eq 5) $r.Body
 
     $r = Invoke-Api GET '/api/dashboard/manajemen' $cs $null
-    Add-Hasil 'GET manajemen: staf juga boleh (tanpa gate role)' ($r.Status -eq 200) $r.Status
+    Add-Hasil 'GET manajemen: staf ditolak 403 (hanya owner/superadmin)' ($r.Status -eq 403) $r.Status
 
     $r = Invoke-Api GET '/api/admin/users' $a $null
     $users = @((DataOf $r).users)

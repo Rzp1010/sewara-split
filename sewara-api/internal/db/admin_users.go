@@ -72,6 +72,29 @@ func (d *DB) DeleteAuthUsers(ctx context.Context, ids []string) (int64, error) {
 	})
 	return n, err
 }
+
+// ExistingAuthUserIDs mengembalikan id (dari daftar ids) yang masih ada di
+// auth.users. Dipakai untuk mencoba ulang pembersihan login setelah kegagalan
+// sebagian, tanpa menebak id mana yang sudah terhapus.
+func (d *DB) ExistingAuthUserIDs(ctx context.Context, ids []string) ([]string, error) {
+	var out []string
+	err := d.inSystemTx(ctx, func(tx pgx.Tx) error {
+		rows, e := tx.Query(ctx, `SELECT id::text FROM auth.users WHERE id = ANY($1::uuid[])`, ids)
+		if e != nil {
+			return e
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if e := rows.Scan(&id); e != nil {
+				return e
+			}
+			out = append(out, id)
+		}
+		return rows.Err()
+	})
+	return out, err
+}
 func (d *DB) UpdateAdminPassword(ctx context.Context, id, hash string) error {
 	return d.UpdatePasswordHash(ctx, id, hash)
 }

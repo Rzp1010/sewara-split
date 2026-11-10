@@ -13,6 +13,12 @@ import (
 )
 
 func (s *Server) handleManajemenGet(w http.ResponseWriter, r *http.Request, u db.Identity) {
+	// ManajemenCounts menghitung lintas tenant lewat jalur sistem, jadi hanya
+	// owner/superadmin yang boleh memanggilnya; staf (cs/gudang) 403.
+	if u.Role != "owner" && u.Role != "superadmin" {
+		writeError(w, 403, CodeForbidden, "FORBIDDEN")
+		return
+	}
 	m, e := s.db.ManajemenCounts(r.Context())
 	if e != nil {
 		writeError(w, 500, CodeDatabaseError, "Gagal membaca manajemen.")
@@ -181,9 +187,26 @@ func (s *Server) handleAdminUsersDelete(w http.ResponseWriter, r *http.Request, 
 	}
 	n, e := s.db.DeleteAuthUsers(r.Context(), ids)
 	if e != nil || n < int64(len(ids)) {
-		gagal := int64(len(ids)) - n
-		writeError(w, 500, CodeDatabaseError, fmt.Sprintf("Data akun sudah dihapus, tapi %d login gagal dibersihkan. Hubungi admin.", gagal))
-		return
+		// Langkah kedua (hapus login) gagal atau tidak lengkap. Data bisnis sudah
+		// terhapus, jadi yang tersisa adalah login yatim. Coba sekali lagi hanya
+		// untuk id yang masih ada, lalu laporkan sisa yang benar-benar gagal —
+		// sebelumnya kegagalan ini tidak terlihat sama sekali di log.
+		sisa, eSisa := s.db.ExistingAuthUserIDs(r.Context(), ids)
+		if eSisa != nil {
+			s.log.Error("gagal memeriksa sisa login admin", "email", email, "err", eSisa)
+			sisa = ids
+		}
+		if len(sisa) > 0 {
+			if c, e2 := s.db.DeleteAuthUsers(r.Context(), sisa); e2 == nil && c == int64(len(sisa)) {
+				sisa = nil
+			}
+		}
+		if len(sisa) > 0 {
+			s.log.Error("hapus login admin gagal permanen", "email", email, "sisa", len(sisa), "ids", sisa, "err", e)
+			writeError(w, 500, CodeDatabaseError, fmt.Sprintf("Data akun sudah dihapus, tapi %d login gagal dibersihkan. Hubungi admin.", len(sisa)))
+			return
+		}
+		s.log.Warn("hapus login admin berhasil pada percobaan kedua", "email", email)
 	}
 	s.db.LogAdminAction(r.Context(), u.Email, "hapus_akun", email, fmt.Sprintf("termasuk %d staf", len(ids)-1))
 	writeSuccess(w, 200, map[string]any{"dihapus": n})
