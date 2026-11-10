@@ -77,6 +77,25 @@ function Stub-Last {
     return $state.Requests[$n - 1]
 }
 function Stub-Body($req) { if ($req) { return ($req.Body | ConvertFrom-Json) } return $null }
+# Notifikasi transaksi dikirim sebagai sendDocument (multipart), bukan JSON:
+# field form dan isi berkas dibaca dengan regex, bukan ConvertFrom-Json.
+function Stub-Form($req) {
+    if (-not $req) { return $null }
+    $b = [string]$req.Body
+    $o = @{}
+    foreach ($k in @('chat_id', 'message_thread_id', 'caption')) {
+        if ($b -match "name=`"$k`"\r?\n\r?\n([^\r]*)\r?\n--") { $o[$k] = $Matches[1] }
+    }
+    return $o
+}
+function Stub-Dokumen($req) {
+    if (-not $req) { return $null }
+    $b = [string]$req.Body
+    if ($b -match '(?s)name="document"; filename="([^"]+)"\r?\nContent-Type:[^\r\n]*\r?\n\r?\n(.*?)\r?\n--') {
+        return @{ Nama = $Matches[1]; Isi = $Matches[2] }
+    }
+    return $null
+}
 
 # tulis/bersihkan setting telegram superadmin.
 # Lewat stdin docker (bukan -c) supaya tanda kutip JSON tidak dimakan PowerShell
@@ -251,21 +270,36 @@ try {
     # Trigger net.http_post sudah dibuang (migrations/0003), jadi simpan transaksi &
     # pendaftaran harus memicu stub sendiri.
     $txNotif = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    # Item sengaja disertakan: lampiran backup harus memuat item, dan skenario
+    # putar-ulang memeriksa item itu benar-benar tersimpan setelah dikirim balik.
     $txBody = @{
         id = $txNotif; penyewa = 'Penyewa Notif'; status = 'Booking'
         biaya = 50000; total_akhir = 50000; no_invoice = 'INV-SMOKE-NOTIF'; jaminan_sewa = @()
-    } | ConvertTo-Json -Compress
+        items = @(@{ nama = 'Barang Notif'; jenis = 'satuan'; qty = 1; harga = 50000; subtotal = 50000 })
+    } | ConvertTo-Json -Compress -Depth 5
     $before = Stub-Count
     $r = Invoke-Api POST '/api/transactions' $a $txBody ''
     Start-Sleep -Milliseconds 600
     $req = $null
     for ($i = $before; $i -lt $state.Requests.Count; $i++) {
         $cand = $state.Requests[$i]
-        if ($cand.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($cand.Body | ConvertFrom-Json).text -match 'INV-SMOKE-NOTIF') { $req = $cand }
+        if ($cand.Path -eq "/bot$TG_TOKEN/sendDocument") { $req = $cand }
     }
-    $sb = Stub-Body $req
-    Add 'simpan transaksi baru -> stub thread 6 INSERT' `
-        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 6 -and $sb.text -match 'TRANSAKSI' -and $sb.text -match 'INSERT' -and $sb.text -match 'INV-SMOKE-NOTIF') "HTTP=$($r.Status) thread=$($sb.message_thread_id)"
+    $form = Stub-Form $req
+    $dok = Stub-Dokumen $req
+    $namaBerkas = "transaksi-INV-SMOKE-NOTIF-$txNotif.json"
+    Add 'simpan transaksi baru -> sendDocument thread 6 INSERT + berkas' `
+        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $form.chat_id -eq $TG_CHAT -and $form.message_thread_id -eq '6' -and $form.caption -match 'TRANSAKSI' -and $form.caption -match 'INSERT' -and $form.caption -match 'INV-SMOKE-NOTIF' -and $form.caption -notmatch '<code>' -and $null -ne $dok -and $dok.Nama -eq $namaBerkas -and $dok.Isi -match 'INV-SMOKE-NOTIF') "HTTP=$($r.Status) thread=$($form.message_thread_id) berkas=$($dok.Nama)"
+
+    # Lampiran harus benar-benar bisa diputar ulang: kirim isinya kembali ke POST.
+    $berkasPutar = Join-Path $tmpDir 'eksternal-putar-ulang.json'
+    [IO.File]::WriteAllText($berkasPutar, $dok.Isi, [Text.UTF8Encoding]::new($false))
+    $rPutar = Invoke-Api POST '/api/transactions' $a $dok.Isi ''
+    $txPutar = ($rPutar.Body | ConvertFrom-Json).data.transaction
+    $itemPutar = Sql "SELECT item_name||'|'||qty::text||'|'||unit_price::text FROM transaction_items WHERE transaction_id=$txNotif;"
+    Add 'lampiran diputar ulang ke POST /api/transactions -> 200 utuh + item tersimpan' `
+        ($rPutar.Status -eq 200 -and $txPutar.id -eq $txNotif -and $txPutar.no_invoice -eq 'INV-SMOKE-NOTIF' -and $txPutar.penyewa -eq 'Penyewa Notif' -and $itemPutar -match '^Barang Notif\|1\|50000(\.00)?$') "HTTP=$($rPutar.Status) id=$($txPutar.id) item=$itemPutar"
+    Start-Sleep -Milliseconds 400
 
     $before = Stub-Count
     $r = Invoke-Api PATCH "/api/transactions/$txNotif" $a '{"status":"Belum Selesai"}' ''
@@ -273,11 +307,12 @@ try {
     $req = $null
     for ($i = $before; $i -lt $state.Requests.Count; $i++) {
         $cand = $state.Requests[$i]
-        if ($cand.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($cand.Body | ConvertFrom-Json).text -match 'INV-SMOKE-NOTIF') { $req = $cand }
+        if ($cand.Path -eq "/bot$TG_TOKEN/sendDocument") { $req = $cand }
     }
-    $sb = Stub-Body $req
-    Add 'ubah transaksi -> stub thread 6 UPDATE' `
-        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $sb.message_thread_id -eq 6 -and $sb.text -match 'UPDATE' -and $sb.text -match 'Belum Selesai') "HTTP=$($r.Status) thread=$($sb.message_thread_id)"
+    $form = Stub-Form $req
+    $dokUpdate = Stub-Dokumen $req
+    Add 'ubah transaksi -> sendDocument thread 6 UPDATE + berkas berisi item tersimpan' `
+        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $form.message_thread_id -eq '6' -and $form.caption -match 'UPDATE' -and $form.caption -match 'Belum Selesai' -and $null -ne $dokUpdate -and $dokUpdate.Isi -match '"items"' -and $dokUpdate.Isi -match 'item_name') "HTTP=$($r.Status) thread=$($form.message_thread_id) berkas=$($dokUpdate.Nama)"
 
     $before = Stub-Count
     $daftarBody = '{"email":"smoke-eksternal-daftar@staging.local","password":"Rahasia123","nama_lengkap":"Pendaftar Notif"}'

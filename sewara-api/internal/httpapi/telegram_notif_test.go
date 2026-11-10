@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -54,6 +55,78 @@ func TestRecordTransaksi(t *testing.T) {
 	kosong := recordTransaksi(&db.Transaction{})
 	if kosong["no_invoice"] != "" {
 		t.Fatalf("no_invoice nil seharusnya string kosong: %v", kosong["no_invoice"])
+	}
+}
+
+func TestFormatPesanTransaksiRingkas(t *testing.T) {
+	inv := "INV-UJI/9"
+	rec := recordTransaksi(&db.Transaction{
+		ID: 9, NoInvoice: &inv, Penyewa: "Budi", Status: "Disewa", TotalAkhir: 10000,
+		CreatedAt: time.Date(2026, 11, 10, 9, 41, 0, 0, time.UTC),
+	})
+
+	pesan := formatPesanTransaksiRingkas("INSERT", rec)
+	for _, wajib := range []string{"TRANSAKSI — INSERT", "INV-UJI/9", "Disewa", "Budi", "POST /api/transactions"} {
+		if !strings.Contains(pesan, wajib) {
+			t.Fatalf("pesan tidak memuat %q:\n%s", wajib, pesan)
+		}
+	}
+	// Blok JSON tidak lagi di pesan: payload-nya ikut sebagai lampiran berkas.
+	for _, terlarang := range []string{"<code>", "JSON:"} {
+		if strings.Contains(pesan, terlarang) {
+			t.Fatalf("pesan masih memuat %q:\n%s", terlarang, pesan)
+		}
+	}
+	if len([]rune(pesan)) > telegramCaptionLimit {
+		t.Fatalf("caption %d rune melewati batas %d", len([]rune(pesan)), telegramCaptionLimit)
+	}
+}
+
+func TestBerkasTransaksiBisaDiputarUlang(t *testing.T) {
+	inv := "INV UJI/1"
+	tx := &db.Transaction{
+		ID: 11, NoInvoice: &inv, Penyewa: "Siti", Status: "Booking", TotalAkhir: 50000,
+		CreatedAt: time.Date(2026, 11, 10, 8, 0, 0, 0, time.UTC),
+	}
+	invID := int64(101)
+	sn := "SN-1"
+	items := []db.TransactionItemInput{{InventoryID: &invID, ItemName: "Kamera A", Qty: 1, UnitPrice: 50000, Subtotal: 50000, SerialNumber: &sn}}
+	payments := []db.TransactionPaymentInput{{PaymentMethod: "Tunai", Amount: 50000, PaymentDate: time.Date(2026, 11, 10, 8, 0, 0, 0, time.UTC)}}
+
+	isi := berkasTransaksi(tx, items, payments)
+	var ulang struct {
+		Transaction json.RawMessage `json:"transaction"`
+		Items       []any           `json:"items"`
+		Payments    []any           `json:"payments"`
+	}
+	if err := json.Unmarshal(isi, &ulang); err != nil {
+		t.Fatalf("berkas bukan JSON valid: %v", err)
+	}
+	if len(ulang.Transaction) == 0 || len(ulang.Items) != 1 || len(ulang.Payments) != 1 {
+		t.Fatalf("bentuk berkas tidak lengkap: %s", isi)
+	}
+
+	// Bentuk ini harus diterima langsung oleh POST /api/transactions, yaitu lewat
+	// normalisasi yang sama dengan handler.
+	normal := db.NormalizeTransactionItems(ulang.Items)
+	if len(normal) != 1 || normal[0].ItemName != "Kamera A" || normal[0].Qty != 1 || normal[0].UnitPrice != 50000 {
+		t.Fatalf("items tidak bisa diputar ulang: %+v", normal)
+	}
+	var txUlang db.Transaction
+	if err := json.Unmarshal(ulang.Transaction, &txUlang); err != nil {
+		t.Fatalf("transaction tidak bisa diputar ulang: %v", err)
+	}
+	if txUlang.ID != 11 || txUlang.Penyewa != "Siti" || txUlang.Status != "Booking" {
+		t.Fatalf("transaction tidak utuh: %+v", txUlang)
+	}
+
+	// Nama berkas aman dipakai di multipart.
+	nama := namaBerkasTransaksi(tx)
+	if strings.ContainsAny(nama, " /\\") || !strings.HasSuffix(nama, "-11.json") {
+		t.Fatalf("nama berkas tidak aman: %q", nama)
+	}
+	if kosong := namaBerkasTransaksi(&db.Transaction{ID: 3}); kosong != "transaksi-tanpa-invoice-3.json" {
+		t.Fatalf("nama berkas tanpa invoice: %q", kosong)
 	}
 }
 

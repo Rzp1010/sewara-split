@@ -335,7 +335,7 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 			s.log.Error("gagal upsert pelanggan dari transaksi", "err", err, "id", tx.ID)
 		}
 	}
-	go s.notifyTransaksiTelegram(eventType, result)
+	go s.notifyTransaksiTelegram(eventType, result, items, payments)
 	writeSuccess(w, http.StatusOK, map[string]any{"transaction": result})
 }
 
@@ -433,6 +433,15 @@ func (s *Server) handleTransactionsDetailPatch(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	go s.notifyTransaksiTelegram("UPDATE", result)
+	// Lampiran backup memuat item & pembayaran yang tersimpan, jadi PATCH
+	// membaca detail setelah update. Kegagalan baca tidak menggagalkan respons.
+	if detail, err := s.db.GetTransactionDetail(r.Context(), me.UserID, id); err != nil || detail == nil {
+		if err != nil {
+			s.log.Error("gagal membaca detail untuk lampiran notifikasi", "err", err, "id", id)
+		}
+		go s.notifyTransaksiTelegram("UPDATE", result, nil, nil)
+	} else {
+		go s.notifyTransaksiTelegram("UPDATE", result, detail.Items, detail.Payments)
+	}
 	writeSuccess(w, http.StatusOK, map[string]any{"transaction": result})
 }

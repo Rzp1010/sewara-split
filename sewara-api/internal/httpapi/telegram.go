@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 )
 
 const telegramMessageLimit = 4096
+const telegramCaptionLimit = 1024
 const telegramTruncatedMarker = "\n… (dipotong)"
 
 func telegramSiap(cfg config.Config) bool {
@@ -265,6 +267,55 @@ func (t *telegramSender) sendMessage(ctx context.Context, botToken, chatID strin
 	return nil
 }
 
+// sendDocument mengirim berkas dengan caption ke topik tertentu. Bot API
+// menolak caption > 1024 karakter, jadi caption dipotong lebih dulu.
+func (t *telegramSender) sendDocument(ctx context.Context, botToken, chatID string, threadID int, filename, caption string, content []byte) error {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	_ = w.WriteField("chat_id", chatID)
+	_ = w.WriteField("message_thread_id", strconv.Itoa(threadID))
+	if caption != "" {
+		_ = w.WriteField("caption", potongCaptionTelegram(caption))
+	}
+	part, err := w.CreateFormFile("document", filename)
+	if err != nil {
+		return err
+	}
+	if _, err := part.Write(content); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, t.base+"/bot"+botToken+"/sendDocument", &buf)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telegram HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// potongCaptionTelegram menjaga caption tetap di batas Bot API.
+func potongCaptionTelegram(text string) string {
+	if len([]rune(text)) <= telegramCaptionLimit {
+		return text
+	}
+	marker := " ... (dipotong)"
+	limit := telegramCaptionLimit - len([]rune(marker))
+	return string([]rune(text)[:limit]) + marker
+}
+
 // recordTransaksi menyusun record bergaya webhook untuk formatPesanTransaksi.
 // Trigger DB sudah dibuang (migrations/0003), jadi handler yang merakit record ini.
 func recordTransaksi(tx *db.Transaction) map[string]any {
@@ -299,15 +350,72 @@ func recordPendaftar(nama, email string) map[string]any {
 	}
 }
 
-// notifyTransaksiTelegram mengirim notifikasi transaksi ke topik transaksi.
+// formatPesanTransaksiRingkas = ringkasan tanpa blok JSON; payload lengkapnya
+// ikut sebagai lampiran berkas (lihat berkasTransaksi).
+func formatPesanTransaksiRingkas(eventType string, record map[string]any) string {
+	separator := strings.Repeat("—", 28)
+	emoji := "✏️"
+	switch eventType {
+	case "INSERT":
+		emoji = "🆕"
+	case "DELETE":
+		emoji = "🗑️"
+	}
+	lines := []string{
+		emoji + " TRANSAKSI — " + eventType,
+		separator,
+		"Invoice  : " + teksAtau(teksPertama(record, "no_invoice", "invoice"), "-"),
+		"Penyewa  : " + teksAtau(teksPertama(record, "nama_penyewa", "penyewa", "user_id"), "-"),
+		"Status   : " + teksAtau(teksPertama(record, "status"), "-"),
+		"Total    : " + formatRupiah(nilaiPertama(record, "total_akhir", "total", "biaya")),
+		"Waktu    : " + waktuID(waktuRecord(record)),
+		"",
+		"Lampiran = body POST /api/transactions untuk memulihkan transaksi ini.",
+	}
+	return strings.Join(lines, "\n")
+}
+
+// namaBerkasTransaksi merapikan nomor invoice jadi nama berkas aman.
+func namaBerkasTransaksi(tx *db.Transaction) string {
+	inv := "tanpa-invoice"
+	if tx.NoInvoice != nil && strings.TrimSpace(*tx.NoInvoice) != "" {
+		inv = strings.TrimSpace(*tx.NoInvoice)
+	}
+	var b strings.Builder
+	for _, r := range inv {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('-')
+		}
+	}
+	return "transaksi-" + b.String() + "-" + strconv.FormatInt(tx.ID, 10) + ".json"
+}
+
+// berkasTransaksi merakit isi lampiran backup: bentuk body yang sama dengan
+// POST /api/transactions ({transaction, items, payments}), jadi pemulihannya
+// cukup mengirim ulang berkas ini ke endpoint itu.
+func berkasTransaksi(tx *db.Transaction, items, payments any) []byte {
+	isi := map[string]any{"transaction": tx, "items": items, "payments": payments}
+	b, err := json.MarshalIndent(isi, "", "  ")
+	if err != nil {
+		return []byte("{}")
+	}
+	return b
+}
+
+// notifyTransaksiTelegram mengirim notifikasi transaksi ke topik transaksi:
+// ringkasan sebagai caption + berkas backup sebagai lampiran.
 // Gagal kirim hanya dicatat; notifikasi tidak boleh menggagalkan penyimpanan.
-func (s *Server) notifyTransaksiTelegram(eventType string, tx *db.Transaction) {
+func (s *Server) notifyTransaksiTelegram(eventType string, tx *db.Transaction, items, payments any) {
 	if !telegramSiap(s.cfg) || tx == nil {
 		return
 	}
+	caption := formatPesanTransaksiRingkas(eventType, recordTransaksi(tx))
 	ctx, cancel := context.WithTimeout(context.Background(), s.cfg.TelegramTimeout)
 	defer cancel()
-	if err := s.tg.sendMessage(ctx, s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadTransaksi, formatPesanTransaksi(eventType, recordTransaksi(tx)), telegramParseModeHTML); err != nil {
+	if err := s.tg.sendDocument(ctx, s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadTransaksi, namaBerkasTransaksi(tx), caption, berkasTransaksi(tx, items, payments)); err != nil {
 		s.log.Error("gagal mengirim notifikasi transaksi telegram", "err", err, "event", eventType, "id", tx.ID)
 	}
 }
