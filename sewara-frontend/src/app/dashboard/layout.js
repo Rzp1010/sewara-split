@@ -313,14 +313,6 @@ const MENU_GRUP = [
       },
     ],
   },
-  {
-    id: "sistem",
-    label: "Sistem",
-    icon: I.gear,
-    items: [
-      { href: "/dashboard/todo", label: "To Do", icon: I.list },
-    ],
-  },
 ];
 
 // Item menu dengan properti `fitur` hanya tampil saat fitur aktif (getFITUR)

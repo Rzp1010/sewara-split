@@ -36,6 +36,16 @@ function KotakSlot({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={label}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick(e);
+        }
+      }}
     >
       <div
         className={`text-sm leading-none ${terisi ? "text-[#047857]" : "text-[var(--text-muted)]"}`}
@@ -56,9 +66,19 @@ function KotakSlot({
       {terisi && bolehUbah && onHapus && (
         <div
           className="text-center text-[10px] text-red-500"
+          role="button"
+          tabIndex={0}
+          aria-label={`Hapus ${label || "dokumen"}`}
           onClick={(e) => {
             e.stopPropagation();
             onHapus();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onHapus();
+            }
           }}
         >
           Hapus

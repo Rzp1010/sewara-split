@@ -52,10 +52,14 @@ func (d *DB) AdminUsers(ctx context.Context, caller Identity) ([]map[string]any,
 	return out, err
 }
 
-func (d *DB) CreateAuthUser(ctx context.Context, email, hash string) (string, error) {
+func (d *DB) CreateAdminAccount(ctx context.Context, email, hash, role, name, username, invoice string, ownerID *string) (string, error) {
 	var id string
 	err := d.inSystemTx(ctx, func(tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `INSERT INTO auth.users (id,email,encrypted_password,email_confirmed_at) VALUES (gen_random_uuid(),lower($1),$2,now()) RETURNING id::text`, email, hash).Scan(&id)
+		if e := tx.QueryRow(ctx, `INSERT INTO auth.users (id,email,encrypted_password,email_confirmed_at) VALUES (gen_random_uuid(),lower($1),$2,now()) RETURNING id::text`, email, hash).Scan(&id); e != nil {
+			return e
+		}
+		_, e := tx.Exec(ctx, `INSERT INTO profiles(user_id,email,role,nama_lengkap,username,nama_invoice,is_active,owner_id) VALUES($1::uuid,$2,$3,$4,$5,$6,true,$7::uuid) ON CONFLICT(email) DO UPDATE SET user_id=EXCLUDED.user_id,role=EXCLUDED.role,nama_lengkap=EXCLUDED.nama_lengkap,username=EXCLUDED.username,nama_invoice=EXCLUDED.nama_invoice,is_active=EXCLUDED.is_active,owner_id=EXCLUDED.owner_id`, id, email, role, name, username, invoice, ownerID)
+		return e
 	})
 	return id, err
 }

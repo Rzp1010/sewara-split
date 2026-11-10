@@ -466,6 +466,33 @@ export default function InventarisPage() {
     setEditKompQty(1);
   }
 
+  // Modal di halaman ini dibuat dengan createPortal sendiri, jadi tidak mewarisi
+  // penutupan Escape dari komponen ui/Modal. Satu listener menutup modal teratas.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== "Escape") return;
+      if (dupModal) {
+        dupModal.resolve(null);
+        setDupModal(null);
+        return;
+      }
+      if (snDelModal) return setSnDelModal(null);
+      if (kondisiModal) return setKondisiModal(null);
+      if (editItem) {
+        setNamaTerbuka(false);
+        setTagTerbuka(false);
+        setEditId(null);
+        setEditItem(null);
+        setEditKomponen([]);
+        return;
+      }
+      if (showTambah) return setShowTambah(false);
+      if (showExport) return setShowExport(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dupModal, snDelModal, kondisiModal, editItem, showTambah, showExport]);
+
   function tutupEdit() {
     setNamaTerbuka(false);
     setTagTerbuka(false);
@@ -936,6 +963,8 @@ export default function InventarisPage() {
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
             onClick={() => setShowTambah(false)}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -1254,6 +1283,8 @@ export default function InventarisPage() {
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
             onClick={() => setShowExport(false)}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -1647,6 +1678,8 @@ export default function InventarisPage() {
               setDupModal(null);
             }}
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
           >
             <div onClick={(e) => e.stopPropagation()}>
               {dupModal.stage === "intro" ? (
@@ -1775,6 +1808,8 @@ export default function InventarisPage() {
           <div
             onClick={() => setSnDelModal(null)}
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -1860,6 +1895,8 @@ export default function InventarisPage() {
           <div
             onClick={() => setKondisiModal(null)}
             className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -2030,7 +2067,7 @@ export default function InventarisPage() {
       {typeof document !== "undefined" &&
         editItem &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
             <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-solid border-[var(--border-color)] bg-[var(--bg-surface)] shadow-2xl">
               <div className="flex items-center justify-between border-b border-[var(--border-color)] px-6 pb-4 pt-5">
                 <h3 className="text-lg font-semibold">Edit Produk</h3>

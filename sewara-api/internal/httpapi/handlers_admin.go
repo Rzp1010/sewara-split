@@ -47,8 +47,9 @@ func (s *Server) handleAdminLogsGet(w http.ResponseWriter, r *http.Request, u db
 
 type adminBody map[string]json.RawMessage
 
-func decodeAdmin(r *http.Request) (adminBody, error) {
+func decodeAdmin(w http.ResponseWriter, r *http.Request) (adminBody, error) {
 	var b adminBody
+	limitBody(w, r, bodySedang)
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	e := d.Decode(&b)
@@ -61,6 +62,7 @@ func bad(w http.ResponseWriter, msg string) {
 }
 func (s *Server) handleAdminUsersPost(w http.ResponseWriter, r *http.Request, u db.Identity) {
 	var raw map[string]json.RawMessage
+	limitBody(w, r, bodySedang)
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		bad(w, "Request body harus JSON yang valid.")
 		return
@@ -103,11 +105,6 @@ func (s *Server) handleAdminUsersPost(w http.ResponseWriter, r *http.Request, u 
 		writeError(w, 500, CodeInternalError, "Gagal membuat akun.")
 		return
 	}
-	id, e := s.db.CreateAuthUser(r.Context(), b.Email, hash)
-	if e != nil {
-		writeError(w, 500, CodeInternalError, "Gagal membuat akun.")
-		return
-	}
 	owner := (*string)(nil)
 	if u.Role == "owner" {
 		owner = &u.UserID
@@ -120,8 +117,11 @@ func (s *Server) handleAdminUsersPost(w http.ResponseWriter, r *http.Request, u 
 	if invoice == "" {
 		invoice = b.Name
 	}
-	if e = s.db.CreateAdminProfile(r.Context(), u.UserID, id, b.Email, b.Role, b.Name, username, invoice, owner); e != nil {
-		writeError(w, 500, CodeInternalError, "Akun dibuat, tapi profil gagal disimpan.")
+	// Akun auth + profil dibuat dalam SATU transaksi (CreateAdminAccount):
+	// kalau salah satu gagal, tidak ada akun auth yatim yang tak bisa login dan
+	// tak muncul di daftar user.
+	if _, e = s.db.CreateAdminAccount(r.Context(), b.Email, hash, b.Role, b.Name, username, invoice, owner); e != nil {
+		writeError(w, 500, CodeInternalError, "Gagal membuat akun.")
 		return
 	}
 	s.db.LogAdminAction(r.Context(), u.Email, "tambah_user", b.Email, "role="+b.Role)
@@ -129,7 +129,7 @@ func (s *Server) handleAdminUsersPost(w http.ResponseWriter, r *http.Request, u 
 }
 func mustRaw(m map[string]json.RawMessage) []byte { b, _ := json.Marshal(m); return b }
 func (s *Server) handleAdminUsersDelete(w http.ResponseWriter, r *http.Request, u db.Identity) {
-	b, e := decodeAdmin(r)
+	b, e := decodeAdmin(w, r)
 	if e != nil {
 		bad(w, "Input tidak valid.")
 		return
@@ -190,6 +190,7 @@ func (s *Server) handleAdminUsersDelete(w http.ResponseWriter, r *http.Request, 
 }
 func (s *Server) handleAdminUsersPatch(w http.ResponseWriter, r *http.Request, u db.Identity) {
 	var b map[string]json.RawMessage
+	limitBody(w, r, bodySedang)
 	if e := json.NewDecoder(r.Body).Decode(&b); e != nil {
 		bad(w, "Request body harus JSON yang valid.")
 		return

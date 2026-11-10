@@ -32,6 +32,13 @@ func run() error {
 	log := newLogger(cfg.IsProd())
 	slog.SetDefault(log)
 
+	// Endpoint purge bukti bayar fail-closed saat PURGE_SECRET kosong (401 di tiap
+	// panggilan). Di produksi itu kesalahan konfigurasi yang dulu senyap, jadi
+	// dibuat berisik saat start supaya cepat terlihat.
+	if cfg.IsProd() && cfg.PurgeSecret == "" {
+		log.Warn("PURGE_SECRET kosong di produksi: endpoint /api/pembayaran/purge tidak aktif (401)")
+	}
+
 	// Satu pool untuk seluruh proses. Gagal cepat kalau database tidak terjangkau.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

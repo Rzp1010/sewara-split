@@ -30,17 +30,8 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return (
     <html lang="id" className={jakarta.variable}>
-      <head>
-        {supabaseUrl && (
-          <>
-            <link rel="preconnect" href={supabaseUrl} />
-            <link rel="dns-prefetch" href={supabaseUrl} />
-          </>
-        )}
-      </head>
       <body>{children}</body>
     </html>
   );

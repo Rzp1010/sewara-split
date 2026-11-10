@@ -159,6 +159,14 @@ func New(cfg config.Config, log *slog.Logger, database *db.DB, store *storage.St
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	if err := s.db.Ping(r.Context()); err != nil {
+		s.log.Error("health: database tidak terjangkau", "err", err)
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"status": "degraded",
+			"env":    s.cfg.Env,
+		})
+		return
+	}
 	writeSuccess(w, http.StatusOK, map[string]string{
 		"status": "ok",
 		"env":    s.cfg.Env,

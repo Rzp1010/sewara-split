@@ -11,7 +11,7 @@
  * initSettings() menarik semua setting tenant ke localStorage saat mount.
  */
 
-import { api, apiRequest, API_BASE } from '@/lib/api-client';
+import { api, apiRequest, API_BASE, apiFetch } from '@/lib/api-client';
 import { samaOrangnya } from '@/lib/utils';
 
 // ============================================================================
@@ -460,9 +460,8 @@ export async function uploadBuktiBayar(file, transaksiId) {
     const fd = new FormData();
     fd.append('file', berkas);
     fd.append('transaksiId', String(transaksiId));
-    const res = await fetch(`${API_BASE}/api/pembayaran/upload`, {
+    const res = await apiFetch('/api/pembayaran/upload', {
       method: 'POST',
-      credentials: 'include',
       body: fd,
       signal: ctl.signal,
     });
@@ -541,9 +540,8 @@ export async function hapusInvoiceHeader(path) {
 /** Ekspor bukti bulan YYYY-MM. -> { ok, message } ; trigger download saat ok. */
 export async function eksporBuktiBayar(bulan) {
   try {
-    const res = await fetch(
-      `${API_BASE}/api/pembayaran/export?bulan=${encodeURIComponent(bulan)}`,
-      { credentials: 'include' },
+    const res = await apiFetch(
+      `/api/pembayaran/export?bulan=${encodeURIComponent(bulan)}`,
     );
     const ctype = res.headers.get('content-type') || '';
     if (!res.ok || ctype.includes('application/json')) {
@@ -629,7 +627,7 @@ export async function uploadDokumenMember({ memberId, file, label, index }) {
   form.append('memberId', String(memberId));
   form.append('label', label);
   form.append('index', String(index));
-  const response = await fetch(`${API_BASE}/api/member/upload`, { method: 'POST', body: form });
+  const response = await apiFetch('/api/member/upload', { method: 'POST', body: form });
   const result = await response.json();
   if (!result.ok) throw new Error(result.error || 'Gagal mengunggah dokumen.');
   kirimEventData();

@@ -40,6 +40,18 @@ export async function apiRequest(endpoint, options = {}) {
   return data.data;
 }
 
+/**
+ * Fetch mentah ke API — untuk aliran non-JSON (unduhan/unggah berkas) yang butuh
+ * Response utuh. Komponen dan pages wajib lewat sini, bukan memanggil fetch
+ * sendiri, supaya API_BASE dan cookie sesi selalu konsisten.
+ */
+export async function apiFetch(endpoint, options = {}) {
+  return fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    credentials: 'include',
+  });
+}
+
 /** Bangun query string, buang nilai kosong. */
 function qs(params = {}) {
   const clean = Object.entries(params).filter(
@@ -60,6 +72,11 @@ export const api = {
       }),
     logout: () => apiRequest('/api/auth/logout', { method: 'POST' }),
     me: () => apiRequest('/api/auth/me'),
+    resendVerification: (email) =>
+      apiRequest('/api/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
     register: (email, password, namaLengkap, namaBisnis) =>
       apiRequest('/api/auth/register', {
         method: 'POST',

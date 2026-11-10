@@ -26,12 +26,6 @@ func (d *DB) ListAdminLogs(ctx context.Context, userID string) ([]map[string]any
 	})
 	return out, err
 }
-func (d *DB) CreateAdminProfile(ctx context.Context, callerID, id, email, role, name, username, invoice string, ownerID *string) error {
-	return d.InTenant(ctx, callerID, func(q Querier) error {
-		_, e := q.Exec(ctx, `INSERT INTO profiles(user_id,email,role,nama_lengkap,username,nama_invoice,is_active,owner_id) VALUES($1::uuid,$2,$3,$4,$5,$6,true,$7::uuid) ON CONFLICT(email) DO UPDATE SET user_id=EXCLUDED.user_id,role=EXCLUDED.role,nama_lengkap=EXCLUDED.nama_lengkap,username=EXCLUDED.username,nama_invoice=EXCLUDED.nama_invoice,is_active=EXCLUDED.is_active,owner_id=EXCLUDED.owner_id`, id, email, role, name, username, invoice, ownerID)
-		return e
-	})
-}
 func (d *DB) AdminUpdate(ctx context.Context, userID, email, field string, value any) error {
 	allowed := map[string]bool{"role": true, "is_active": true, "status": true, "owner_id": true, "subscribed_until": true, "locked_until": true, "failed_login": true, "cooldown_until": true, "last_failed_at": true, "nama_lengkap": true, "username": true, "nama_invoice": true}
 	if !allowed[field] {

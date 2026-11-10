@@ -57,6 +57,7 @@ func (s *Server) handleChatPost(w http.ResponseWriter, r *http.Request, user db.
 		TrxID json.RawMessage `json:"trxId"`
 		Pesan string          `json:"pesan"`
 	}
+	limitBody(w, r, bodySedang)
 	if json.NewDecoder(r.Body).Decode(&b) != nil {
 		writeError(w, 400, CodeValidationError, "Body JSON tidak valid.")
 		return
@@ -107,6 +108,7 @@ func (s *Server) handleChatRead(w http.ResponseWriter, r *http.Request, user db.
 	var b struct {
 		TrxID json.RawMessage `json:"trxId"`
 	}
+	limitBody(w, r, bodyKecil)
 	if json.NewDecoder(r.Body).Decode(&b) != nil {
 		writeError(w, 400, CodeValidationError, "Body JSON tidak valid.")
 		return

@@ -1121,6 +1121,14 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
       resetFormBooking();
       onSukses?.(trxBaru);
       notify(`Booking berhasil! Invoice: ${trxBaru.no_invoice}`);
+    } catch (err) {
+      // Rejection API tidak boleh hilang diam-diam: sebelumnya hanya `finally`
+      // yang me-reset loading, tanpa pesan yang bisa dipulihkan pengguna.
+      console.error("[Booking] Simpan error:", err);
+      notify(
+        err?.message || "Gagal menyimpan booking. Silakan coba lagi.",
+        "error",
+      );
     } finally {
       setLoading("");
     }

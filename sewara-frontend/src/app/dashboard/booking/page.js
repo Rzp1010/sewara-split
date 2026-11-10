@@ -67,6 +67,7 @@ export default function BookingPage() {
   // jadi satu indikator loading menutup simpan + muat ulang data.
   const sedangSimpan = useRef(false);
   const [isIndexing, setIsIndexing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [refresh, setRefresh] = useState(0);
 
   const muat = useCallback(async () => {
@@ -74,6 +75,7 @@ export default function BookingPage() {
     // supaya tidak muncul "Memuat data..." kedua setelah "Menyimpan booking...".
     if (!sedangSimpan.current) setLoading("Memuat data...");
     setIsIndexing(true);
+    setLoadError(false);
     try {
       const [inventoryData, transactionData] = await Promise.all([
         getInventory(),
@@ -83,6 +85,7 @@ export default function BookingPage() {
       setTrx(transactionData || []);
     } catch (err) {
       console.error("[Booking] Load error:", err);
+      setLoadError(true);
       notify("Gagal memuat data booking", "error");
     } finally {
       setIsIndexing(false);
@@ -277,6 +280,18 @@ export default function BookingPage() {
 
   return (
     <div>
+      {loadError && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-solid border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>Gagal memuat data booking. Periksa koneksi lalu muat ulang.</span>
+          <button
+            type="button"
+            onClick={() => setRefresh((r) => r + 1)}
+            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+          >
+            Muat ulang
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div ref={refKolomKiri} className="lg:col-span-3">
           <FormBookingBaru

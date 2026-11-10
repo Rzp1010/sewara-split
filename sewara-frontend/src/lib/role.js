@@ -25,8 +25,6 @@ export const HAK_MENU = {
   "/dashboard/pengaturan": [ROLE_OWNER, ROLE_SUPERADMIN],
   "/dashboard/loginlog": [ROLE_SUPERADMIN, ROLE_OWNER],
   "/dashboard/manajemen": [ROLE_SUPERADMIN],
-  "/dashboard/progres": [ROLE_SUPERADMIN],
-  "/dashboard/todo": [ROLE_SUPERADMIN],
 };
 
 export function roleBolehAkses(role, href) {

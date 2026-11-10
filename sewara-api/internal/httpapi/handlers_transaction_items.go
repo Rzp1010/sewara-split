@@ -10,9 +10,10 @@ import (
 )
 
 // GET /api/transaction-items
-//   ?transaction_id=x     item satu transaksi
-//   ?transaction_ids=a,b  dikelompokkan per transaksi
-//   ?all=1                ringkasan semua item tenant (default)
+//
+//	?transaction_id=x     item satu transaksi
+//	?transaction_ids=a,b  dikelompokkan per transaksi
+//	?all=1                ringkasan semua item tenant (default)
 func (s *Server) handleTransactionItemsGet(w http.ResponseWriter, r *http.Request, user db.Identity) {
 	q := r.URL.Query()
 
@@ -52,11 +53,12 @@ func (s *Server) handleTransactionItemsGet(w http.ResponseWriter, r *http.Reques
 // Body: { transaction_id, items, user_id? } — user_id diabaikan.
 func (s *Server) handleTransactionItemsPost(w http.ResponseWriter, r *http.Request, user db.Identity) {
 	var body struct {
-		TransactionID int                      `json:"transaction_id"`
-		Items         []map[string]any         `json:"items"`
-		UserID        *string                  `json:"user_id"`
+		TransactionID int              `json:"transaction_id"`
+		Items         []map[string]any `json:"items"`
+		UserID        *string          `json:"user_id"`
 	}
 
+	limitBody(w, r, bodyBesar)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, CodeValidationError, "Body JSON tidak valid.")
 		return

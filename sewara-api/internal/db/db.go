@@ -61,6 +61,10 @@ func Open(ctx context.Context, url string) (*DB, error) {
 
 func (d *DB) Close() { d.pool.Close() }
 
+// Ping memeriksa konektivitas database. Dipakai health check supaya container
+// tidak dilaporkan sehat saat Postgres mati.
+func (d *DB) Ping(ctx context.Context) error { return d.pool.Ping(ctx) }
+
 // Querier sengaja dibatasi ke tiga operasi yang memang dipakai handler.
 // Transaksi dan kontrolnya tetap dipegang paket ini.
 type Querier interface {

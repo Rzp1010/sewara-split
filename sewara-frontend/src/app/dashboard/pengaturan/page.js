@@ -1500,11 +1500,7 @@ export default function PengaturanPage() {
                 Lingkungan
               </p>
               <p className="m-0 mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(
-                  "srgmeoipuybrkhsxmtsf",
-                )
-                  ? "Tester (Uji)"
-                  : "Pribadi (Produksi)"}
+                {process.env.NODE_ENV === "production" ? "Produksi" : "Pengembangan"}
               </p>
             </div>
             <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-subtle)] px-4 py-3">

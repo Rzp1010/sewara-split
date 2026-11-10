@@ -26,6 +26,7 @@ func (s *Server) handleLogsGet(w http.ResponseWriter, r *http.Request, user db.I
 // `id` kiriman klien diabaikan; user_id diisi tenant pemanggil.
 func (s *Server) handleLogsPost(w http.ResponseWriter, r *http.Request, user db.Identity) {
 	var raw json.RawMessage
+	limitBody(w, r, bodyBesar)
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		writeError(w, http.StatusBadRequest, CodeValidationError, "Body JSON tidak valid.")
 		return
@@ -52,6 +53,7 @@ func (s *Server) handleLogsDelete(w http.ResponseWriter, r *http.Request, user d
 		OlderThanDays int     `json:"olderThanDays"`
 	}
 	// Body kosong sah (artinya hapus semua), jadi kegagalan decode diabaikan.
+	limitBody(w, r, bodyKecil)
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
 	deleted, err := s.db.DeleteActivityLogs(r.Context(), user.UserID, body.IDs, body.OlderThanDays)
