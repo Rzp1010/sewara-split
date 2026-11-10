@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Rzp1010/sewara-split/sewara-api/internal/config"
+	"github.com/Rzp1010/sewara-split/sewara-api/internal/db"
 )
 
 const telegramMessageLimit = 4096
@@ -262,4 +263,63 @@ func (t *telegramSender) sendMessage(ctx context.Context, botToken, chatID strin
 		return fmt.Errorf("telegram HTTP %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// recordTransaksi menyusun record bergaya webhook untuk formatPesanTransaksi.
+// Trigger DB sudah dibuang (migrations/0003), jadi handler yang merakit record ini.
+func recordTransaksi(tx *db.Transaction) map[string]any {
+	if tx == nil {
+		return map[string]any{}
+	}
+	noInvoice := ""
+	if tx.NoInvoice != nil {
+		noInvoice = *tx.NoInvoice
+	}
+	return map[string]any{
+		"id":          tx.ID,
+		"user_id":     tx.UserID,
+		"no_invoice":  noInvoice,
+		"penyewa":     tx.Penyewa,
+		"status":      tx.Status,
+		"total_akhir": tx.TotalAkhir,
+		"created_at":  tx.CreatedAt.Format(time.RFC3339),
+		"updated_at":  tx.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+// recordPendaftar menyusun record untuk formatPesanRegistrasi. Yang dikirim hanya
+// akun owner berstatus menunggu — sama dengan syarat filter trigger lama.
+func recordPendaftar(nama, email string) map[string]any {
+	return map[string]any{
+		"nama_lengkap": nama,
+		"email":        email,
+		"role":         "owner",
+		"status":       "menunggu",
+		"created_at":   time.Now().Format(time.RFC3339),
+	}
+}
+
+// notifyTransaksiTelegram mengirim notifikasi transaksi ke topik transaksi.
+// Gagal kirim hanya dicatat; notifikasi tidak boleh menggagalkan penyimpanan.
+func (s *Server) notifyTransaksiTelegram(eventType string, tx *db.Transaction) {
+	if !telegramSiap(s.cfg) || tx == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.cfg.TelegramTimeout)
+	defer cancel()
+	if err := s.tg.sendMessage(ctx, s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadTransaksi, formatPesanTransaksi(eventType, recordTransaksi(tx)), telegramParseModeHTML); err != nil {
+		s.log.Error("gagal mengirim notifikasi transaksi telegram", "err", err, "event", eventType, "id", tx.ID)
+	}
+}
+
+// notifyPendaftaranTelegram mengirim notifikasi pendaftar baru ke topik daftar.
+func (s *Server) notifyPendaftaranTelegram(nama, email string) {
+	if !telegramSiap(s.cfg) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.cfg.TelegramTimeout)
+	defer cancel()
+	if err := s.tg.sendMessage(ctx, s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramThreadDaftar, formatPesanRegistrasi("INSERT", recordPendaftar(nama, email)), telegramParseModeHTML); err != nil {
+		s.log.Error("gagal mengirim notifikasi pendaftaran telegram", "err", err, "email", email)
+	}
 }

@@ -81,6 +81,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// tanpa efek samping (paritas Next: identities kosong â†’ sukses tanpa upsert).
 	if created {
 		s.db.LogAdminAction(r.Context(), email, "daftar", email, "menunggu persetujuan")
+		go s.notifyPendaftaranTelegram(namaLengkap, email)
 		if err := s.kirimVerifikasi(r, userID, email, ""); err != nil {
 			// Akun sudah terbuat; kegagalan kirim tidak membatalkan pendaftaran.
 			s.log.Error("register: kirim email verifikasi gagal", "err", err, "email", email)

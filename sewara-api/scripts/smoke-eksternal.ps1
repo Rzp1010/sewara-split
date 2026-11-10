@@ -247,6 +247,51 @@ try {
     $state.Status = 200
     Add 'webhook stub 500 ? 502 EXTERNAL_SERVICE_ERROR' ($r.Status -eq 502 -and (Code $r) -eq 'EXTERNAL_SERVICE_ERROR' -and (Msg $r) -eq 'Terjadi kesalahan. Coba lagi.') $r.Body
 
+    # ============ notifikasi transaksi & pendaftar dari handler (bukan trigger DB) ============
+    # Trigger net.http_post sudah dibuang (migrations/0003), jadi simpan transaksi &
+    # pendaftaran harus memicu stub sendiri.
+    $txNotif = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $txBody = @{
+        id = $txNotif; penyewa = 'Penyewa Notif'; status = 'Booking'
+        biaya = 50000; total_akhir = 50000; no_invoice = 'INV-SMOKE-NOTIF'; jaminan_sewa = @()
+    } | ConvertTo-Json -Compress
+    $before = Stub-Count
+    $r = Invoke-Api POST '/api/transactions' $a $txBody ''
+    Start-Sleep -Milliseconds 600
+    $req = $null
+    for ($i = $before; $i -lt $state.Requests.Count; $i++) {
+        $cand = $state.Requests[$i]
+        if ($cand.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($cand.Body | ConvertFrom-Json).text -match 'INV-SMOKE-NOTIF') { $req = $cand }
+    }
+    $sb = Stub-Body $req
+    Add 'simpan transaksi baru -> stub thread 6 INSERT' `
+        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $req.Path -eq "/bot$TG_TOKEN/sendMessage" -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 6 -and $sb.text -match 'TRANSAKSI' -and $sb.text -match 'INSERT' -and $sb.text -match 'INV-SMOKE-NOTIF') "HTTP=$($r.Status) thread=$($sb.message_thread_id)"
+
+    $before = Stub-Count
+    $r = Invoke-Api PATCH "/api/transactions/$txNotif" $a '{"status":"Belum Selesai"}' ''
+    Start-Sleep -Milliseconds 600
+    $req = $null
+    for ($i = $before; $i -lt $state.Requests.Count; $i++) {
+        $cand = $state.Requests[$i]
+        if ($cand.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($cand.Body | ConvertFrom-Json).text -match 'INV-SMOKE-NOTIF') { $req = $cand }
+    }
+    $sb = Stub-Body $req
+    Add 'ubah transaksi -> stub thread 6 UPDATE' `
+        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $sb.message_thread_id -eq 6 -and $sb.text -match 'UPDATE' -and $sb.text -match 'Belum Selesai') "HTTP=$($r.Status) thread=$($sb.message_thread_id)"
+
+    $before = Stub-Count
+    $daftarBody = '{"email":"smoke-eksternal-daftar@staging.local","password":"Rahasia123","nama_lengkap":"Pendaftar Notif"}'
+    $r = Invoke-Api POST '/api/auth/register' '' $daftarBody ''
+    Start-Sleep -Milliseconds 600
+    $req = $null
+    for ($i = $before; $i -lt $state.Requests.Count; $i++) {
+        $cand = $state.Requests[$i]
+        if ($cand.Path -eq "/bot$TG_TOKEN/sendMessage" -and ($cand.Body | ConvertFrom-Json).text -match 'PENDAFTAR BARU') { $req = $cand }
+    }
+    $sb = Stub-Body $req
+    Add 'daftar owner baru -> stub thread 25 pendaftar' `
+        ($r.Status -eq 200 -and $null -ne $req -and (Stub-Count) -eq ($before + 1) -and $sb.chat_id -eq $TG_CHAT -and $sb.message_thread_id -eq 25 -and $sb.text -match 'PENDAFTAR BARU' -and $sb.text -match 'smoke-eksternal-daftar@staging.local' -and $sb.text -match 'menunggu') "HTTP=$($r.Status) thread=$($sb.message_thread_id)"
+
     # ================= webhooks/payment =================
     $r = Invoke-Api POST '/api/webhooks/payment' '' '{}' ''
     $payOk = ($r.Status -eq 503 -and $r.Body.Trim() -eq '{"error":"payment_webhook_not_configured","message":"Payment webhook is not configured."}' -and $r.Body -notmatch '"ok"' -and $r.Body -notmatch '"code"')

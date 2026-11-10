@@ -297,6 +297,15 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	// Notifikasi Telegram: INSERT bila baris belum ada, selain itu UPDATE. Gagal
+	// membaca penentu tidak boleh menggagalkan simpan — anggap UPDATE.
+	eventType := "UPDATE"
+	if detail, err := s.db.GetTransactionDetail(r.Context(), me.UserID, tx.ID); err != nil {
+		s.log.Error("gagal membaca transaksi untuk menentukan notifikasi", "err", err, "id", tx.ID)
+	} else if detail == nil {
+		eventType = "INSERT"
+	}
+
 	result, err := s.db.SaveTransaction(r.Context(), me.UserID, tx, items, payments)
 	if err != nil {
 		// G2: referensi lintas tenant -> 403, pesan disamakan dengan rpc_save_transaction.
@@ -326,6 +335,7 @@ func (s *Server) handleTransactionsPost(w http.ResponseWriter, r *http.Request, 
 			s.log.Error("gagal upsert pelanggan dari transaksi", "err", err, "id", tx.ID)
 		}
 	}
+	go s.notifyTransaksiTelegram(eventType, result)
 	writeSuccess(w, http.StatusOK, map[string]any{"transaction": result})
 }
 
@@ -423,5 +433,6 @@ func (s *Server) handleTransactionsDetailPatch(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	go s.notifyTransaksiTelegram("UPDATE", result)
 	writeSuccess(w, http.StatusOK, map[string]any{"transaction": result})
 }
