@@ -33,6 +33,7 @@ import dynamic from "next/dynamic";
 import ModalEditTransaksi from "@/components/booking/ModalEditTransaksi";
 import FormBookingBaru from "@/components/booking/FormBookingBaru";
 import { Modal } from "@/components/ui/Modal";
+import ModalPerpanjang from "@/components/ModalPerpanjang";
 import PencarianAdaptif from "@/components/ui/PencarianAdaptif";
 
 const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
@@ -269,6 +270,7 @@ export default function StatusPage() {
     useTransactionsAktif();
   const [dragId, setDragId] = useState(null);
   const [detailTrx, setDetailTrx] = useState(null);
+  const [modalPerpanjang, setModalPerpanjang] = useState(null);
   const [editTrx, setEditTrx] = useState(null);
   const [cetakData, setCetakData] = useState(null);
   const [bayarTrx, setBayarTrx] = useState(null);
@@ -1102,44 +1104,44 @@ export default function StatusPage() {
         "error",
       );
     const durasiLama = trx.durasi_teks;
-    const pilih = await confirmChoice(
-      `Perpanjang sewa ${trx.penyewa} (${trx.no_invoice})?`,
-      muat.map((u, i) => {
-        const bentrok = bentrokUntuk(u.kembali);
-        const tetap = u.biaya === (trx.biaya || 0);
-        return {
-          label: `${durasiLama} → ${u.dur.durasi_teks} (${formatRupiah(u.biaya)}${tetap ? ", harga tetap" : ""})${bentrok ? ` — BENTROK ${bentrok}` : ""}`,
-          value: `tier${i}`,
-        };
-      }),
-    );
-    if (pilih === null) return;
-    const dipilih = muat[Number(String(pilih).slice(4))];
-    if (!dipilih) return;
-    trx.items = dipilih.items;
-    trx.biaya = dipilih.biaya;
-    trx.durasi_teks = dipilih.dur.durasi_teks;
-    trx.waktu_kembali_rencana = dipilih.kembali;
-    if (trx.total_akhir != null)
-      trx.total_akhir = (trx.biaya || 0) + (trx.denda || 0);
-    const namaPelayan = (await getNamaInvoice()) || "-";
-    const bentrok = bentrokUntuk(dipilih.kembali);
-    trx.riwayatDilayani = [
-      ...(trx.riwayatDilayani || []),
-      {
-        aksi: "perpanjang",
-        nama: namaPelayan,
-        tgl: new Date().toISOString(),
-        catatan: `${durasiLama} -> ${dipilih.dur.durasi_teks}, biaya ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN: jadwal bentrok ${bentrok}` : ""}`,
+    const opsi = muat.map((u) => ({ ...u, bentrok: bentrokUntuk(u.kembali) }));
+    setModalPerpanjang({
+      opsi,
+      durasiLama,
+      kembaliLama: trx.waktu_kembali_rencana,
+      menitTelat: Math.max(0, Math.floor((Date.now() - new Date(trx.waktu_kembali_rencana).getTime()) / 60000)),
+      biayaLama: trx.biaya || 0,
+      jamLama: jamTersimpan,
+      penyewa: trx.penyewa,
+      invoice: trx.no_invoice,
+      terapkan: async (dipilih) => {
+        trx.items = dipilih.items;
+        trx.biaya = dipilih.biaya;
+        trx.durasi_teks = dipilih.dur.durasi_teks;
+        trx.waktu_kembali_rencana = dipilih.kembali;
+        if (trx.total_akhir != null)
+          trx.total_akhir = (trx.biaya || 0) + (trx.denda || 0);
+        const namaPelayan = (await getNamaInvoice()) || "-";
+        const bentrok = dipilih.bentrok;
+        trx.riwayatDilayani = [
+          ...(trx.riwayatDilayani || []),
+          {
+            aksi: "perpanjang",
+            nama: namaPelayan,
+            tgl: new Date().toISOString(),
+            catatan: `${durasiLama} -> ${dipilih.dur.durasi_teks}, biaya ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN: jadwal bentrok ${bentrok}` : ""}`,
+          },
+        ];
+        trx.dilayani_oleh = namaPelayan;
+        if (!(await updateTransactions([trx])))
+          return notify("Gagal menyimpan perpanjangan. Silakan coba lagi.", "error");
+        setModalPerpanjang(null);
+        setRefresh((r) => r + 1);
+        notify(
+          `Sewa diperpanjang sampai ${formatTanggal(trx.waktu_kembali_rencana)}.\n${dipilih.dur.durasi_teks} — ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN bentrok: ${bentrok}` : ""}`,
+        );
       },
-    ];
-    trx.dilayani_oleh = namaPelayan;
-    if (!(await updateTransactions([trx])))
-      return notify("Gagal menyimpan perpanjangan. Silakan coba lagi.", "error");
-    setRefresh((r) => r + 1);
-    notify(
-      `Sewa diperpanjang sampai ${formatTanggal(trx.waktu_kembali_rencana)}.\n${dipilih.dur.durasi_teks} — ${formatRupiah(dipilih.biaya)}${bentrok ? `\nPERINGATAN bentrok: ${bentrok}` : ""}`,
-    );
+    });
   }
 
   async function prosesKembali(trxId) {
@@ -1645,6 +1647,7 @@ export default function StatusPage() {
   return (
     <>
       <div className="min-h-full bg-[var(--bg-body)]">
+        {modalPerpanjang && <ModalPerpanjang data={modalPerpanjang} onClose={() => setModalPerpanjang(null)} onConfirm={(opsi) => modalPerpanjang.terapkan(opsi)} />}
         <Modal isOpen={bookingBaruOpen} onClose={() => setBookingBaruOpen(false)} title="Booking baru" size="3xl" closeOnOverlay={false}>
           <FormBookingBaru mode="modal" daftarAktif={trx} notify={notify} confirmChoice={confirmChoice} onSukses={() => { setBookingBaruOpen(false); setRefresh((r) => r + 1); }} onTutup={() => setBookingBaruOpen(false)} />
         </Modal>
