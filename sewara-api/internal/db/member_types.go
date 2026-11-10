@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -64,22 +65,47 @@ func (d *DB) InsertMemberType(ctx context.Context, userID string, mt MemberType)
 	return result, nil
 }
 
+// ErrKolomMemberTypeAsing dikembalikan UpdateMemberType saat body memuat kunci
+// yang bukan kolom yang boleh diubah (mis. percobaan SQL injection lewat nama
+// kunci JSON).
+type ErrKolomMemberTypeAsing struct{ Kolom string }
+
+func (e ErrKolomMemberTypeAsing) Error() string {
+	return "kolom member_type tidak dikenal: " + e.Kolom
+}
+
+// kolomMemberTypeBolehDiubah adalah daftar putih kolom yang boleh muncul di SET.
+var kolomMemberTypeBolehDiubah = map[string]bool{
+	"nama":                 true,
+	"diskon_persen":        true,
+	"status":               true,
+	"diskon_durasi_aturan": true,
+}
+
+// susunSetMemberType menyusun klausa SET + argumen. Kunci JSON wajib lolos daftar
+// putih: kunci mentah tidak pernah disambung ke SQL.
+func susunSetMemberType(id string, fields map[string]any) (string, []any, error) {
+	bagian := make([]string, 0, len(fields))
+	args := []any{id}
+	for k, v := range fields {
+		if !kolomMemberTypeBolehDiubah[k] {
+			return "", nil, ErrKolomMemberTypeAsing{Kolom: k}
+		}
+		args = append(args, v)
+		bagian = append(bagian, fmt.Sprintf("%s = $%d", k, len(args)))
+	}
+	return strings.Join(bagian, ", "), args, nil
+}
+
 // UpdateMemberType mengubah tipe member. Return nil jika tidak ditemukan atau bukan milik tenant.
 func (d *DB) UpdateMemberType(ctx context.Context, userID, id string, fields map[string]any) (*MemberType, error) {
-	var result MemberType
-	err := d.InTenant(ctx, userID, func(q Querier) error {
-		setClauses := ""
-		args := []any{id}
-		i := 2
-		for k, v := range fields {
-			if setClauses != "" {
-				setClauses += ", "
-			}
-			setClauses += fmt.Sprintf("%s = $%d", k, i)
-			args = append(args, v)
-			i++
-		}
+	setClauses, args, err := susunSetMemberType(id, fields)
+	if err != nil {
+		return nil, err
+	}
 
+	var result MemberType
+	err = d.InTenant(ctx, userID, func(q Querier) error {
 		query := fmt.Sprintf(`
 			UPDATE member_types
 			SET %s

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -93,6 +94,11 @@ func (s *Server) handleMemberTypesPatch(w http.ResponseWriter, r *http.Request, 
 
 	result, err := s.db.UpdateMemberType(r.Context(), me.UserID, id, body)
 	if err != nil {
+		var kolomAsing db.ErrKolomMemberTypeAsing
+		if errors.As(err, &kolomAsing) {
+			writeValidationError(w, "Kolom '"+kolomAsing.Kolom+"' tidak dikenal.", nil)
+			return
+		}
 		s.log.Error("gagal update member_type", "err", err, "id", id)
 		writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
 		return

@@ -111,6 +111,10 @@ ON CONFLICT (id) DO UPDATE SET encrypted_password='$hash', email_confirmed_at=no
     $diskonOK = $updated.diskon_persen -eq 12
     Add-Hasil 'PATCH -> field berubah' ([int]($namaOK -and $diskonOK)) 1 "nama=$namaOK diskon=$diskonOK"
 
+    # PATCH kunci bukan kolom (percobaan SQL injection) -> 400
+    $r = Invoke-Api 'PATCH' '/api/member-types/1' $cookieA '{"nama = (SELECT count(*)::text FROM profiles)": 1}'
+    Add-Hasil 'PATCH kolom asing (injeksi SQL) -> 400' $r.Status 400 ''
+
     # PATCH user_id diabaikan (tetap tenant A)
     $r = Invoke-Api 'PATCH' '/api/member-types/1' $cookieA '{"user_id":"b0000000-0000-0000-0000-000000000001","nama":"Hack"}'
     $patched = ($r.Body | ConvertFrom-Json).data.memberType
