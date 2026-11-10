@@ -46,7 +46,7 @@ import { filterTime, lewatJamTutup } from "@/lib/booking/jam";
 import { useNotify } from "@/components/NotificationProvider";
 import SearchableSelect from "@/components/SearchableSelect";
 import DateTimePicker from "@/components/DateTimePicker";
-import ModalKunciSN from "@/components/booking/ModalKunciSN";
+import PilihSN from "@/components/PilihSN";
 import PanelAksesoris from "@/components/booking/PanelAksesoris";
 
 export default function ModalEditTransaksi({
@@ -98,8 +98,7 @@ export default function ModalEditTransaksi({
   const [editPrintilanCustom, setEditPrintilanCustom] = useState(
     () => trx.printilan?.custom || "",
   );
-  const [editSnModalItem, setEditSnModalItem] = useState(null);
-  const [editSnModalTerpilih, setEditSnModalTerpilih] = useState([]);
+  const [editSnModal, setEditSnModal] = useState(null);
   const [editSnOptions, setEditSnOptions] = useState([]);
   const [editSnDipilih, setEditSnDipilih] = useState("");
   const [showEditSn, setShowEditSn] = useState(false);
@@ -294,21 +293,37 @@ export default function ModalEditTransaksi({
     setEditItems(items);
   }
 
-  function kunciSNEdit(idx) {
-    const item = editItems[idx];
-    if (item?.ref.jenis !== "satuan") return;
-    setEditSnModalTerpilih((item.sn || "").split(", ").filter(Boolean));
-    setEditSnModalItem(idx);
+  // Satu modal untuk semua baris satuan (selaras modal booking/status sewa).
+  function kunciSNEdit() {
+    const mulaiISO = editForm.waktu_ambil_rencana
+      ? new Date(editForm.waktu_ambil_rencana).toISOString()
+      : "";
+    const selesaiISO = editForm.waktu_kembali_rencana
+      ? new Date(editForm.waktu_kembali_rencana).toISOString()
+      : "";
+    const entries = editItems
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => item?.ref?.jenis === "satuan")
+      .map(({ item, idx }) => ({
+        key: String(idx),
+        nama: item.ref?.nama ?? "(barang tidak ditemukan)",
+        butuh: item.qty || 1,
+        bebas: snsBebasCepat(item.idBarang, mulaiISO, selesaiISO, trx.id),
+        pilihan: (item.sn || "").split(", ").filter(Boolean),
+      }));
+    if (entries.length === 0) return;
+    setEditSnModal(entries);
   }
 
-  function simpanKunciSNEdit() {
+  function simpanKunciSNEdit(entries) {
     const items = [...editItems];
-    const item = items[editSnModalItem];
-    if (!item || editSnModalTerpilih.length !== item.qty)
-      return notify("Pilih S/N sebanyak jumlah unit.", "error");
-    items[editSnModalItem] = { ...item, sn: editSnModalTerpilih.join(", ") };
+    for (const e of entries) {
+      const item = items[Number(e.key)];
+      if (!item) continue;
+      items[Number(e.key)] = { ...item, sn: (e.pilihan || []).join(", ") };
+    }
     setEditItems(items);
-    setEditSnModalItem(null);
+    setEditSnModal(null);
   }
 
   function isiSnEdit(v) {
@@ -563,22 +578,12 @@ export default function ModalEditTransaksi({
 
   return (
     <>
-      {editSnModalItem !== null && (
-        <ModalKunciSN
-          daftarSN={snsBebasCepat(
-            editItems[editSnModalItem]?.idBarang,
-            editForm.waktu_ambil_rencana?.toISOString() || "",
-            editForm.waktu_kembali_rencana?.toISOString() || "",
-            trx?.id,
-          )}
-          terpilih={editSnModalTerpilih}
-          butuh={editItems[editSnModalItem]?.qty || 0}
-          onToggle={(sn, checked) =>
-            setEditSnModalTerpilih((lama) =>
-              checked ? [...lama, sn] : lama.filter((x) => x !== sn),
-            )
-          }
-          onBatal={() => setEditSnModalItem(null)}
+      {editSnModal && (
+        <PilihSN
+          subjudul="Pilih unit yang akan dimasukkan ke transaksi."
+          labelUtama="Simpan"
+          entries={editSnModal}
+          onBatal={() => setEditSnModal(null)}
           onSimpan={simpanKunciSNEdit}
         />
       )}
@@ -781,7 +786,7 @@ export default function ModalEditTransaksi({
                           {item.ref.jenis === "satuan" ? (
                             <button
                               type="button"
-                              onClick={() => kunciSNEdit(idx)}
+                              onClick={() => kunciSNEdit()}
                               className="inline-block max-w-full truncate align-bottom text-xs text-[#7181E0] underline decoration-dotted"
                               style={{ fontFamily: "ui-monospace, monospace" }}
                               title="Klik untuk memilih S/N"

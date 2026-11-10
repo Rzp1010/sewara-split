@@ -35,6 +35,7 @@ import FormBookingBaru from "@/components/booking/FormBookingBaru";
 import { Modal } from "@/components/ui/Modal";
 import ModalPerpanjang from "@/components/ModalPerpanjang";
 import PencarianAdaptif from "@/components/ui/PencarianAdaptif";
+import PilihSN from "@/components/PilihSN";
 
 const InvoiceView = dynamic(() => import("@/components/InvoiceView"), {
   ssr: false,
@@ -2385,78 +2386,21 @@ export default function StatusPage() {
           document.body,
         )}
 
-      {typeof document !== "undefined" &&
-        snModal &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-            <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-[var(--bg-surface)] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[var(--border-color)] p-6">
-                <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Pilih S/N Unit</h2>
-                  <p className="mt-1 text-sm text-[var(--text-secondary)]">Pilih unit yang diserahkan.</p>
-                </div>
-              </div>
-              <div className="max-h-[60vh] flex-1 space-y-4 overflow-y-auto p-6">
-                {snModal.entries.map((e) => (
-                  <section key={e.key} className="rounded-lg border border-[var(--border-color)] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold">{e.nama}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">butuh {e.butuh} unit</p>
-                        {e.pilihan.length > 0 && <p className="mt-1 text-xs">Terpasang: {e.pilihan.join(", ")}</p>}
-                      </div>
-                      {e.pilihan.length > 0 && <button type="button" onClick={() => setSnModal({ ...snModal, entries: snModal.entries.map((x) => x.key === e.key ? { ...x, pilihan: [] } : x), buka: e.key })} className={BTN_SECONDARY}>Ganti</button>}
-                    </div>
-                    {(!e.pilihan.length || snModal.buka === e.key) && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {e.bebas.map((sn) => {
-                          const dipilih = e.pilihan.includes(sn);
-                          const dipakaiLain = snModal.entries.some((x) => x.key !== e.key && x.pilihan.includes(sn));
-                          return (
-                            <button
-                              key={sn}
-                              type="button"
-                              disabled={dipakaiLain}
-                              onClick={() =>
-                                setSnModal((m) => ({
-                                  ...m,
-                                  entries: m.entries.map((x) => {
-                                    if (x.key === e.key) {
-                                      return {
-                                        ...x,
-                                        pilihan: dipilih
-                                          ? x.pilihan.filter((v) => v !== sn)
-                                          : x.pilihan.length < x.butuh
-                                            ? [...x.pilihan, sn]
-                                            : x.pilihan,
-                                      };
-                                    }
-                                    // S/N yang sudah dipakai entri lain dilepas dari entri ini.
-                                    return dipilih
-                                      ? x
-                                      : { ...x, pilihan: x.pilihan.filter((v) => v !== sn) };
-                                  }),
-                                }))
-                              }
-                              className={`rounded border px-3 py-2 text-sm ${dipilih ? "border-[#579171] bg-[#579171] text-white" : "border-[var(--border-color)]"} ${dipakaiLain ? "cursor-not-allowed opacity-40" : ""}`}
-                            >
-                              {sn}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </section>
-                ))}
-              </div>
-              <div className="flex gap-3 border-t border-[var(--border-color)] bg-[var(--bg-subtle)] px-6 py-4">
-                <button type="button" onClick={() => { snModal.resolve(null); setSnModal(null); }} className="flex-1 rounded-lg border border-[var(--border-color)] px-4 py-2 text-sm font-semibold">Batal</button>
-                <button type="button" disabled={snModal.entries.some((e) => e.pilihan.length !== e.butuh)} onClick={() => { snModal.resolve(snModal.entries); setSnModal(null); }} className="flex-1 rounded-lg border-0 bg-[#579171] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Simpan</button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {snModal && (
+        <PilihSN
+          subjudul="Pilih unit yang diserahkan ke penyewa."
+          labelUtama="Serahkan"
+          entries={snModal.entries}
+          onBatal={() => {
+            snModal.resolve(null);
+            setSnModal(null);
+          }}
+          onSimpan={(entries) => {
+            snModal.resolve(entries);
+            setSnModal(null);
+          }}
+        />
+      )}
 
       {typeof document !== "undefined" &&
         kondisiModal &&

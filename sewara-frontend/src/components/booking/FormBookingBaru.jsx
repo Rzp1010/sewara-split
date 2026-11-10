@@ -20,7 +20,7 @@ import BuktiDropzone from "@/components/BuktiDropzone";
 import SearchableSelect from "@/components/SearchableSelect";
 import DateTimePicker from "@/components/DateTimePicker";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import ModalKunciSN from "@/components/booking/ModalKunciSN";
+import PilihSN from "@/components/PilihSN";
 import PanelJaminan from "@/components/booking/PanelJaminan";
 import PanelAksesoris from "@/components/booking/PanelAksesoris";
 import InputHP from "@/components/ui/InputHP";
@@ -69,8 +69,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   const [daftarJaminan, setDaftarJaminan] = useState(DEFAULT_JAMINAN);
   const [snOptions, setSnOptions] = useState([]);
   const [snDipilih, setSnDipilih] = useState("");
-  const [snModalItem, setSnModalItem] = useState(null);
-  const [snModalTerpilih, setSnModalTerpilih] = useState([]);
+  const [snKeranjang, setSnKeranjang] = useState(null);
   const cartRef = useRef(cart);
   const hitungTotalRef = useRef(null);
   const prefillTerpakai = useRef(false);
@@ -611,21 +610,32 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     hitungTotal(c);
   }
 
-  function kunciSNKeranjang(idx) {
-    const item = cartRef.current[idx];
-    if (!item || item.ref.jenis !== "satuan") return;
-    setSnModalTerpilih((item.sn || "").split(", ").filter(Boolean));
-    setSnModalItem(idx);
+  // Satu modal untuk seluruh keranjang: barang satuan yang belum dikunci S/N
+  // ikut tampil sekaligus, bukan satu baris per modal.
+  function kunciSNKeranjang() {
+    const entries = cartRef.current
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => item.ref?.jenis === "satuan")
+      .map(({ item, idx }) => ({
+        key: String(idx),
+        nama: item.ref?.nama ?? "(barang tidak ditemukan)",
+        butuh: item.qty || 1,
+        bebas: snsBebasCepat(item.idBarang, mulaiISO, selesaiISO),
+        pilihan: (item.sn || "").split(", ").filter(Boolean),
+      }));
+    if (entries.length === 0) return;
+    setSnKeranjang(entries);
   }
 
-  function simpanKunciSNKeranjang() {
+  function simpanKunciSNKeranjang(entries) {
     const c = [...cartRef.current];
-    const item = c[snModalItem];
-    if (!item || snModalTerpilih.length !== item.qty)
-      return notify("Pilih S/N sebanyak jumlah unit.", "error");
-    item.sn = snModalTerpilih.join(", ");
+    for (const e of entries) {
+      const item = c[Number(e.key)];
+      if (!item) continue;
+      item.sn = (e.pilihan || []).join(", ");
+    }
     hitungTotal(c);
-    setSnModalItem(null);
+    setSnKeranjang(null);
   }
 
   function revalidasiKeranjang(mulaiISO, selesaiISO) {
@@ -1468,7 +1478,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                           <>
                             <button
                               type="button"
-                              onClick={() => kunciSNKeranjang(idx)}
+                              onClick={() => kunciSNKeranjang()}
                               className="inline-block max-w-full truncate align-bottom text-xs text-[#7181E0] underline decoration-dotted"
                               title="Klik untuk memilih S/N"
                             >
@@ -1820,17 +1830,12 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
 
 </div>
 
-            {snModalItem !== null && (
-        <ModalKunciSN
-          daftarSN={snsBebasCepat(cart[snModalItem]?.idBarang, mulaiISO, selesaiISO)}
-          terpilih={snModalTerpilih}
-          butuh={cart[snModalItem]?.qty || 0}
-          onToggle={(sn, checked) =>
-            setSnModalTerpilih((lama) =>
-              checked ? [...lama, sn] : lama.filter((x) => x !== sn),
-            )
-          }
-          onBatal={() => setSnModalItem(null)}
+            {snKeranjang && (
+        <PilihSN
+          subjudul="Pilih unit yang akan dimasukkan ke keranjang."
+          labelUtama="Masukkan"
+          entries={snKeranjang}
+          onBatal={() => setSnKeranjang(null)}
           onSimpan={simpanKunciSNKeranjang}
         />
       )}
