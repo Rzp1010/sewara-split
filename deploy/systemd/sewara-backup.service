@@ -25,7 +25,7 @@ ExecStart=/usr/bin/docker run --rm --user root \
 # `r2backup` bebas. RCLONE_REMOTE = <remote>:<bucket>/<prefix>.
 # Gagal upload / hash tidak sama -> unit FAILED (kelihatan di systemctl status).
 ExecStartPost=/usr/bin/docker run --rm --user root --memory 192m --entrypoint sh \
-  -e RCLONE_REMOTE=r2backup:sewara-backup/db \
+  -e RCLONE_REMOTE=r2backup:sewara-db-backup-production/db \
   -e BACKUP_DIR=/backup \
   -e RCLONE_CONFIG=/etc/rclone/rclone.conf \
   -e RETENSI_HARI=28 \

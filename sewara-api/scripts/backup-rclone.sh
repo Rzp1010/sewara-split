@@ -18,7 +18,7 @@
 set -eu
 
 : "${BACKUP_DIR:=/backup}"
-: "${RCLONE_REMOTE:?RCLONE_REMOTE wajib diisi, mis. r2backup:sewara-backup/db}"
+: "${RCLONE_REMOTE:?RCLONE_REMOTE wajib diisi, mis. r2backup:sewara-db-backup-production/db}"
 : "${RCLONE_CONFIG:=/etc/rclone/rclone.conf}"
 : "${RETENSI_HARI:=28}"
 : "${POLA:=*.dump}"

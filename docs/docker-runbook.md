@@ -497,7 +497,8 @@ acl = private
 ```
 
 - Buat token R2 khusus bucket backup (idealnya hanya bucket itu) — bukan token
-  akun. Bucket dump terpisah, mis. `sewara-backup`, prefix `db`. Token cukup
+  akun. Bucket dump terpisah, mis. `sewara-db-backup-production` (uji:
+  `sewara-db-backup-test`), prefix `db`. Token cukup
   **Object Read & Write pada bucket itu**; izin tingkat bucket tidak diperlukan
   (dan kalau tidak ada, skrip tetap jalan asalkan `--s3-no-check-bucket` dipakai
   dan `rclone mkdir` tidak dipanggil — lihat §Hasil uji).
@@ -520,8 +521,8 @@ beserta daftar isi tujuan. Upload gagal atau hash beda → unit FAILED.
 ### Unduh balik (drill restore dari tujuan)
 
 ```bash
-rclone --config /etc/sewara/rclone.conf copy r2backup:sewara-backup/db/<berkas>.dump /srv/sewara/restore/
-rclone --config /etc/sewara/rclone.conf check /srv/sewara/restore r2backup:sewara-backup/db
+rclone --config /etc/sewara/rclone.conf copy r2backup:sewara-db-backup-production/db/<berkas>.dump /srv/sewara/restore/
+rclone --config /etc/sewara/rclone.conf check /srv/sewara/restore r2backup:sewara-db-backup-production/db
 ```
 
 Restore ke DB scratch dulu (prosedur di `runbook-migrasi-mesin.md`), jangan
