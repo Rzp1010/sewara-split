@@ -28,7 +28,7 @@ set -eu
 # rclone mencoba CreateBucket lalu gagal total. Ditemukan saat uji 2026-10-30.
 S3="--s3-no-check-bucket"
 
-echo "[rclone] sumber=$BACKUP_DIR tujuan=$RCLONE_REMOTE retensi=${RETENSI_HARI}h"
+echo "[rclone] sumber=$BACKUP_DIR tujuan=$RCLONE_REMOTE retensi=${RETENSI_HARI}d"
 
 # Sengaja TIDAK ada `rclone mkdir`: pada S3/R2 ia memicu CreateBucket, dan token
 # yang dibatasi hanya ke satu bucket ditolak 403 -> upload gagal seluruhnya.
@@ -42,8 +42,12 @@ rclone --config "$RCLONE_CONFIG" copy "$BACKUP_DIR" "$RCLONE_REMOTE" \
 # Bukti terkirim: bandingkan hash kedua sisi (isi, bukan cuma keberadaan berkas).
 # Beda -> exit != 0 -> unit FAILED, jadi kegagalan upload terlihat di
 # `systemctl status`, bukan hilang diam-diam.
+# --one-way (ditemukan 2026-11-11 di homelab): hanya berkas LOKAL yang wajib ada
+# dan identik di tujuan. Tanpa ini, objek milik mesin lain / dump yang sudah
+# dirotasi lokal membuat `check` melaporkan "file not in Local file system"
+# -> unit FAILED padahal upload sukses.
 rclone --config "$RCLONE_CONFIG" check "$BACKUP_DIR" "$RCLONE_REMOTE" \
-  --include "$POLA" --include "$POLA.sha256" $S3
+  --include "$POLA" --include "$POLA.sha256" $S3 --one-way
 
 # Rotasi sisi tujuan (sisi sumber sudah dirotasi backup.sh).
 rclone --config "$RCLONE_CONFIG" delete "$RCLONE_REMOTE" \
