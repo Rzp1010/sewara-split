@@ -7,6 +7,9 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/srv/sewara/app/sewara-api
+# Tujuan backup. Mesin yang memakai bucket lain (mis. homelab uji) cukup
+# menimpanya lewat drop-in: [Service] Environment=RCLONE_REMOTE=...
+Environment=RCLONE_REMOTE=r2backup:sewara-db-backup-production/db
 # --user root: berkas password mode 600 hanya bisa dibaca root.
 # Network `sewara_internal` = nama project (name: sewara) + network internal.
 # Skrip keluar exit 1 kalau dump tidak lolos verifikasi -> unit ini FAILED,
@@ -25,7 +28,7 @@ ExecStart=/usr/bin/docker run --rm --user root \
 # `r2backup` bebas. RCLONE_REMOTE = <remote>:<bucket>/<prefix>.
 # Gagal upload / hash tidak sama -> unit FAILED (kelihatan di systemctl status).
 ExecStartPost=/usr/bin/docker run --rm --user root --memory 192m --entrypoint sh \
-  -e RCLONE_REMOTE=r2backup:sewara-db-backup-production/db \
+  -e RCLONE_REMOTE=${RCLONE_REMOTE} \
   -e BACKUP_DIR=/backup \
   -e RCLONE_CONFIG=/etc/rclone/rclone.conf \
   -e RETENSI_HARI=28 \

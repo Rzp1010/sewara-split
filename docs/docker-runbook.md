@@ -503,6 +503,9 @@ acl = private
   (dan kalau tidak ada, skrip tetap jalan asalkan `--s3-no-check-bucket` dipakai
   dan `rclone mkdir` tidak dipanggil — lihat §Hasil uji).
 - Nama remote (`r2backup`) bebas; samakan dengan `RCLONE_REMOTE` di unit.
+- `RCLONE_REMOTE` unit punya default produksi; mesin lain (homelab uji)
+  menimpanya lewat drop-in: `systemctl edit sewara-backup.service` →
+  `[Service]` + `Environment=RCLONE_REMOTE=r2backup:sewara-db-backup-test/db`.
 - Supaya backup tahan hapus: aktifkan Object Lock/retention **di dashboard
   Cloudflare** (token objek tidak bisa mengaturnya) — `--min-age` hanya rotasi
   normal, bukan proteksi dari penghapusan.
