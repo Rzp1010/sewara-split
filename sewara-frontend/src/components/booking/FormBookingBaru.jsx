@@ -1172,12 +1172,12 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
 
   return (
     <div className={mode === "modal" ? "p-4" : ""}>
-      {mode === "page" && <h2 className="text-2xl font-bold mb-6">Buat Booking Baru</h2>}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-5">
-          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-6">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
-              Identitas Penyewa
+      {mode === "page" && <h2 className="mb-5 text-xl font-bold tracking-tight text-[var(--text-primary)]">Buat booking</h2>}
+      <div className="mx-auto max-w-3xl">
+        <div className="flex flex-col gap-4">
+          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              Penyewa
             </h3>
             {blacklistHit && (
               <div className="mb-4 flex items-start gap-2 rounded-lg border border-solid border-[var(--color-danger-text,#dc2626)] bg-[var(--color-danger-soft,#fef2f2)] px-4 py-3 text-sm text-[var(--color-danger-text,#dc2626)]">
@@ -1313,13 +1313,14 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 <InputHP name="hp_penyewa" ariaLabel="No. HP penyewa" value={hp_penyewa} onChange={setHpPenyewa} />
               </div>
             </div>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Detail booking</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <PanelJaminan
                 daftar={daftarJaminan}
                 terpilih={jaminanTerpilih}
                 onToggle={(o) => setJaminanTerpilih((p) => toggleJaminan(p, o))}
               />
-              <div>
+              <div className="md:col-span-2">
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Alamat
                 </label>
@@ -1437,9 +1438,9 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 </span>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-6 mt-4">
+          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
               Barang
             </h3>
@@ -1460,23 +1461,23 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               </div>
               <button
                 type="button"
-                onClick={tambahKeKeranjang}
-                className="flex min-h-12 items-center justify-center whitespace-nowrap rounded-md border border-transparent bg-[#579171] px-4 py-2.5 text-base font-medium leading-[1.6] text-white transition-colors hover:bg-[#447057]"
-              >
-                Masukkan
-              </button>
-              <button
-                type="button"
                 onClick={() => setCustomItemOpen(true)}
-                className="flex h-12 w-12 items-center justify-center border-0 bg-transparent text-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="flex h-12 w-12 items-center justify-center rounded-md border border-[var(--border-color)] bg-transparent text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                 aria-label="Tambah item custom"
                 title="Tambah item custom"
               >
                 +
               </button>
+              <button
+                type="button"
+                onClick={tambahKeKeranjang}
+                className="flex min-h-12 items-center justify-center whitespace-nowrap rounded-md border border-transparent bg-[#579171] px-4 py-2.5 text-base font-medium leading-[1.6] text-white transition-colors hover:bg-[#447057]"
+              >
+                Masukkan
+              </button>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
+            <div className="overflow-x-auto rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)]">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <colgroup>
                   <col style={{ width: "30%" }} />
@@ -1486,8 +1487,8 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                   <col style={{ width: "15%" }} />
                   <col style={{ width: "10%" }} />
                 </colgroup>
-                <thead className="bg-[var(--bg-subtle)]">
-                  <tr className="border-b-2 border-[var(--border-color)]">
+                <thead className="bg-[var(--bg-body)]">
+                  <tr className="border-b border-[var(--border-color)]">
                     <th className="text-left py-2.5 px-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-secondary)] border-r border-[var(--border-color)]">
                       Produk
                     </th>
@@ -1630,7 +1631,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]" htmlFor="custom-item-price">Harga</label>
               <input id="custom-item-price" inputMode="numeric" value={customItemPrice} onChange={(e) => setCustomItemPrice(e.target.value.replace(/\D/g, ""))} className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]" placeholder="0" />
             </Modal>
-            <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-subtle)] p-4 md:p-6 flex items-center justify-between mt-6 shadow-sm">
+            <div className="mt-3 flex items-center justify-between rounded-lg bg-[var(--bg-subtle)] px-4 py-3">
               <div>
                 <p className="text-13 text-[var(--text-secondary)] mb-0">Durasi:</p>
                 <p className="text-lg font-bold mb-0">
@@ -1707,7 +1708,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 <button
                   type="button"
                   onClick={() => setShowPromoDiskon((v) => !v)}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] w-full text-sm font-medium transition-colors outline-none focus:outline-none border-0"
+                  className="mt-2 w-full border-0 bg-transparent p-0 text-left text-sm font-semibold text-[#7181E0] hover:underline"
                 >
                   {showPromoDiskon ? "− Promo & Diskon" : "+ Promo & Diskon"}
                 </button>
@@ -1812,8 +1813,9 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 )}
               </div>
             )}
-          </div>
+          </section>
 
+          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
           <PanelAksesoris
             daftar={printilanDaftar}
             terpilih={printilanTerpilih}
@@ -1828,16 +1830,17 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
             onChangeCustom={setPrintilanCustom}
           />
 
-          <div
-            className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-6 mt-4"
+          </section>
+          <section
+            className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5"
             style={{
               background: "var(--bg-surface)",
               borderColor: "var(--border-color)",
             }}
           >
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
-              Uang Muka / DP (Opsional)
-            </label>
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
+              Uang Muka / DP <span className="font-normal normal-case tracking-normal text-[var(--text-muted)]">(opsional)</span>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
@@ -1894,10 +1897,9 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
             >
               Buat Booking
             </button>
-          </div>
+          </section>
         </div>
-
-</div>
+      </div>
 
             {snKeranjang && (
         <PilihSN
