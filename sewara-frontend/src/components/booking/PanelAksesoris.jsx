@@ -21,7 +21,7 @@ export default function PanelAksesoris({
       className={
         modal
           ? "mt-3 bg-[var(--bg-subtle)] rounded-lg p-3"
-          : "mt-6 mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-lg"
+          : "mb-4"
       }
     >
       {modal ? (

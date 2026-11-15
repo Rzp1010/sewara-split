@@ -1171,9 +1171,8 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   return (
     <div className={mode === "modal" ? "p-4" : ""}>
       {mode === "page" && <h2 className="mb-5 text-xl font-bold tracking-tight text-[var(--text-primary)]">Buat booking</h2>}
-      <div className="mx-auto max-w-3xl">
-        <div className="flex flex-col gap-4">
-          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
+      <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 md:px-6">
+          <section className="border-b border-[var(--border-color)] py-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               Penyewa
             </h3>
@@ -1312,7 +1311,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               </div>
             </div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Detail booking</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <PanelJaminan
                 daftar={daftarJaminan}
                 terpilih={jaminanTerpilih}
@@ -1368,7 +1367,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                       }
                       gantiAmbil(now);
                     }}
-                    className="rounded-lg bg-[#7181E0] hover:bg-[#5d6fcc] px-4 py-2 text-sm font-medium text-white transition-colors border-0"
+                    className="h-[38px] shrink-0 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-body)]"
                   >
                     Sekarang
                   </button>
@@ -1438,8 +1437,8 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
             )}
           </section>
 
-          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
+          <section className="border-b border-[var(--border-color)] py-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               Barang
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] items-end gap-3 mb-3">
@@ -1460,7 +1459,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               <button
                 type="button"
                 onClick={() => setCustomItemOpen(true)}
-                className="flex h-12 w-12 items-center justify-center rounded-md border border-[var(--border-color)] bg-transparent text-xl text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                className="h-[38px] w-[38px] items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] text-lg font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-body)] hover:text-[var(--text-primary)]"
                 aria-label="Tambah item custom"
                 title="Tambah item custom"
               >
@@ -1469,7 +1468,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               <button
                 type="button"
                 onClick={tambahKeKeranjang}
-                className="flex min-h-12 items-center justify-center whitespace-nowrap rounded-md border border-transparent bg-[#579171] px-4 py-2.5 text-base font-medium leading-[1.6] text-white transition-colors hover:bg-[#447057]"
+                className="h-[38px] items-center justify-center whitespace-nowrap rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-body)]"
               >
                 Masukkan
               </button>
@@ -1813,7 +1812,8 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
             )}
           </section>
 
-          <section className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5">
+          <section className="border-b border-[var(--border-color)] py-5">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Aksesoris</h3>
           <PanelAksesoris
             daftar={printilanDaftar}
             terpilih={printilanTerpilih}
@@ -1830,11 +1830,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
 
           </section>
           <section
-            className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 md:p-5"
-            style={{
-              background: "var(--bg-surface)",
-              borderColor: "var(--border-color)",
-            }}
+            className="py-5"
           >
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
               Uang Muka / DP <span className="font-normal normal-case tracking-normal text-[var(--text-muted)]">(opsional)</span>
@@ -1891,13 +1887,11 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               type="button"
               onClick={buatBooking}
               disabled={Boolean(loading)}
-              className="px-4 py-2 rounded bg-[#579171] text-white w-full mt-4 text-lg"
+              className="h-10 rounded-lg border border-[#4f6fe0] bg-[#4f6fe0] px-5 text-[13px] font-semibold text-white transition-colors hover:brightness-95"
             >
               Buat Booking
             </button>
           </section>
-        </div>
-      </div>
 
             {snKeranjang && (
         <PilihSN
@@ -1915,6 +1909,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
           subteks="Mohon tunggu, jangan tutup halaman ini..."
         />
       )}
+      </div>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export default function PanelJaminan({ daftar = [], terpilih = [], onToggle }) {
       <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
         Jaminan
       </label>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2">
         {daftar.map((o) => {
           const aktif = terpilih.includes(o);
           const nonaktif =
@@ -23,7 +23,7 @@ export default function PanelJaminan({ daftar = [], terpilih = [], onToggle }) {
               type="button"
               disabled={nonaktif}
               onClick={() => onToggle(o)}
-              className={`${aktif ? "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[#7181E0] hover:bg-[#5d6fcc] text-white border-0" : "rounded-lg px-4 py-2 text-sm font-medium transition-colors outline-none focus:outline-none bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)] text-[var(--text-primary)] border-0"} ${nonaktif ? "opacity-40 cursor-not-allowed" : ""}`}
+              className={`h-8 rounded-lg border px-3 text-[12.5px] font-medium transition-colors ${aktif ? "border-[#4f6fe0] bg-[#e8edfb] text-[#4f6fe0]" : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[#c7d2fe] hover:text-[var(--text-primary)]"} ${nonaktif ? "cursor-not-allowed opacity-40" : ""}`}
             >
               {aktif ? "✓ " : ""}
               {o}
