@@ -106,11 +106,15 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   const [identitasCek] = useDebounce(`${namaPenyewa}|${hp_penyewa}`, 500);
   useEffect(() => {
     const [nama, hp] = String(identitasCek || "").split("|");
-    if (!nama.trim() || !hp.trim()) {
-      setBlacklistHit(null);
-      return;
-    }
     let aktif = true;
+    if (!nama.trim() || !hp.trim()) {
+      queueMicrotask(() => {
+        if (aktif) setBlacklistHit(null);
+      });
+      return () => {
+        aktif = false;
+      };
+    }
     cekBlacklist(nama.trim(), hp.trim()).then((h) => {
       if (aktif) setBlacklistHit(h?.hit ? h : null);
     });
@@ -435,18 +439,12 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   });
 
   useEffect(() => {
-    if (!ambilWaktu || !kembaliWaktu) return;
+    if (!ambilWaktu || !kembaliWaktu || cart.length === 0) return;
     const ambilISO = new Date(ambilWaktu).toISOString();
     const kembaliISO = new Date(kembaliWaktu).toISOString();
-    const dur = hitungDurasi(ambilISO, kembaliISO);
-    if (!dur.error) {
-      setKalkulasi((sebelumnya) => ({
-        ...sebelumnya,
-        durasi_teks: dur.durasi_teks,
-        totalJam: dur.totalJam,
-      }));
-      if (cart.length > 0) hitungTotal(cart, ambilISO, kembaliISO);
-    }
+    queueMicrotask(() => {
+      hitungTotalRef.current?.(cartRef.current, ambilISO, kembaliISO);
+    });
   }, [ambilWaktu, kembaliWaktu, cart.length]);
 
   const durasiCepat = [
