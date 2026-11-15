@@ -24,6 +24,7 @@ import PilihSN from "@/components/PilihSN";
 import PanelJaminan from "@/components/booking/PanelJaminan";
 import PanelAksesoris from "@/components/booking/PanelAksesoris";
 import InputHP from "@/components/ui/InputHP";
+import { Modal } from "@/components/ui/Modal";
 
 import {
   DEFAULT_JAMINAN,
@@ -54,6 +55,9 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   const [showCustom, setShowCustom] = useState(false);
   const [selectedDurasi, setSelectedDurasi] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [customItemOpen, setCustomItemOpen] = useState(false);
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
   const [dpJumlah, setDpJumlah] = useState("");
   const [dpMetode, setDpMetode] = useState("Tunai");
   const [buktiFile, setBuktiFile] = useState(null);
@@ -411,7 +415,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     }
 
     const updated = daftar.map((item) => {
-      const sub = hitungSubtotal(item, dur);
+      const sub = item.custom ? Number(item.hargaSatuan) || 0 : hitungSubtotal(item, dur);
       item.hargaSatuan = sub;
       item.subtotal = sub * item.qty;
       totalBiaya += item.subtotal;
@@ -586,6 +590,28 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     setSnOptions([]);
   }
 
+  function tambahItemCustom() {
+    const nama = customItemName.trim();
+    const harga = Number(String(customItemPrice).replace(/\D/g, ""));
+    if (!nama) return notify("Nama barang wajib diisi.", "error");
+    if (!Number.isSafeInteger(harga) || harga <= 0)
+      return notify("Harga harus lebih dari 0.", "error");
+    hitungTotal([
+      ...cartRef.current,
+      {
+        idBarang: `custom-${crypto.randomUUID()}`,
+        custom: true,
+        ref: { nama, jenis: "custom" },
+        qty: 1,
+        hargaSatuan: harga,
+        subtotal: harga,
+      },
+    ]);
+    setCustomItemName("");
+    setCustomItemPrice("");
+    setCustomItemOpen(false);
+  }
+
   function hapusDariKeranjang(idx) {
     const c = [...cartRef.current];
     c.splice(idx, 1);
@@ -598,6 +624,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     // otomatis dari sini (hapus hanya lewat tombol Hapus).
     const qty = Math.max(1, parseInt(nilai, 10) || 1);
     const item = c[idx];
+    if (item.custom) return;
     const stok = pakaiPeriode
       ? bebasJumlahPerPeriode(inv, trx, item.ref, mulaiISO, selesaiISO)
       : getStok(item.ref, inv);
@@ -644,6 +671,10 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     const hasil = [];
     let berubah = false;
     c.forEach((item) => {
+      if (item.custom) {
+        hasil.push(item);
+        return;
+      }
       if (item.ref.jenis === "satuan") {
         if (!item.sn) {
           hasil.push(item);
@@ -788,7 +819,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     setLoading("Menyimpan booking...");
     try {
       const idsInv = new Set();
-      c.forEach((item) => {
+      c.filter((item) => !item.custom).forEach((item) => {
         idsInv.add(item.idBarang);
         (item.ref.komponen || []).forEach((k) => idsInv.add(k.idBarang));
       });
@@ -844,6 +875,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
       const excludeId = mergeTarget ? mergeTarget.id : undefined;
 
       for (let item of c) {
+        if (item.custom) continue;
         const refInventaris = rawInv.find((i) => i.id == item.idBarang) || item.ref;
         const bebas = bebasJumlahPerPeriode(inv, trxAllSebelum, refInventaris, ambilISO, kembaliISO, excludeId);
         if (item.qty > bebas)
@@ -896,6 +928,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
 
       const invDiubah = new Set();
       for (let item of c) {
+        if (item.custom) continue;
         if (item.ref.jenis === "satuan") {
           let dbItem = tempInv.find((i) => i.id == item.idBarang);
           if (!dbItem)
@@ -1033,7 +1066,9 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
         waktu_ambil_rencana: ambilWaktu ? ambilWaktu.toISOString() : "",
         waktu_kembali_rencana: kembaliWaktu ? kembaliWaktu.toISOString() : "",
         durasi_teks: kalkulasi.durasi_teks,
-        items: JSON.parse(JSON.stringify(c)),
+        items: JSON.parse(JSON.stringify(c.map((item) => item.custom
+          ? { ...item, idBarang: null, inventory_id: null, nama: item.ref.nama, harga: item.hargaSatuan, jenis: "custom", tarif: null, qty: 1, subtotal: item.hargaSatuan, ref: { nama: item.ref.nama, jenis: "custom" } }
+          : item))),
         biaya: d.biayaAkhir,
         denda: 0,
         total_akhir: d.biayaAkhir,
@@ -1408,7 +1443,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-soft-text)]">
               Barang
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-end gap-3 mb-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] items-end gap-3 mb-3">
               <div className="flex-[3] min-w-0">
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-secondary)]">
                   Produk
@@ -1429,6 +1464,15 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 className="flex min-h-12 items-center justify-center whitespace-nowrap rounded-md border border-transparent bg-[#579171] px-4 py-2.5 text-base font-medium leading-[1.6] text-white transition-colors hover:bg-[#447057]"
               >
                 Masukkan
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomItemOpen(true)}
+                className="flex h-12 w-12 items-center justify-center border-0 bg-transparent text-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                aria-label="Tambah item custom"
+                title="Tambah item custom"
+              >
+                +
               </button>
             </div>
 
@@ -1482,7 +1526,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                         {c.ref.nama}
                       </td>
                       <td className="text-xs py-3 px-2 border-r border-[var(--border-color)] text-[#7181E0] max-w-[16rem] break-words whitespace-normal">
-                        {c.ref.jenis === "satuan" ? (
+                        {!c.custom && c.ref.jenis === "satuan" ? (
                           <>
                             <button
                               type="button"
@@ -1541,7 +1585,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                         )}
                       </td>
                       <td className="text-center py-3 px-2 border-r border-[var(--border-color)]">
-                        <input type="text" inputMode="numeric" value={c.qty} onChange={(e) => ubahQtyKeranjang(idx, e.target.value.replace(/\D/g, ""))} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center" aria-label={`Jumlah ${c.ref.nama}`} />
+                        <input type="text" inputMode="numeric" value={c.qty} onChange={(e) => ubahQtyKeranjang(idx, e.target.value.replace(/\D/g, ""))} disabled={c.custom} className="w-16 rounded border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-1 text-center disabled:opacity-60" aria-label={`Jumlah ${c.ref.nama}`} />
                       </td>
                       <td className="text-right text-[var(--text-primary)] py-3 px-2 border-r border-[var(--border-color)]">
                         {formatRupiah(c.hargaSatuan || 0)}
@@ -1569,6 +1613,23 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
               </table>
             </div>
 
+            <Modal
+              isOpen={customItemOpen}
+              onClose={() => setCustomItemOpen(false)}
+              title="Item Custom"
+              size="sm"
+              footer={
+                <>
+                  <button type="button" onClick={() => setCustomItemOpen(false)} className="rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]">Batal</button>
+                  <button type="button" onClick={tambahItemCustom} className="rounded-lg px-4 py-2 text-sm font-medium bg-[#579171] text-white hover:bg-[#447057]">Simpan</button>
+                </>
+              }
+            >
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]" htmlFor="custom-item-name">Nama barang</label>
+              <input id="custom-item-name" autoFocus value={customItemName} onChange={(e) => setCustomItemName(e.target.value)} className="mb-4 w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]" maxLength={120} />
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]" htmlFor="custom-item-price">Harga</label>
+              <input id="custom-item-price" inputMode="numeric" value={customItemPrice} onChange={(e) => setCustomItemPrice(e.target.value.replace(/\D/g, ""))} className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]" placeholder="0" />
+            </Modal>
             <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-subtle)] p-4 md:p-6 flex items-center justify-between mt-6 shadow-sm">
               <div>
                 <p className="text-13 text-[var(--text-secondary)] mb-0">Durasi:</p>
