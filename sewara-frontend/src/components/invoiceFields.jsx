@@ -300,7 +300,7 @@ export function FieldBaris({ fkey, data, ctx }) {
             <td className="w-[35%] py-0.5 align-top">Status Bayar</td>
             <td className="w-[5%] py-0.5 align-top">:</td>
             <td className="py-0.5 align-top">
-              <BadgeStatus status={ctx.pay.status} />
+              <BadgeStatus status={ctx.pay.label} />
             </td>
           </tr>
         </tbody>

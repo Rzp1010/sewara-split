@@ -469,7 +469,7 @@ export default function PengaturanPage() {
       const [diskStack, diskMaks, promoMin, printilanDaftar, printilanMode, daftarJaminanTenant] =
         await Promise.all([
           getSettingTenant("diskon_stack", "terbesar"),
-          getSettingTenant("diskon_maks_persen", 50),
+          getSettingTenant("diskon_maks_persen", 100),
           getSettingTenant("promo_min_transaksi", 0),
           getSettingTenant("printilan_daftar", []),
           getSettingTenant("printilan_invoice_mode", "dicentang"),
@@ -513,7 +513,7 @@ export default function PengaturanPage() {
         kalender_selesai: getSetting("kalender_selesai", "tampil") || "tampil",
         
         diskon_stack: diskStack || "terbesar",
-        diskon_maks_persen: String(diskMaks ?? 50),
+        diskon_maks_persen: String(diskMaks ?? 100),
         promo_min_transaksi: String(promoMin ?? 0),
         printilan_daftar: Array.isArray(printilanDaftar) ? printilanDaftar : [],
         daftar_jaminan: Array.isArray(daftarJaminanTenant) ? daftarJaminanTenant : [],
@@ -1441,7 +1441,7 @@ export default function PengaturanPage() {
                 value={f.diskon_maks_persen}
                 onChange={ubahAngka("diskon_maks_persen", 100)}
                 className={INPUT_CLS}
-                placeholder="50"
+                placeholder="100"
               />
             </Field>
             <Field

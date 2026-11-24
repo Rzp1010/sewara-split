@@ -126,7 +126,7 @@ const DetailCard = memo(function DetailCard({ t }) {
           {formatRupiah(t.total_akhir || t.biaya)}
         </span>
         <span className={`rounded-md px-2 py-1 text-xs ${payCls}`}>
-          {pay.status === "Belum Bayar" ? "Belum Bayar" : pay.status}
+          {pay.label}
         </span>
       </div>
     </div>

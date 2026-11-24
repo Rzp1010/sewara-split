@@ -202,7 +202,7 @@ const KartuTrx = memo(function KartuTrx({
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] text-[var(--text-secondary)]">{t.no_invoice}</span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tagWarna}`}>{pay.status}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tagWarna}`}>{pay.label}</span>
       </div>
       <p className="mb-0 truncate text-[13px] font-bold text-[var(--text-primary)]">{t.penyewa}</p>
       <p className="mb-0 text-[11px] text-[var(--text-secondary)]">Ambil <b className="font-semibold text-[var(--text-primary)]">{formatJam(t.waktu_ambil_rencana)}</b></p>
@@ -2045,7 +2045,7 @@ export default function StatusPage() {
                               <span
                                 className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}
                               >
-                                {pay.status}
+                                {pay.label}
                               </span>
                             </div>
                             <div

@@ -61,7 +61,27 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
   }
 
   // Filter: buang child tables & metadata sebelum update
-  const { transaction_items, transaction_payments, created_at, updated_at, ...updateData } = body;
+  const { transaction_items, transaction_payments, created_at, updated_at, konfirmasi_perubahan_total, ...updateData } = body;
+
+  if (('biaya' in updateData || 'total_akhir' in updateData || 'diskon' in updateData) && !konfirmasi_perubahan_total) {
+    const [{ data: payments, error: paymentError }, { data: stored, error: transactionError }] = await Promise.all([
+      supabase
+        .from('transaction_payments')
+        .select('amount')
+        .eq('transaction_id', id),
+      supabase
+        .from('transactions')
+        .select('total_akhir, diskon')
+        .eq('id', id)
+        .single(),
+    ]);
+    if (paymentError) throw paymentError;
+    if (transactionError) throw transactionError;
+    const transaksiGratisTersimpan = Number(stored.total_akhir) <= 0 && Number(stored.diskon?.totalDiskon) > 0;
+    if (transaksiGratisTersimpan || (payments || []).some((payment) => Number(payment.amount) > 0)) {
+      return errorResponse('Transaksi sudah memiliki pembayaran. Konfirmasi perubahan total diperlukan.', 'KONFIRMASI_PERUBAHAN_TOTAL', 409);
+    }
+  }
   
   const { data: transaction, error } = await supabase
     .from('transactions')

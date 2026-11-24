@@ -23,6 +23,7 @@ import {
 import {
   hitungDurasi,
   hitungSubtotal,
+  formatRupiah,
   kondisiUnit,
   catatanUnit,
   parseJaminan,
@@ -68,7 +69,7 @@ export default function ModalEditTransaksi({
   const [daftarPromo, setDaftarPromo] = useState([]);
   const [aturanDiskon, setAturanDiskon] = useState({
     stack: "terbesar",
-    maksPersen: 50,
+    maksPersen: 100,
     minTransaksi: 0,
   });
   const [printilanDaftar, setPrintilanDaftar] = useState([]);
@@ -102,6 +103,31 @@ export default function ModalEditTransaksi({
   const [editSnOptions, setEditSnOptions] = useState([]);
   const [editSnDipilih, setEditSnDipilih] = useState("");
   const [showEditSn, setShowEditSn] = useState(false);
+  const snapshotAwal = useMemo(() => JSON.stringify({
+    penyewa: trx.penyewa || "",
+    hp_penyewa: hpNormal(trx.hp_penyewa || ""),
+    alamat_penyewa: trx.alamat_penyewa || "",
+    jaminan_sewa: parseJaminan(trx.jaminan_sewa).slice().sort(),
+    waktu_ambil_rencana: trx.waktu_ambil_rencana || "",
+    waktu_kembali_rencana: trx.waktu_kembali_rencana || "",
+    items: trx.items || [],
+    printilan: trx.printilan?.terpilih || [],
+    printilanCustom: trx.printilan?.custom || "",
+  }), [trx]);
+  const adaPerubahan = useMemo(() => JSON.stringify({
+    penyewa: editForm.penyewa || "",
+    hp_penyewa: hpNormal(editForm.hp_penyewa || ""),
+    alamat_penyewa: editForm.alamat_penyewa || "",
+    jaminan_sewa: (editForm.jaminan_sewa || []).slice().sort(),
+    waktu_ambil_rencana: editForm.waktu_ambil_rencana?.toISOString() || "",
+    waktu_kembali_rencana: editForm.waktu_kembali_rencana?.toISOString() || "",
+    items: editItems,
+    printilan: editPrintilanTerpilih,
+    printilanCustom: editPrintilanCustom,
+  }) !== snapshotAwal, [editForm, editItems, editPrintilanTerpilih, editPrintilanCustom, snapshotAwal]);
+  const adaPembayaran =
+    Number(trx.total_akhir || 0) <= 0 && Number(trx.diskon?.totalDiskon || 0) > 0 ||
+    (trx.pembayaran?.riwayatBayar || []).some((bayar) => Number(bayar.jumlah) > 0);
 
   useEffect(() => {
     let aktif = true;
@@ -114,7 +140,7 @@ export default function ModalEditTransaksi({
             getPelangganSuggestions(),
             getPromoCodes(),
             getSettingTenant("diskon_stack", "terbesar"),
-            getSettingTenant("diskon_maks_persen", 50),
+            getSettingTenant("diskon_maks_persen", 100),
             getSettingTenant("promo_min_transaksi", 0),
             getSettingTenant("printilan_daftar", []),
             getSettingTenant("printilan_invoice_mode", "dicentang"),
@@ -388,7 +414,7 @@ export default function ModalEditTransaksi({
 
   async function simpanEdit() {
     const t = trx;
-    if (!t) return;
+    if (!t || !adaPerubahan) return;
     const ambil = editForm.waktu_ambil_rencana?.toISOString() || "";
     const kembali = editForm.waktu_kembali_rencana?.toISOString() || "";
     const dur = hitungDurasi(ambil, kembali);
@@ -508,15 +534,40 @@ export default function ModalEditTransaksi({
       const promoLama = t.diskon?.kodePromo
         ? daftarPromo.find((p) => p.kode === t.diskon.kodePromo)
         : null;
-      const dEdit = hitungDiskonMurni(totalBiaya, {
-        member: memberLama,
-        promo: promoLama,
-        totalJam: dur.totalJam,
-        aturanDiskon,
-        now: Date.now(),
-        fiturMemberPromo: getFITUR().memberPromo,
-        promoKadaluarsa: promoSudahKadaluarsa,
-      });
+      const memberCocok = daftarMember.find(
+        (member) =>
+          member.sumber === "member" &&
+          member.status === "aktif" &&
+          String(member.nama || "").trim().toLowerCase() === String(editForm.penyewa || "").trim().toLowerCase() &&
+          hpNormal(member.hp) &&
+          hpNormal(member.hp) === hpNormal(editForm.hp_penyewa),
+      );
+      const memberDiskon = memberCocok || memberLama;
+      const dEdit = adaPembayaran
+        ? {
+            totalDiskon: Number(t.diskon?.totalDiskon) || 0,
+            biayaAkhir: Math.max(0, totalBiaya - (Number(t.diskon?.totalDiskon) || 0)),
+            diskonMember: Number(t.diskon?.diskonMember) || 0,
+            diskonPromo: Number(t.diskon?.diskonPromo) || 0,
+            persenEfektif: Number(t.diskon?.memberPersen) || 0,
+            sumberDiskon: t.diskon?.memberSumber || null,
+          }
+        : hitungDiskonMurni(totalBiaya, {
+            member: memberDiskon,
+            promo: promoLama,
+            totalJam: dur.totalJam,
+            aturanDiskon,
+            now: Date.now(),
+            fiturMemberPromo: getFITUR().memberPromo,
+            promoKadaluarsa: promoSudahKadaluarsa,
+          });
+      const totalBaru = dEdit.biayaAkhir + (t.denda || 0);
+      if (adaPembayaran && totalBaru !== Number(t.total_akhir || 0)) {
+        const lanjut = window.confirm(
+          `Total berubah dari ${formatRupiah(t.total_akhir || 0)} menjadi ${formatRupiah(totalBaru)}. Pembayaran yang sudah tercatat tetap ${formatRupiah((t.pembayaran?.riwayatBayar || []).reduce((jumlah, bayar) => jumlah + (Number(bayar.jumlah) || 0), 0))}. Lanjutkan?`,
+        );
+        if (!lanjut) return;
+      }
 
       const namaPelayan = (await getNamaInvoice()) || "-";
       const trxBaru = {
@@ -530,12 +581,13 @@ export default function ModalEditTransaksi({
         waktu_kembali_rencana: kembali,
         durasi_teks: dur.durasi_teks,
         biaya: dEdit.biayaAkhir,
-        total_akhir: dEdit.biayaAkhir + (t.denda || 0),
-        diskon:
-          dEdit.totalDiskon > 0
+        total_akhir: totalBaru,
+        diskon: adaPembayaran
+          ? t.diskon
+          : dEdit.totalDiskon > 0
             ? {
-                memberId: memberLama?.id || null,
-                memberNama: memberLama?.nama || null,
+                memberId: memberDiskon?.id || null,
+                memberNama: memberDiskon?.nama || null,
                 diskonMember: dEdit.diskonMember,
                 memberPersen: dEdit.persenEfektif,
                 memberSumber: dEdit.sumberDiskon,
@@ -544,7 +596,8 @@ export default function ModalEditTransaksi({
                 totalDiskon: dEdit.totalDiskon,
                 biayaAsli: totalBiaya,
               }
-            : undefined,
+            : null,
+        konfirmasi_perubahan_total: adaPembayaran,
         riwayatDilayani: [
           ...(t.riwayatDilayani || []),
           { aksi: "edit", nama: namaPelayan, tgl: new Date().toISOString() },
@@ -917,8 +970,8 @@ export default function ModalEditTransaksi({
               <button
                 type="button"
                 onClick={simpanEdit}
-                disabled={Boolean(loading)}
-                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={Boolean(loading) || !adaPerubahan}
+                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 bg-[#579171] text-white shadow-sm hover:bg-[#447057] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Simpan
               </button>

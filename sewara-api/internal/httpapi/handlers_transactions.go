@@ -362,6 +362,16 @@ func (s *Server) handleTransactionsDetailGet(w http.ResponseWriter, r *http.Requ
 }
 
 // handleTransactionsDetailPatch mengubah field parent transaksi (items/payments tidak disentuh).
+func diskonTersimpan(raw json.RawMessage) float64 {
+	var diskon struct {
+		Total float64 `json:"totalDiskon"`
+	}
+	if err := json.Unmarshal(raw, &diskon); err != nil {
+		return 0
+	}
+	return diskon.Total
+}
+
 func (s *Server) handleTransactionsDetailPatch(w http.ResponseWriter, r *http.Request, me db.Identity) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {
@@ -382,10 +392,36 @@ func (s *Server) handleTransactionsDetailPatch(w http.ResponseWriter, r *http.Re
 	delete(body, "updated_at")
 	delete(body, "user_id")
 	delete(body, "id")
+	konfirmasiPerubahanTotal, _ := body["konfirmasi_perubahan_total"].(bool)
+	delete(body, "konfirmasi_perubahan_total")
 
 	if len(body) == 0 {
 		writeValidationError(w, "Tidak ada perubahan.", nil)
 		return
+	}
+
+	if body["biaya"] != nil || body["total_akhir"] != nil || body["diskon"] != nil {
+		detail, err := s.db.GetTransactionDetail(r.Context(), me.UserID, id)
+		if err != nil {
+			s.log.Error("gagal membaca transaksi untuk guard finansial", "err", err, "id", id)
+			writeError(w, http.StatusInternalServerError, CodeInternalError, "Terjadi kesalahan server. Coba lagi.")
+			return
+		}
+		if detail == nil {
+			writeError(w, http.StatusNotFound, CodeNotFound, "Transaction not found")
+			return
+		}
+		adaPembayaran := detail.TotalAkhir <= 0 && diskonTersimpan(detail.Diskon) > 0
+		for _, pembayaran := range detail.Payments {
+			if pembayaran.Amount > 0 {
+				adaPembayaran = true
+				break
+			}
+		}
+		if adaPembayaran && !konfirmasiPerubahanTotal {
+			writeValidationError(w, "Transaksi sudah memiliki pembayaran. Konfirmasi perubahan total diperlukan.", nil)
+			return
+		}
 	}
 
 	if status, ok := body["status"].(string); ok && status != "" {

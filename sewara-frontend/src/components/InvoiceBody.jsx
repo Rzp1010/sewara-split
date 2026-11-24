@@ -102,7 +102,7 @@ function LegacyBody({ data, footer, namaAksi, pay }) {
                           : "bg-[#F04438] text-white"
                     }`}
                   >
-                    {pay.status}
+                    {pay.label}
                   </span>
                 </td>
               </tr>

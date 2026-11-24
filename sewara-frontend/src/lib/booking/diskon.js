@@ -76,7 +76,8 @@ export function hitungDiskonMurni(biaya, opsi = {}) {
       memberAktif && pilihSatu !== "promo" ? diskonMember : diskonPromo;
   } else totalDiskon = Math.max(diskonMember, diskonPromo);
 
-  const cap = Math.round((biayaNum * (Number(maksPersen) || 0)) / 100);
+  const capPersen = Math.min(100, Math.max(0, Number(maksPersen) || 0));
+  const cap = Math.round((biayaNum * capPersen) / 100);
   totalDiskon = Math.min(totalDiskon, cap);
   const dasarDiskonCustom = Math.max(0, biayaNum - totalDiskon);
   const nilaiCustom =

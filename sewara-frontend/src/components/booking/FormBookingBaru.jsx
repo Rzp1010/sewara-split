@@ -13,6 +13,7 @@ import {
   catatanUnit,
   parseJaminan,
   terBlacklist,
+  hpNormal,
   bebasJumlahPerPeriode,
 } from "@/lib/utils";
 import { getFITUR } from "@/lib/features";
@@ -89,7 +90,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   const [pilihSatu, setPilihSatu] = useState(null);
   const [aturanDiskon, setAturanDiskon] = useState({
     stack: "terbesar",
-    maksPersen: 50,
+    maksPersen: 100,
     minTransaksi: 0,
   });
   const [kini, setKini] = useState(0);
@@ -186,7 +187,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
         getPelangganSuggestions(),
         getPromoCodes(),
         getSettingTenant("diskon_stack", "terbesar"),
-        getSettingTenant("diskon_maks_persen", 50),
+        getSettingTenant("diskon_maks_persen", 100),
         getSettingTenant("promo_min_transaksi", 0),
       ]);
       setDaftarMember(members || []);
@@ -706,10 +707,21 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
   // ---- Autocomplete member di kolom nama penyewa ----
   function gantiNamaPenyewa(v) {
     setNamaPenyewa(v);
-    // Jika nama diubah dan tidak lagi cocok dengan member terpilih, lepas member.
-    if (
+    const cocokMember = daftarMember.find(
+      (m) =>
+        m.sumber === "member" &&
+        m.status === "aktif" &&
+        String(m.nama || "").trim().toLowerCase() === v.trim().toLowerCase() &&
+        hpNormal(m.hp) &&
+        hpNormal(m.hp) === hpNormal(hp_penyewa),
+    );
+    if (cocokMember) {
+      setMemberDipilih(cocokMember);
+      setPilihSatu(null);
+    } else if (
       memberDipilih &&
-      v.trim().toLowerCase() !== memberDipilih.nama.trim().toLowerCase()
+      (v.trim().toLowerCase() !== memberDipilih.nama.trim().toLowerCase() ||
+        hpNormal(hp_penyewa) !== hpNormal(memberDipilih.hp))
     ) {
       setMemberDipilih(null);
       setPilihSatu(null);
@@ -746,7 +758,7 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
     setNamaPenyewa(m.nama || "");
     setHpPenyewa(m.hp || "");
     setAlamatPenyewa(m.alamat || "");
-    setMemberDipilih(m);
+    setMemberDipilih(m.sumber === "member" && m.status === "aktif" ? m : null);
     setPilihSatu(null);
     setSaranMember([]);
     setShowSaran(false);
@@ -1307,7 +1319,23 @@ export default function FormBookingBaru({ mode = "page", daftarAktif = [], katal
                 <label className="mb-2 block text-[12.5px] font-bold tracking-[0.02em] text-[var(--text-primary)]">
                   No. HP
                 </label>
-                <InputHP name="hp_penyewa" ariaLabel="No. HP penyewa" value={hp_penyewa} onChange={setHpPenyewa} />
+                <InputHP
+                  name="hp_penyewa"
+                  ariaLabel="No. HP penyewa"
+                  value={hp_penyewa}
+                  onChange={(hp) => {
+                    setHpPenyewa(hp);
+                    const cocok = daftarMember.find(
+                      (m) =>
+                        m.sumber === "member" &&
+                        m.status === "aktif" &&
+                        String(m.nama || "").trim().toLowerCase() === namaPenyewa.trim().toLowerCase() &&
+                        hpNormal(m.hp) && hpNormal(m.hp) === hpNormal(hp),
+                    );
+                    setMemberDipilih(cocok || null);
+                    if (!cocok) setPilihSatu(null);
+                  }}
+                />
               </div>
             </div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Detail booking</h4>

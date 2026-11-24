@@ -438,8 +438,8 @@ export default function BookingPage() {
                             <span
                               className={`inline-block px-2 py-1 rounded text-xs ${cls}`}
                             >
-                              {pay.status}
-                              {pay.status === "Belum Bayar"
+                              {pay.label}
+                              {pay.status === "Belum Bayar" && pay.label !== "Gratis"
                                 ? " / Belum DP"
                                 : ""}
                             </span>

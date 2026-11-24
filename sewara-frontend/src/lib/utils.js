@@ -241,7 +241,7 @@ export function hitungPembayaran(trx) {
   const dibayar = riwayat.reduce((s, b) => s + (b.jumlah || 0), 0);
   const total = trx?.total_akhir || 0;
   let status = "Belum Bayar";
-  if (dibayar >= total && total > 0) status = "Lunas";
+  if (total <= 0 || dibayar >= total) status = "Lunas";
   else if (dibayar > 0) status = "DP";
   return {
     dibayar,
@@ -249,6 +249,7 @@ export function hitungPembayaran(trx) {
     sisa: Math.max(0, total - dibayar),
     kembalian: dibayar > total ? dibayar - total : 0,
     status,
+    label: total <= 0 ? "Gratis" : status,
   };
 }
 
